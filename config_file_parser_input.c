@@ -214,7 +214,7 @@ ConfigFileParser_createModelFromConfigFile_inputs(FileHandle fileHandle)
                     if (StringUtils_startsWith((char*) lineBuffer, "IN")) {
                         indendation = 4;
 
-                        currentInput = Input_create(currentLN);
+                        currentInput = Input_create(currentLN, model);
                     }
                     else {
                         if (DEBUG_IED_SERVER)

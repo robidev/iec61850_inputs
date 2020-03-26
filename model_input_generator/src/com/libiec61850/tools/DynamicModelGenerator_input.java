@@ -229,7 +229,7 @@ public class DynamicModelGenerator_input {
                                     if (gseControlBlock.getAppID() != null)
                                         ID = gseControlBlock.getAppID();
                                     
-                                    cbRef = gseControlBlock.getName();
+                                    cbRef = ied_local.getName() + logicalDevice.getInst() + "/" + logicalNode2.getName() + "$GO$" + gseControlBlock.getName();
                                 }
                             }
 
@@ -237,7 +237,7 @@ public class DynamicModelGenerator_input {
                             for (SampledValueControl svCB : svControlBlocks) {
                                 if(datasetName_.equals(svCB.getDatSet()))
                                 {
-                                    PhyComAddress svAddress = connectedAP.lookupSMVAddress( logicalDevice.getInst(), svCB.getName());                            
+                                    PhyComAddress svAddress = connectedAP_local.lookupSMVAddress( logicalDevice.getInst(), svCB.getName());                            
                                     if (svAddress != null) {
                                         AppID = "" + svAddress.getAppId();
                                         
@@ -250,7 +250,7 @@ public class DynamicModelGenerator_input {
                                     if (svCB.getSmvID() != null)
                                         ID = svCB.getSmvID();
 
-                                    cbRef =  svCB.getName();
+                                    cbRef =  ied_local.getName() + logicalDevice.getInst() + "/" + logicalNode2.getName() + "$SV$" + svCB.getName();
                                 }
                             }
                         }
@@ -262,10 +262,10 @@ public class DynamicModelGenerator_input {
                             mmsVariableName += fcda.getLnClass();
                             if (fcda.getLnInstance() != null)
                                 mmsVariableName += fcda.getLnInstance();
-                            mmsVariableName += "$" + fcda.getFc().toString();
-                            mmsVariableName += "$" + toMmsString(fcda.getDoName());
+                            //mmsVariableName += "$" + fcda.getFc().toString();
+                            mmsVariableName += "." + toMmsString(fcda.getDoName());
                             if (fcda.getDaName() != null)
-                                mmsVariableName += "$" + toMmsString(fcda.getDaName());
+                                mmsVariableName += "." + toMmsString(fcda.getDaName());
 
                             output.print("SD(" + mmsVariableName + " " + datasetName_ + " " + AppID + " " + ethAddr + " " + cbRef + " " + ID + ");\n");
             

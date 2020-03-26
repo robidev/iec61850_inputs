@@ -64,18 +64,16 @@ IedModel_addInput(IedModel_inputs* self, Input* input)
 
 
 Input*
-Input_create(LogicalNode* parent)
+Input_create(LogicalNode* parent, IedModel_inputs* inputs )
 {
     Input* self = (Input*) GLOBAL_MALLOC(sizeof(Input));
-
-    LogicalDevice* ld = (LogicalDevice*) parent->parent;
 
     self->parent = parent;
     self->elementCount = 0;
     self->sibling = NULL;
     self->extRefs = NULL;
 
-    IedModel_addInput((IedModel_inputs*) ld->parent, self);//TODO: wrong cast!
+    IedModel_addInput(inputs, self);
 
     return self;
 }

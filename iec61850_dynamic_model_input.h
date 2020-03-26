@@ -43,7 +43,7 @@ IedModel_input_create(void);
  * \return the new input instance
  */
 LIB61850_API Input*
-Input_create(LogicalNode* parent);
+Input_create(LogicalNode* parent, IedModel_inputs* inputs );
 
 /**
  * \brief returns the number of elements (entries) of the Input

@@ -22,8 +22,127 @@
            </Address>
 	    </GSE>
       </ConnectedAP>
+      <ConnectedAP iedName="IED2" apName="accessPoint2">
+        <Address>
+          <P type="IP">10.0.0.3</P>
+          <P type="IP-SUBNET">255.255.255.0</P>
+          <P type="IP-GATEWAY">10.0.0.1</P>
+          <P type="OSI-TSEL">0001</P>
+          <P type="OSI-PSEL">00000001</P>
+          <P type="OSI-SSEL">0001</P>
+        </Address>
+        <GSE ldInst="GenericIO" cbName="gcbEvents">
+           <Address>
+                <P type="VLAN-ID">1</P>
+                <P type="VLAN-PRIORITY">4</P>
+                <P type="MAC-Address">01-0c-cd-01-00-02</P>
+                <P type="APPID">1001</P>
+           </Address>
+	    </GSE>
+      </ConnectedAP>
+      <ConnectedAP iedName="SMV1" apName="accessPoint3">
+        <Address>
+          <P type="IP">10.0.0.4</P>
+          <P type="IP-SUBNET">255.255.255.0</P>
+          <P type="IP-GATEWAY">10.0.0.1</P>
+          <P type="OSI-TSEL">0001</P>
+          <P type="OSI-PSEL">00000001</P>
+          <P type="OSI-SSEL">0001</P>
+        </Address>
+	<SMV ldInst="MUnn" cbName="MSVCB01">
+		<Address>
+			<P type="VLAN-ID">1</P>
+			<P type="VLAN-PRIORITY">4</P>
+			<P type="MAC-Address">01-0c-cd-04-00-01</P>
+			<P type="APPID">1002</P>
+		</Address>
+	</SMV>
+      </ConnectedAP>
     </SubNetwork>
   </Communication>
+
+	<Substation name="">
+		<VoltageLevel name="">
+			<Bay name="">
+				<ConductingEquipment name="Inn" type="CTR">
+					<SubEquipment name="A" phase="A">
+						<LNode lnClass="TCTR" lnInst="1" />
+					</SubEquipment>
+					<SubEquipment name="B" phase="B">
+						<LNode lnClass="TCTR" lnInst="2" />
+					</SubEquipment>
+					<SubEquipment name="C" phase="C">
+						<LNode lnClass="TCTR" lnInst="3" />
+					</SubEquipment>
+					<SubEquipment name="N" phase="N">
+						<LNode lnClass="TCTR" lnInst="4" />
+					</SubEquipment>
+				</ConductingEquipment>
+				<ConductingEquipment name="Unn" type="VTR">
+					<SubEquipment name="A" phase="A">
+						<LNode lnClass="TVTR" lnInst="1" />
+					</SubEquipment>
+					<SubEquipment name="B" phase="B">
+						<LNode lnClass="TVTR" lnInst="2" />
+					</SubEquipment>
+					<SubEquipment name="C" phase="C">
+						<LNode lnClass="TVTR" lnInst="3" />
+					</SubEquipment>
+					<SubEquipment name="N" phase="N">
+						<LNode lnClass="TVTR" lnInst="4" />
+					</SubEquipment>
+				</ConductingEquipment>
+			</Bay>
+		</VoltageLevel>
+	</Substation>
+	<IED name="SMV1">
+		<AccessPoint name="accessPoint3">
+			<Server>
+				<Authentication />
+				<LDevice inst="MUnn">
+					<LN0 lnType="9-2LELLN0" lnClass="LLN0" inst="">
+						<DataSet name="PhsMeas1">
+
+							<FCDA ldInst="MUnn" lnClass="TCTR" lnInst="1" fc="MX"
+								doName="Amp" />
+							<FCDA ldInst="MUnn" lnClass="TCTR" lnInst="2" fc="MX"
+								doName="Amp" />
+							<FCDA ldInst="MUnn" lnClass="TCTR" lnInst="3" fc="MX"
+								doName="Amp" />
+							<FCDA ldInst="MUnn" lnClass="TCTR" lnInst="4" fc="MX"
+								doName="Amp" />
+							<FCDA ldInst="MUnn" lnClass="TVTR" lnInst="1" fc="MX"
+								doName="Vol" />
+							<FCDA ldInst="MUnn" lnClass="TVTR" lnInst="2" fc="MX"
+								doName="Vol" />
+							<FCDA ldInst="MUnn" lnClass="TVTR" lnInst="3" fc="MX"
+								doName="Vol" />
+							<FCDA ldInst="MUnn" lnClass="TVTR" lnInst="4" fc="MX"
+								doName="Vol" />
+
+						</DataSet>
+						<SampledValueControl name="MSVCB01" datSet="PhsMeas1"
+							smvID="xxxxMUnn01" smpRate="80" nofASDU="1" confRev="1">
+
+							<SmvOpts refreshTime="false" sampleSynchronized="true"
+								security="false" dataRef="false" />
+						</SampledValueControl>
+					</LN0>
+
+					<LN lnType="9-2LETCTR" lnClass="TCTR" inst="1" />
+					<LN lnType="9-2LETCTR" lnClass="TCTR" inst="2" />
+					<LN lnType="9-2LETCTR" lnClass="TCTR" inst="3" />
+					<LN lnType="9-2LETCTR" lnClass="TCTR" inst="4" />
+
+					<LN lnType="9-2LETVTR" lnClass="TVTR" inst="1" />
+					<LN lnType="9-2LETVTR" lnClass="TVTR" inst="2" />
+					<LN lnType="9-2LETVTR" lnClass="TVTR" inst="3" />
+					<LN lnType="9-2LETVTR" lnClass="TVTR" inst="4" />
+
+				</LDevice>
+			</Server>
+		</AccessPoint>
+	</IED>
   <IED name="simpleIO">
     <Services>
       <DynAssociation />
@@ -45,15 +164,11 @@
         <Authentication />
         <LDevice inst="GenericIO">
           <LN0 lnClass="LLN0" lnType="LLN01" inst="">
-          	<DataSet name="Events" desc="Events">
-              <FCDA ldInst="GenericIO" lnClass="GGIO" fc="ST" lnInst="1" doName="SPCSO1" daName="stVal" />
-              <FCDA ldInst="GenericIO" lnClass="GGIO" fc="ST" lnInst="1" doName="SPCSO2" daName="stVal" />
-              <FCDA ldInst="GenericIO" lnClass="GGIO" fc="ST" lnInst="1" doName="SPCSO3" daName="stVal" />
-              <FCDA ldInst="GenericIO" lnClass="GGIO" fc="ST" lnInst="1" doName="SPCSO4" daName="stVal" />
-            </DataSet>
-            
-            <GSEControl appID="events" name="gcbEvents" type="GOOSE" datSet="Events" confRev="2" minTime="1000" maxTime="3000" /> 
-
+            <Inputs>
+              <ExtRef intAddr="adr_smv" desc="sample" iedName="SMV1" ldInst="MUnn" lnClass="TVTR" lnInst="1" doName="Vol" serviceType="SMV" srcLDInst="MUnn" srcLNClass="LLN0" srcLNInst="" srcCBName="MSVCB01" />
+              <ExtRef intAddr="adr_smv" desc="sample" iedName="SMV1" ldInst="MUnn" lnClass="TVTR" lnInst="2" doName="Vol" serviceType="SMV" srcLDInst="MUnn" srcLNClass="LLN0" srcLNInst="" srcCBName="MSVCB01" />
+              <ExtRef intAddr="adr_smv" desc="sample" iedName="SMV1" ldInst="MUnn" lnClass="TCTR" lnInst="1" doName="Amp" serviceType="SMV" srcLDInst="MUnn" srcLNClass="LLN0" srcLNInst="" srcCBName="MSVCB01" />
+            </Inputs>
             <DOI name="Mod">
               <DAI name="ctlModel">
                 <Val>status-only</Val>
@@ -64,7 +179,7 @@
           <LN lnClass="GGIO" lnType="GGIO1" inst="1" prefix="">
             <Inputs>
               <ExtRef intAddr="adr1" desc="one" iedName="IED2" ldInst="GenericIO" lnClass="GGIO" lnInst="1" doName="SPCSO1" daName="stVal" serviceType="GOOSE" srcLDInst="GenericIO" srcLNClass="GGIO" srcLNInst="1" srcCBName="GoCB" />
-              <ExtRef intAddr="adr2" desc="two" iedName="IED3" ldInst="GenericIO" lnClass="LLN0" lnInst="" doName="Mod" daName="ctlModel" serviceType="GOOSE" srcLDInst="GenericIO" srcLNClass="LLN" srcLNInst="1" srcCBName="GoCB" />
+              <ExtRef intAddr="adr2" desc="two" iedName="IED2" ldInst="GenericIO" lnClass="LLN0" lnInst="" doName="Mod" daName="ctlModel" serviceType="GOOSE" srcLDInst="GenericIO" srcLNClass="LLN" srcLNInst="1" srcCBName="GoCB" />
             </Inputs>
             <DOI name="Mod">
               <DAI name="ctlModel">
@@ -96,7 +211,88 @@
       </Server>
     </AccessPoint>
   </IED>
+  <IED name="IED2">
+    <Services>
+      <DynAssociation />
+      <GetDirectory />
+      <GetDataObjectDefinition />
+      <GetDataSetValue />
+      <DataSetDirectory />
+      <ReadWrite />
+      <GetCBValues />
+      <ConfLNs fixPrefix="true" fixLnInst="true" />
+      <GOOSE max="5" />
+      <GSSE max="5" />
+      <FileHandling />
+      <GSEDir />
+      <TimerActivatedControl />
+    </Services>
+    <AccessPoint name="accessPoint2">
+      <Server>
+        <Authentication />
+        <LDevice inst="GenericIO">
+          <LN0 lnClass="LLN0" lnType="LLN01" inst="">
+          	<DataSet name="Events" desc="Events">
+              <FCDA ldInst="GenericIO" lnClass="GGIO" fc="ST" lnInst="1" doName="SPCSO1" daName="stVal" />
+              <FCDA ldInst="GenericIO" lnClass="GGIO" fc="ST" lnInst="1" doName="SPCSO2" daName="stVal" />
+              <FCDA ldInst="GenericIO" lnClass="GGIO" fc="ST" lnInst="1" doName="SPCSO3" daName="stVal" />
+              <FCDA ldInst="GenericIO" lnClass="GGIO" fc="ST" lnInst="1" doName="SPCSO4" daName="stVal" />
+            </DataSet>
+            
+            <GSEControl appID="events" name="gcbEvents" type="GOOSE" datSet="Events" confRev="2" minTime="1000" maxTime="3000" /> 
+
+            <DOI name="Mod">
+              <DAI name="ctlModel">
+                <Val>status-only</Val>
+              </DAI>
+            </DOI>
+          </LN0>
+          <LN lnClass="LPHD" lnType="LPHD1" inst="1" prefix="" />
+          <LN lnClass="GGIO" lnType="GGIO1" inst="1" prefix="">
+            <DOI name="Mod">
+              <DAI name="ctlModel">
+                <Val>status-only</Val>
+              </DAI>
+            </DOI>
+            <DOI name="SPCSO1">
+              <DAI name="ctlModel">
+                <Val>direct-with-normal-security</Val>
+              </DAI>
+            </DOI>
+            <DOI name="SPCSO2">
+              <DAI name="ctlModel">
+                <Val>direct-with-normal-security</Val>
+              </DAI>
+            </DOI>
+            <DOI name="SPCSO3">
+              <DAI name="ctlModel">
+                <Val>direct-with-normal-security</Val>
+              </DAI>
+            </DOI>
+            <DOI name="SPCSO4">
+              <DAI name="ctlModel">
+                <Val>direct-with-normal-security</Val>
+              </DAI>
+            </DOI>
+          </LN>
+        </LDevice>
+      </Server>
+    </AccessPoint>
+  </IED>
   <DataTypeTemplates>
+
+	<LNodeType id="9-2LELLN0" lnClass="LLN0">
+		<DO name="Mod" type="9-2LEINC" />
+	</LNodeType>
+
+	<LNodeType id="9-2LETCTR" lnClass="TCTR">
+		<DO name="Amp" type="9-2LESAVAmp" />
+	</LNodeType>
+
+	<LNodeType id="9-2LETVTR" lnClass="TVTR">
+		<DO name="Vol" type="9-2LESAVVol" />
+	</LNodeType>
+
     <LNodeType id="LLN01" lnClass="LLN0">
       <DO name="Mod" type="INC_1_Mod" />
       <DO name="Beh" type="INS_1_Beh" />
@@ -126,6 +322,25 @@
       <DO name="Ind3" type="SPS_1_Proxy" />
       <DO name="Ind4" type="SPS_1_Proxy" />
     </LNodeType>
+
+	<DOType id="9-2LESAVAmp" cdc="SAV">
+		<DA name="instMag" bType="Struct" type="9-2LEAV" fc="MX" />
+		<DA name="q" bType="Quality" fc="MX" />
+		<DA name="sVC" bType="Struct" type="9-2LEsVCAmp" fc="CF" />
+	</DOType>
+
+	<DOType id="9-2LESAVVol" cdc="SAV">
+		<DA name="instMag" bType="Struct" type="9-2LEAV" fc="MX" />
+		<DA name="q" bType="Quality" fc="MX" />
+		<DA name="sVC" bType="Struct" type="9-2LEsVCVol" fc="CF" />
+	</DOType>
+
+	<DOType id="9-2LEINC" cdc="INC">
+		<DA name="stVal" fc="ST" bType="INT32" dchg="true" />
+		<DA name="q" fc="ST" bType="Quality" dchg="true" />
+		<DA name="t" fc="ST" bType="Timestamp" dchg="true" />
+	</DOType>
+
     <DOType id="INC_1_Mod" cdc="INC">
       <DA name="q" bType="Quality" fc="ST" qchg="true" />
       <DA name="t" bType="Timestamp" fc="ST" />
@@ -194,6 +409,27 @@
       <DA name="ctlModel" type="CtlModels" bType="Enum" fc="CF" />
       <DA name="t" bType="Timestamp" fc="ST" />
     </DOType>
+
+	<DAType id="9-2LEAV">
+		<BDA name="i" bType="INT32" />
+	</DAType>
+	<DAType id="9-2LEsVCAmp">
+		<BDA name="scaleFactor" bType="FLOAT32">
+			<Val>0.001</Val>
+		</BDA>
+		<BDA name="offset" bType="FLOAT32">
+			<Val>0</Val>
+		</BDA>
+	</DAType>
+	<DAType id="9-2LEsVCVol">
+		<BDA name="scaleFactor" bType="FLOAT32">
+			<Val>0.01</Val>
+		</BDA>
+		<BDA name="offset" bType="FLOAT32">
+			<Val>0</Val>
+		</BDA>
+	</DAType>
+
     <DAType id="AnalogueValue_1">
       <BDA name="f" bType="FLOAT32" />
     </DAType>

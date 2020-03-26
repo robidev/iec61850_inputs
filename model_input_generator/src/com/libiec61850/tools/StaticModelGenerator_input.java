@@ -73,7 +73,6 @@ public class StaticModelGenerator_input {
 
     private List<String> variablesList;
     private PrintStream cOut;
-    private PrintStream hOut;
 
     private List<String> inputsNames;
     private String subRefs_name = null;
@@ -87,23 +86,23 @@ public class StaticModelGenerator_input {
 
 	private String outputFileName;
 	private String hDefineName;
+    private String IEDmodelPrefix;
 	private String modelPrefix;
 	private boolean initializeOnce;
 	
 	private SclParser sclParser;
 
-    public StaticModelGenerator_input(InputStream stream, String icdFile, PrintStream cOut, PrintStream hOut,
-    		String outputFileName, String iedName, String accessPointName, String modelPrefix,
+    public StaticModelGenerator_input(InputStream stream, String icdFile, PrintStream cOut,
+    		String outputFileName, String iedName, String accessPointName, String modelPrefix, String IEDmodelPrefix,
 			boolean initializeOnce) throws SclParserException 
     {
         this.cOut = cOut;
-        this.hOut = hOut;
-        
         
         sclParser = new SclParser(stream);
 
 		this.outputFileName = outputFileName;
 		this.hDefineName = outputFileName.toUpperCase().replace( '.', '_' ).replace( '-', '_' ) + "_H_";
+        this.IEDmodelPrefix = IEDmodelPrefix;
 		this.modelPrefix = modelPrefix;
 		this.initializeOnce = initializeOnce;
 
@@ -131,8 +130,23 @@ public class StaticModelGenerator_input {
 
         connectedAP = sclParser.getConnectedAP(ied, accessPoint.getName());
 
+        printCFileHeader(icdFile);
         printDeviceModelDefinitions();
 
+    }
+
+    private void printCFileHeader(String filename) {
+
+        cOut.println("/*");
+        cOut.println(" * " + outputFileName + ".c");
+        cOut.println(" *");
+        cOut.println(" * automatically generated from " + filename);
+        cOut.println(" */");
+        cOut.println("#include <stdlib.h>");
+        cOut.println("#include \"iec61850_model.h\"");
+        cOut.println("#include \"iec61850_model_input.h\"");
+        cOut.println("#include \"static_model.h\"");
+        cOut.println();
     }
 
     private static String toMmsString(String iecString) {
@@ -141,7 +155,7 @@ public class StaticModelGenerator_input {
 
     public static void main(String[] args) throws FileNotFoundException  {
         if (args.length < 1) {
-            System.out.println("Usage: genmodel <ICD file>  [-ied  <ied-name>] [-ap <access-point-name>] [-out <output-name>] [-modelprefix <model-prefix>]");
+            System.out.println("Usage: genmodel <ICD file>  [-ied  <ied-name>] [-ap <access-point-name>] [-out <output-name>] [-Inputmodelprefix <input-model-prefix>] [-IEDmodelprefix <ied-model-prefix>]");
             System.exit(1);
         }
 
@@ -151,6 +165,7 @@ public class StaticModelGenerator_input {
         
         String accessPointName = null;
         String iedName = null;
+        String IEDmodelPrefix = "iedModel";
 		String modelPrefix = "iedInputModel";
 		boolean initializeOnce = false;
         
@@ -179,14 +194,24 @@ public class StaticModelGenerator_input {
         			i++;
         			
         		}
-        		else if (args[i].equals("-modelprefix")) {
+        		else if (args[i].equals("-Inputmodelprefix")) {
 					modelPrefix = args[i+1];
 
-        			System.out.println("Select Model Prefix " + modelPrefix);
+        			System.out.println("Select input Model Prefix " + modelPrefix);
 
         			i++;
         			
         		}
+
+                else if (args[i].equals("-IEDmodelprefix")) {
+					IEDmodelPrefix = args[i+1];
+
+        			System.out.println("Select IED Model Prefix " + IEDmodelPrefix);
+
+        			i++;
+        			
+        		}
+
         		else if (args[i].equals("-initializeonce")) {
 					initializeOnce = true;
 
@@ -201,25 +226,15 @@ public class StaticModelGenerator_input {
         }
 
         PrintStream cOutStream = new PrintStream(new FileOutputStream(new File(outputFileName + ".c")));
-        PrintStream hOutStream = new PrintStream(new FileOutputStream(new File(outputFileName + ".h")));
 
 		System.out.println("Select ICD File " + icdFile);
         InputStream stream = new FileInputStream(icdFile);
 
         try {
-			new StaticModelGenerator_input(stream, icdFile, cOutStream, hOutStream, outputFileName, iedName, accessPointName, modelPrefix, initializeOnce);
+			new StaticModelGenerator_input(stream, icdFile, cOutStream, outputFileName, iedName, accessPointName, modelPrefix, IEDmodelPrefix,initializeOnce);
         } catch (SclParserException e) {
 			System.err.println("ERROR: " + e.getMessage());
 		}
-    }
-
-    private void printVariablePointerDefines() {
-        hOut.println("\n\n");
-
-        for (String variableName : variablesList) {
-			String name = modelPrefix.toUpperCase() + variableName.substring( modelPrefix.length() );
-            hOut.println("#define " + name + " (&" + variableName + ")");
-        }
     }
 
     private String getLogicalDeviceInst(LogicalDevice logicalDevice) {
@@ -329,7 +344,7 @@ public class StaticModelGenerator_input {
 
                     cOut.println("Input " + inputVarName + " = {");
 
-                    String lnVariableName = modelPrefix + "_" + logicalDevice.getInst() + "_" + logicalNode.getName();
+                    String lnVariableName = IEDmodelPrefix + "_" + logicalDevice.getInst() + "_" + logicalNode.getName();
                     cOut.println("  &" + lnVariableName + ",");
                     cOut.println("  " + numberOfExtRef + ",");
                     cOut.println("  &" + inputVarName + "_extRef0,");
@@ -347,8 +362,6 @@ public class StaticModelGenerator_input {
             }
         }
     }
-
-
 
 
     private void printSubscribeDataSets(String accessPointName_local) {
@@ -418,7 +431,7 @@ public class StaticModelGenerator_input {
                                     if (gseControlBlock.getAppID() != null)
                                         ID = "\"" + gseControlBlock.getAppID() + "\"";
                                     
-                                    cbRef = "\"" + gseControlBlock.getName() + "\"";
+                                    cbRef = "\"" + ied_local.getName() + logicalDevice.getInst() + "/" + logicalNode2.getName() + "$GO$" + gseControlBlock.getName() + "\"";
                                 }
                             }
 
@@ -426,7 +439,7 @@ public class StaticModelGenerator_input {
                             for (SampledValueControl svCB : svControlBlocks) {
                                 if(datasetName_.equals(svCB.getDatSet()))
                                 {
-                                    PhyComAddress svAddress = connectedAP.lookupSMVAddress( logicalDevice.getInst(), svCB.getName());                            
+                                    PhyComAddress svAddress = connectedAP_local.lookupSMVAddress( logicalDevice.getInst(), svCB.getName());                            
                                     if (svAddress != null) {
                                         AppID = "" + svAddress.getAppId();
                                         
@@ -441,7 +454,7 @@ public class StaticModelGenerator_input {
                                     if (svCB.getSmvID() != null)
                                         ID = "\"" + svCB.getSmvID() + "\"";
 
-                                    cbRef = "\"" + svCB.getName() + "\"";
+                                    cbRef = "\"" + ied_local.getName() + logicalDevice.getInst() + "/" + logicalNode2.getName() + "$SV$" + svCB.getName() + "\"";
                                 }
                             }
                         }
@@ -456,10 +469,10 @@ public class StaticModelGenerator_input {
                             mmsVariableName += fcda.getLnClass();
                             if (fcda.getLnInstance() != null)
                                 mmsVariableName += fcda.getLnInstance();
-                            mmsVariableName += "$" + fcda.getFc().toString();
-                            mmsVariableName += "$" + toMmsString(fcda.getDoName());
+                            //mmsVariableName += "$" + fcda.getFc().toString();
+                            mmsVariableName += "." + toMmsString(fcda.getDoName());
                             if (fcda.getDaName() != null)
-                                mmsVariableName += "$" + toMmsString(fcda.getDaName());
+                                mmsVariableName += "." + toMmsString(fcda.getDaName());
                             mmsVariableNames.add(mmsVariableName);
 
                             dataSetNames_.add(datasetName_);

@@ -57,7 +57,7 @@ int main(int argc, char** argv) {
     GooseReceiver_start(GSEreceiver);
     SVReceiver_start(SMVreceiver);
 
-    if (GooseReceiver_isRunning(GSEreceiver) && SVReceiver_isRunning(SMVreceiver)) 
+    if (GooseReceiver_isRunning(GSEreceiver) || SVReceiver_isRunning(SMVreceiver)) 
 	{
 		printf("receivers working...\n");
 	}
@@ -81,12 +81,12 @@ int main(int argc, char** argv) {
 
 	while (running) {
 
-	    IedServer_lockDataModel(iedServer);
+	    //IedServer_lockDataModel(iedServer);
 
-        IedServer_updateUTCTimeAttributeValue(iedServer, IEDMODEL_GenericIO_GGIO1_AnIn1_t, Hal_getTimeInMs());
-	    IedServer_updateFloatAttributeValue(iedServer, IEDMODEL_GenericIO_GGIO1_AnIn1_mag_f, anIn1);
+        //IedServer_updateUTCTimeAttributeValue(iedServer, IEDMODEL_GenericIO_GGIO1_AnIn1_t, Hal_getTimeInMs());
+	    //IedServer_updateFloatAttributeValue(iedServer, IEDMODEL_GenericIO_GGIO1_AnIn1_mag_f, anIn1);
 
-	    IedServer_unlockDataModel(iedServer);
+	    //IedServer_unlockDataModel(iedServer);
 
 	    anIn1 += 0.1;
 
