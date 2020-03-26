@@ -121,6 +121,7 @@ ConfigFileParser_createModelFromConfigFile_inputs(FileHandle fileHandle)
     bool stateInModel = false;
     int indendation = 0;
 
+    IedModel* IEDmodel = NULL;
     IedModel_inputs* model = NULL;
     LogicalDevice* currentLD = NULL;
     LogicalNode* currentLN = NULL;
@@ -174,7 +175,7 @@ ConfigFileParser_createModelFromConfigFile_inputs(FileHandle fileHandle)
 
                         terminateString(nameString, ')');
 
-                        //currentLD = LogicalDevice_create(nameString, model);
+                        currentLD = LogicalDevice_create(nameString, IEDmodel);
                     }
                     else if (StringUtils_startsWith((char*) lineBuffer, "SD")) {
                         uint32_t appid = 0;
@@ -184,8 +185,9 @@ ConfigFileParser_createModelFromConfigFile_inputs(FileHandle fileHandle)
                         //SD( simpleIOGenericIO/GGIO1$ST$SPCSO1$stVal Events 4096 0x1,0xc,0xcd,0x1,0x0,0x1 gcbEvents events );
                         int matchedItems = sscanf((char*) lineBuffer, "SD(%s %s %u %s %s %s)",
                                 nameString, nameString2, &appid, nameString3, nameString4, nameString5);
-
+                        
                         if (matchedItems < 6) goto exit_error;
+                        terminateString(nameString5, ')');
 
                         if (StringUtils_createBufferFromHexString(nameString3, ethAddr) != 6)
                             goto exit_error;
@@ -228,7 +230,7 @@ ConfigFileParser_createModelFromConfigFile_inputs(FileHandle fileHandle)
                     if (StringUtils_startsWith((char*) lineBuffer, "ER")) {
                         char serviceType[130];
                         char srcRef[130];
-                        sscanf((char*) lineBuffer, "RE(%s %s %s %s %s)", nameString, nameString2, nameString3, serviceType, srcRef );
+                        sscanf((char*) lineBuffer, "ER(%s %s %s %s %s)", nameString, nameString2, nameString3, serviceType, srcRef );
                         terminateString(srcRef, ')');
 
                         InputEntry_create(currentInput, nameString,nameString2,nameString3, serviceType, srcRef);
@@ -243,6 +245,7 @@ ConfigFileParser_createModelFromConfigFile_inputs(FileHandle fileHandle)
                 if (StringUtils_startsWith((char*) lineBuffer, "MODEL{")) {
 
                     model = IedModel_input_create();
+                    IEDmodel = IedModel_create("");
                     stateInModel = true;
                     indendation = 1;
                 }
@@ -250,6 +253,7 @@ ConfigFileParser_createModelFromConfigFile_inputs(FileHandle fileHandle)
                     sscanf((char*) lineBuffer, "MODEL(%s)", nameString);
                     terminateString(nameString, ')');
                     model = IedModel_input_create();
+                    IEDmodel = IedModel_create(nameString);
                     stateInModel = true;
                     indendation = 1;
                 }

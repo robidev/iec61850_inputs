@@ -9,7 +9,80 @@
 #include "static_model.h"
 
 
+extern Input iedInputModel_GenericIO_LLN0_inputs;
+extern Input iedInputModel_GenericIO_GGIO1_inputs;
 
+
+extern InputEntry iedInputModel_GenericIO_LLN0_inputs_extRef0;
+extern InputEntry iedInputModel_GenericIO_LLN0_inputs_extRef1;
+extern InputEntry iedInputModel_GenericIO_LLN0_inputs_extRef2;
+
+InputEntry iedInputModel_GenericIO_LLN0_inputs_extRef0 = {
+  "sample",
+  "SMV1MUnn/TVTR1.Vol",
+  "adr_smv",
+  "SMV",
+  "SMV1MUnn/LLN0.MSVCB01",
+  NULL,
+  &iedInputModel_GenericIO_LLN0_inputs_extRef1
+};
+
+InputEntry iedInputModel_GenericIO_LLN0_inputs_extRef1 = {
+  "sample",
+  "SMV1MUnn/TVTR2.Vol",
+  "adr_smv",
+  "SMV",
+  "SMV1MUnn/LLN0.MSVCB01",
+  NULL,
+  &iedInputModel_GenericIO_LLN0_inputs_extRef2
+};
+
+InputEntry iedInputModel_GenericIO_LLN0_inputs_extRef2 = {
+  "sample",
+  "SMV1MUnn/TCTR1.Amp",
+  "adr_smv",
+  "SMV",
+  "SMV1MUnn/LLN0.MSVCB01",
+  NULL,
+  NULL
+};
+
+Input iedInputModel_GenericIO_LLN0_inputs = {
+  &iedModel_GenericIO_LLN0,
+  3,
+  &iedInputModel_GenericIO_LLN0_inputs_extRef0,
+  &iedInputModel_GenericIO_GGIO1_inputs
+};
+
+extern InputEntry iedInputModel_GenericIO_GGIO1_inputs_extRef0;
+extern InputEntry iedInputModel_GenericIO_GGIO1_inputs_extRef1;
+
+InputEntry iedInputModel_GenericIO_GGIO1_inputs_extRef0 = {
+  "one",
+  "IED2GenericIO/GGIO1.SPCSO1.stVal",
+  "adr1",
+  "GOOSE",
+  "IED2GenericIO/GGIO1.GoCB",
+  NULL,
+  &iedInputModel_GenericIO_GGIO1_inputs_extRef1
+};
+
+InputEntry iedInputModel_GenericIO_GGIO1_inputs_extRef1 = {
+  "two",
+  "IED2GenericIO/LLN0.Mod.ctlModel",
+  "adr2",
+  "GOOSE",
+  "IED2GenericIO/LLN1.GoCB",
+  NULL,
+  NULL
+};
+
+Input iedInputModel_GenericIO_GGIO1_inputs = {
+  &iedModel_GenericIO_GGIO1,
+  2,
+  &iedInputModel_GenericIO_GGIO1_inputs_extRef0,
+  NULL
+};
 extern SubscriberEntry SMV1_ds_MUnn_LLN0_PhsMeas10;
 extern SubscriberEntry SMV1_ds_MUnn_LLN0_PhsMeas11;
 extern SubscriberEntry SMV1_ds_MUnn_LLN0_PhsMeas12;
@@ -134,6 +207,6 @@ SubscriberEntry IED2_ds_GenericIO_LLN0_Events3 = {
 
 
 IedModel_inputs iedInputModel = {
-    NULL,
+    &iedInputModel_GenericIO_LLN0_inputs,
     &SMV1_ds_MUnn_LLN0_PhsMeas10,
     };

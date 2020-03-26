@@ -22,6 +22,9 @@
 extern IedModel iedModel;
 extern IedModel_inputs iedInputModel;
 
+IedModel_inputs*
+ConfigFileParser_createModelFromConfigFileEx_inputs(const char* filename);
+
 static int running = 0;
 static IedServer iedServer = NULL;
 
@@ -33,6 +36,8 @@ void sigint_handler(int signalId)
 int main(int argc, char** argv) {
 
 	iedServer = IedServer_create(&iedModel);
+
+	IedModel_inputs* iedInputModel2 = ConfigFileParser_createModelFromConfigFileEx_inputs("config.cfg");
 
 	GooseReceiver GSEreceiver = GooseReceiver_create();
 
@@ -75,21 +80,30 @@ int main(int argc, char** argv) {
 
 	running = 1;
 
+	InputEntry* ee = iedInputModel.inputs->extRefs;
+	char aa[] = "adr_smv";
+	while(ee != NULL)
+	{
+		if(strcmp(ee->intAddr,aa) == 0)
+		{
+			break;
+		}
+		ee = ee->sibling;
+	}
+	
+
 	signal(SIGINT, sigint_handler);
 
-	float anIn1 = 0.f;
-
 	while (running) {
-
-	    //IedServer_lockDataModel(iedServer);
-
-        //IedServer_updateUTCTimeAttributeValue(iedServer, IEDMODEL_GenericIO_GGIO1_AnIn1_t, Hal_getTimeInMs());
-	    //IedServer_updateFloatAttributeValue(iedServer, IEDMODEL_GenericIO_GGIO1_AnIn1_mag_f, anIn1);
-
-	    //IedServer_unlockDataModel(iedServer);
-
-	    anIn1 += 0.1;
-
+		if(ee->value != NULL)
+		{
+			printf("val:%i\n", MmsValue_toInt32(MmsValue_getElement(ee->value,0)));
+		}
+		else
+		{
+			printf("no value received yet\n");
+		}
+		
 		Thread_sleep(1000);
 	}
 

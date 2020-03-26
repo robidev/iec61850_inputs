@@ -127,9 +127,14 @@ void subscribeToInputs(IedModel_inputs* self, GooseReceiver GSEreceiver, SVRecei
             //create a new subscriber, if its the first inputValue in the list
             if(prev_inp == NULL)
             {
+              char null_arr[6] = {0,0,0,0,0,0};
               SVSubscriber subscriber = SVSubscriber_create(sub->ethAddr, sub->APPID);
               SVSubscriber_setListener(subscriber, subscriber_callback_inputs_SMV, inputValue);
               SVReceiver_addSubscriber(SMVreceiver, subscriber);
+              if(memcmp(sub->ethAddr,null_arr,6) != 0)
+              {
+                SVReceiver_enableDestAddrCheck(SMVreceiver);
+              }
               prev_sub = sub;            
             }
             else//add entries to the new subscriber
@@ -217,7 +222,8 @@ void subscriber_callback_inputs_SMV(SVSubscriber subscriber, void* parameter, SV
       for(i=0; i < (size/8); i++)//a mmsval with stval, q and time is expected
       {
         while(inputVal->index == i)//find all extrefs for this index(they should be grouped by index)
-        {
+      {
+          //performancewise this could be improved, by performing the copy directly
           MmsValue* value = MmsValue_createEmptyStructure(3);
 
           MmsValue* stVal = MmsValue_newIntegerFromInt32(val[(i*2)]);
@@ -229,7 +235,16 @@ void subscriber_callback_inputs_SMV(SVSubscriber subscriber, void* parameter, SV
           MmsValue* t = MmsValue_newUtcTimeByMsTime(tm);
           MmsValue_setElement(value,2,t);
 
-          inputVal->input->value = value;
+          if(inputVal->input->value == NULL)
+          {
+            inputVal->input->value = value;
+          }
+          else
+          {
+            MmsValue_update(inputVal->input->value,value);
+            MmsValue_delete(value);
+          }
+          
           inputVal = inputVal->next;
           if(inputVal == NULL)
             return;

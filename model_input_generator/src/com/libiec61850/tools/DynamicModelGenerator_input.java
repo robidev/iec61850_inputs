@@ -208,7 +208,7 @@ public class DynamicModelGenerator_input {
                         String datasetName_ = dataSet.getName();
 
                         String AppID = "0";
-                        String ethAddr =  "0,0,0,0,0,0";
+                        String ethAddr =  "000000000000";
                         String cbRef = "NULL";
                         String ID = "NULL";
                         for (LogicalNode logicalNode2 : logicalDevice.getLogicalNodes()) {

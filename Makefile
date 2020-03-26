@@ -18,8 +18,8 @@ all:	$(PROJECT_BINARY_NAME)
 include $(LIBIEC_HOME)/make/common_targets.mk
 
 model:	$(PROJECT_ICD_FILE)
-	java -jar $(LIBIEC_HOME)/tools/model_generator/genmodel.jar $(PROJECT_ICD_FILE)
-	java -jar model_input_generator/genmodel_input.jar $(PROJECT_ICD_FILE)
+	java -jar $(LIBIEC_HOME)/tools/model_generator/genmodel.jar $(PROJECT_ICD_FILE) -ied simpleIO
+	java -jar model_input_generator/genmodel_input.jar $(PROJECT_ICD_FILE) -ied simpleIO
 
 $(PROJECT_BINARY_NAME):	$(PROJECT_SOURCES) $(LIB_NAME)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $(PROJECT_BINARY_NAME) $(PROJECT_SOURCES) $(INCLUDES) $(LIB_NAME) $(LDLIBS)

@@ -1,0 +1,20 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "/home/user/projects/libiec61850"
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"static_model.h": "c",
+			"hal_thread.h": "c",
+			"iec61850_server.h": "c",
+			"iec61850_dynamic_model_input.h": "c",
+			"inputs_api.h": "c",
+			"libiec61850_platform_includes.h": "c"
+		}
+	}
+}
