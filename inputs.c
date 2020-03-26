@@ -205,19 +205,20 @@ void subscriber_callback_inputs_GOOSE(GooseSubscriber subscriber, void* paramete
 //called for subscribed SMV data
 void subscriber_callback_inputs_SMV(SVSubscriber subscriber, void* parameter, SVSubscriber_ASDU asdu)
 {
-  uint64_t tm = Hal_getTimeInMs();
+  uint64_t tm = SVSubscriber_ASDU_getRefrTmAsMs(asdu);//Hal_getTimeInMs();
   InputValue* inputVal = (InputValue*)parameter;
   if(inputVal != NULL && inputVal->input != NULL)  //iterate trough list of value-indexes that need to be copied, and
   {
     int size = SVSubscriber_ASDU_getDataSize(asdu);
     if(size > 63)//set to fixed size of 9-2LE
     {
-      int val[size/4];
+      int32_t val[size/4];
       int i;
       for(i=0; i < (size/4); i += 2)//read the stval and q. time is for all the same.
       {
         val[i] = SVSubscriber_ASDU_getINT32(asdu,i*4);
-        val[i+1] = SVSubscriber_ASDU_getQuality(asdu,(i*4))+4;
+        Quality q = SVSubscriber_ASDU_getQuality(asdu,(i*4)+4);
+        val[i+1] = (int)q;
       }
       for(i=0; i < (size/8); i++)//a mmsval with stval, q and time is expected
       {
@@ -229,7 +230,7 @@ void subscriber_callback_inputs_SMV(SVSubscriber subscriber, void* parameter, SV
           MmsValue* stVal = MmsValue_newIntegerFromInt32(val[(i*2)]);
           MmsValue_setElement(value,0,stVal);
           
-          MmsValue* q = MmsValue_newIntegerFromInt32(val[(i*2) + 1]);
+          MmsValue* q = MmsValue_newUnsignedFromUint32(val[(i*2) + 1]);
           MmsValue_setElement(value,1,q);
           
           MmsValue* t = MmsValue_newUtcTimeByMsTime(tm);
@@ -241,10 +242,15 @@ void subscriber_callback_inputs_SMV(SVSubscriber subscriber, void* parameter, SV
           }
           else
           {
-            MmsValue_update(inputVal->input->value,value);
+            if(!MmsValue_update(inputVal->input->value,value))
+              printf("update ERROR");
             MmsValue_delete(value);
           }
-          
+          //if( inputVal->next == NULL){
+          //  char bbb[80];
+          //  MmsValue_printToBuffer(inputVal->input->value,bbb,80);
+            //printf("b:%s\n",bbb);
+          //}
           inputVal = inputVal->next;
           if(inputVal == NULL)
             return;

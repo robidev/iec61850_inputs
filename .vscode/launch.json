@@ -9,7 +9,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/server_example_inputs",
-            "args": ["enp6s0"],
+            "args": ["lo"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
