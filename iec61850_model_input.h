@@ -45,6 +45,7 @@ extern "C" {
  * \brief Root node of the IEC 61850 data model. This is usually created by the model generator tool (genmodel.jar)
  */
 typedef struct sIedModel_inputs IedModel_inputs;
+typedef struct sLogicalNodeClass LogicalNodeClass;
 typedef struct sInput Input;
 typedef struct sSubscriberEntry SubscriberEntry;
 
@@ -52,6 +53,14 @@ typedef struct sSubscriberEntry SubscriberEntry;
 struct sIedModel_inputs {
     Input* inputs;
     SubscriberEntry* subRefs;
+    LogicalNodeClass* logicalNodes;
+};
+
+struct sLogicalNodeClass {
+  LogicalNode* parent;
+  char* lnClass;
+  void* initFunction;
+  LogicalNodeClass* sibling;
 };
 
 

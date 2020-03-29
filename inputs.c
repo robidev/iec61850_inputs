@@ -25,13 +25,21 @@
 #include "inputs_api.h"
 #include "goose_subscriber.h"
 
-
+typedef struct sSubscribers Subscribers;
 typedef struct sInputValue InputValue;
+typedef void (*callBackFunction) (InputValue* input);
+
+struct sSubscribers {
+  InputValue* inputVal;
+  SubscriberEntry* subscriberData;//initial subscriber-entry for APPID, cbRef and ID
+  Subscribers* next;
+};
 
 struct sInputValue {
   int index;          //index of value in the dataset
   InputEntry * input; //pointer to related input
   InputValue* next;
+  callBackFunction callBack;
 };
 
 
@@ -55,6 +63,14 @@ int strcmp_p(const char* str1, const char* str2)
       return strcmp(str1, str2);
   }
   return -1;
+}
+
+Subscribers* create_Subscribers(InputValue* inputVal, SubscriberEntry* subscriberData)
+{
+  Subscribers* self = (Subscribers *) GLOBAL_MALLOC(sizeof(struct sSubscribers));
+  self->inputVal = inputVal;
+  self->subscriberData = subscriberData;
+  self->next = NULL;
 }
 
 
@@ -82,6 +98,7 @@ void subscribeToInputs(IedModel_inputs* self, GooseReceiver GSEreceiver, SVRecei
 
   char * prev_datset = NULL;
   int index = 0;
+  Subscribers* sub_list = NULL;
   
   while(sub != NULL)
   {
@@ -95,12 +112,12 @@ void subscribeToInputs(IedModel_inputs* self, GooseReceiver GSEreceiver, SVRecei
       prev_datset = sub->Dataset;
     }
 
-    //find a matching input, iterate over all of them
+    //find a matching input, iterate over all of them (all inputs are grouped by logical node)
     Input* inputs = self->inputs;
     while(inputs != NULL)
     {
       InputEntry* extRef = inputs->extRefs; 
-      while(extRef != NULL)
+      while(extRef != NULL)//find all matching extref for this input
       {
         if(strcmp_p(sub->variableName, extRef->Ref) == 0)//if extref and datasetname match, we subscribe to it!
         {
@@ -108,20 +125,83 @@ void subscribeToInputs(IedModel_inputs* self, GooseReceiver GSEreceiver, SVRecei
 
           if(strcmp_p(extRef->serviceType, "GOOSE") == 0 && GSEreceiver != NULL)
           {//if the extref is GOOSE subscribed, then create a subscriber
+            if(prev_sub == NULL)//always create an initial subscriber 
+            {
+              prev_sub = sub;
+              prev_inp = NULL;
+            }
 
-            GooseSubscriber subscriber = GooseSubscriber_create(sub->cbRef, NULL);
-            GooseSubscriber_setAppId(subscriber, sub->APPID);
-            GooseSubscriber_setListener(subscriber, subscriber_callback_inputs_GOOSE, inputValue);
-            GooseReceiver_addSubscriber(GSEreceiver, subscriber);
+            if(sub->APPID != prev_sub->APPID || strcmp_p(sub->cbRef,prev_sub->cbRef) != 0)//check if a new subscriber should be made, or added to an existing
+            {//no match with the previous subscriber-entry, so search all existing inputs for a usable subscriber
+              prev_inp = NULL;
+              //search all existing subscribers for a ref. if previous ref does not match. 
+              //TODO: is this needed when subscriber-entries are ordered by dataset?
+                  Subscribers* lSub_list = sub_list;
+                  while(lSub_list != NULL)
+                  {
+                    if(sub->APPID == lSub_list->subscriberData->APPID && strcmp_p(sub->cbRef,lSub_list->subscriberData->cbRef) == 0)
+                    {
+                      prev_inp = lSub_list->inputVal;//a match is found, so add this input entry to that subscriber
+                      break;
+                    }
+                    lSub_list = lSub_list->next;
+                  }
+                  //ensure we are at the end of the list
+                  while(prev_inp->next != NULL)
+                  {
+                    prev_inp = prev_inp->next;
+                  }
+            }
+
+            //create a new subscriber, if its the first inputValue in the list
+            if(prev_inp == NULL)
+            {
+              GooseSubscriber subscriber = GooseSubscriber_create(sub->cbRef, NULL);
+              GooseSubscriber_setAppId(subscriber, sub->APPID);
+              GooseSubscriber_setListener(subscriber, subscriber_callback_inputs_GOOSE, inputValue);
+              GooseReceiver_addSubscriber(GSEreceiver, subscriber);
+
+              if(sub_list == NULL)
+                sub_list = create_Subscribers(inputValue, sub);
+              else
+                sub_list->next = create_Subscribers(inputValue, sub);
+
+              prev_sub = sub; 
+            }
+            else//add entries to the current subscriber
+            {
+              prev_inp->next = inputValue;
+            }
+            prev_inp = inputValue;
           }
           else if(strcmp_p(extRef->serviceType, "SMV") == 0 && SMVreceiver != NULL)
           {//if the extref is SMV, then create/add a subscriber
             if(prev_sub == NULL)//always create an initial subscriber 
+            {
               prev_sub = sub;
+              prev_inp = NULL;
+            }
 
             if(sub->APPID != prev_sub->APPID || memcmp(sub->ethAddr,prev_sub->ethAddr,6) != 0)//check if a new subscriber should be made, or added to an existing
             {
               prev_inp = NULL;
+              //search all existing subscribers for a ref. if previous ref does not match
+              //TODO: is this needed when subscriber-entries are ordered by dataset?
+                  Subscribers* lSub_list = sub_list;
+                  while(lSub_list != NULL)
+                  {
+                    if(sub->APPID == lSub_list->subscriberData->APPID && memcmp(sub->ethAddr,lSub_list->subscriberData->ethAddr,6) == 0)
+                    {
+                      prev_inp = lSub_list->inputVal;//a match is found, so add this input entry to that subscriber
+                      break;
+                    }
+                    lSub_list = lSub_list->next;
+                  }
+                  //ensure we are at the end of the list
+                  while(prev_inp->next != NULL)
+                  {
+                    prev_inp = prev_inp->next;
+                  }
             }
 
             //create a new subscriber, if its the first inputValue in the list
@@ -135,9 +215,15 @@ void subscribeToInputs(IedModel_inputs* self, GooseReceiver GSEreceiver, SVRecei
               {
                 SVReceiver_enableDestAddrCheck(SMVreceiver);
               }
+
+              if(sub_list == NULL)
+                sub_list = create_Subscribers(inputValue, sub);
+              else
+                sub_list->next = create_Subscribers(inputValue, sub);
+
               prev_sub = sub;            
             }
-            else//add entries to the new subscriber
+            else//add entries to the current subscriber
             {
               prev_inp->next = inputValue;
             }
@@ -167,27 +253,35 @@ void subscriber_callback_inputs_GOOSE(GooseSubscriber subscriber, void* paramete
     if(MmsValue_getType(values) == MMS_STRUCTURE || MmsValue_getType(values) == MMS_ARRAY)
     {
       int arraySize = MmsValue_getArraySize(values);
-      if(inputVal->index < arraySize)
+      int i;
+      for(i=0;i<arraySize;i++)
       {
-        MmsValue* value = MmsValue_getElement(values, inputVal->index);
-        if(value == NULL)
-        {
-          printf("ERROR: could not retrieve element from subscribed dataset, '%s' value not updated",inputVal->input->Ref);
-          return;
+        //find all extrefs for this index
+        while(inputVal != NULL)//TODO: is this needed, when inputval entries are ordered in a dataset? could be combined into 'while(inputVal->index == i)'
+        { 
+          if(inputVal->index == i)
+          {
+            MmsValue* value = MmsValue_getElement(values, inputVal->index);
+            if(value == NULL)
+            {
+              printf("ERROR: could not retrieve element from subscribed dataset, '%s' value not updated",inputVal->input->Ref);
+              return;
+            }
+            printf("copying value %i to extRef:'%s'", inputVal->index, inputVal->input->Ref);
+            if(inputVal->input->value == NULL)
+              inputVal->input->value = MmsValue_clone(value);
+            else
+            {
+              if(!MmsValue_update(inputVal->input->value, value))
+                printf("ERROR: datatype does not match, '%s' value not updated",inputVal->input->Ref);
+            }
+
+            if(inputVal->callBack != NULL){
+              inputVal->callBack(inputVal);
+            }
+          }
+          inputVal = inputVal->next;
         }
-        printf("copying value %i to extRef:'%s'", inputVal->index, inputVal->input->Ref);
-        if(inputVal->input->value == NULL)
-          inputVal->input->value = MmsValue_clone(value);
-        else
-        {
-          if(!MmsValue_update(inputVal->input->value, value))
-            printf("ERROR: datatype does not match, '%s' value not updated",inputVal->input->Ref);
-        }
-      }
-      else
-      {
-        printf("ERROR: requested index out of bounds, '%s' value not updated",inputVal->input->Ref);
-        return;
       }
     }
     else
@@ -222,38 +316,39 @@ void subscriber_callback_inputs_SMV(SVSubscriber subscriber, void* parameter, SV
       }
       for(i=0; i < (size/8); i++)//a mmsval with stval, q and time is expected
       {
-        while(inputVal->index == i)//find all extrefs for this index(they should be grouped by index)
-      {
-          //performancewise this could be improved, by performing the copy directly
-          MmsValue* value = MmsValue_createEmptyStructure(3);
-
-          MmsValue* stVal = MmsValue_newIntegerFromInt32(val[(i*2)]);
-          MmsValue_setElement(value,0,stVal);
-          
-          MmsValue* q = MmsValue_newUnsignedFromUint32(val[(i*2) + 1]);
-          MmsValue_setElement(value,1,q);
-          
-          MmsValue* t = MmsValue_newUtcTimeByMsTime(tm);
-          MmsValue_setElement(value,2,t);
-
-          if(inputVal->input->value == NULL)
+        //find all extrefs for this index
+        while(inputVal != NULL)//TODO: is this needed, when inputval entries are ordered in a dataset? could be combined into 'while(inputVal->index == i)'
+        {
+          if(inputVal->index == i)
           {
-            inputVal->input->value = value;
+            //performancewise this could be improved, by performing the copy directly
+            MmsValue* value = MmsValue_createEmptyStructure(3);
+
+            MmsValue* stVal = MmsValue_newIntegerFromInt32(val[(i*2)]);
+            MmsValue_setElement(value,0,stVal);
+            
+            MmsValue* q = MmsValue_newUnsignedFromUint32(val[(i*2) + 1]);
+            MmsValue_setElement(value,1,q);
+            
+            MmsValue* t = MmsValue_newUtcTimeByMsTime(tm);
+            MmsValue_setElement(value,2,t);
+
+            if(inputVal->input->value == NULL)
+            {
+              inputVal->input->value = value;
+            }
+            else
+            {
+              if(!MmsValue_update(inputVal->input->value,value))
+                printf("update ERROR");
+              MmsValue_delete(value);
+            }
+            
+            if(inputVal->callBack != NULL){
+              inputVal->callBack(inputVal);
+            }
           }
-          else
-          {
-            if(!MmsValue_update(inputVal->input->value,value))
-              printf("update ERROR");
-            MmsValue_delete(value);
-          }
-          //if( inputVal->next == NULL){
-          //  char bbb[80];
-          //  MmsValue_printToBuffer(inputVal->input->value,bbb,80);
-            //printf("b:%s\n",bbb);
-          //}
           inputVal = inputVal->next;
-          if(inputVal == NULL)
-            return;
         }
       }
     }

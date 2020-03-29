@@ -38,6 +38,8 @@ IedModel_input_create()
 
     self->subRefs = NULL;
 
+    self->logicalNodes = NULL;
+
     return self;
 }
 
@@ -61,7 +63,44 @@ IedModel_addInput(IedModel_inputs* self, Input* input)
     }
 }
 
+static void
+IedModel_addLogicalNodeClass(IedModel_inputs* self, LogicalNodeClass* lnClass)
+{
+    if (self->logicalNodes == NULL)
+        self->logicalNodes = lnClass;
+    else {
+        LogicalNodeClass* lastlnClass = self->logicalNodes;
 
+        while (lastlnClass != NULL) {
+            if (lastlnClass->sibling == NULL) {
+                lastlnClass->sibling = lnClass;
+                break;
+            }
+
+            lastlnClass = lastlnClass->sibling;
+        }
+    }
+}
+
+
+
+LogicalNodeClass*
+LogicalNodeClass_create(LogicalNode* parent, IedModel_inputs* inputs, char * lnClass )
+{
+    LogicalNodeClass* self = (LogicalNodeClass*) GLOBAL_MALLOC(sizeof(LogicalNodeClass));
+
+    self->parent = parent;
+
+    if(lnClass != NULL)
+      self->lnClass = StringUtils_copyString(lnClass);
+
+    self->initFunction = NULL;
+    self->sibling = NULL;
+
+    IedModel_addLogicalNodeClass(inputs, self);
+
+    return self;
+}
 
 Input*
 Input_create(LogicalNode* parent, IedModel_inputs* inputs )

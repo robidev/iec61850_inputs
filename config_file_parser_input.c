@@ -218,6 +218,12 @@ ConfigFileParser_createModelFromConfigFile_inputs(FileHandle fileHandle)
 
                         currentInput = Input_create(currentLN, model);
                     }
+                    else if (StringUtils_startsWith((char*) lineBuffer, "CL")) {
+                        indendation = 4;
+                        sscanf((char*) lineBuffer, "CL(%s)", nameString);
+                        terminateString(nameString, ')');
+                        LogicalNodeClass_create(currentLN, model,nameString);
+                    }
                     else {
                         if (DEBUG_IED_SERVER)
                             printf("IED_SERVER: Unknown identifier (%s)\n", lineBuffer);

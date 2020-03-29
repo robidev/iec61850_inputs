@@ -205,8 +205,35 @@ SubscriberEntry IED2_ds_GenericIO_LLN0_Events3 = {
   NULL,
 };
 
+extern LogicalNodeClass iedModel_GenericIO_LLN0_class;
+extern LogicalNodeClass iedModel_GenericIO_LPHD1_class;
+extern LogicalNodeClass iedModel_GenericIO_GGIO1_class;
+
+
+LogicalNodeClass iedModel_GenericIO_LLN0_class = {
+    &iedModel_GenericIO_LLN0,
+    "LLN0",
+    NULL,
+    &iedModel_GenericIO_LPHD1_class,
+};
+
+LogicalNodeClass iedModel_GenericIO_LPHD1_class = {
+    &iedModel_GenericIO_LPHD1,
+    "LPHD",
+    NULL,
+    &iedModel_GenericIO_GGIO1_class,
+};
+
+LogicalNodeClass iedModel_GenericIO_GGIO1_class = {
+    &iedModel_GenericIO_GGIO1,
+    "GGIO",
+    NULL,
+    NULL
+};
+
 
 IedModel_inputs iedInputModel = {
     &iedInputModel_GenericIO_LLN0_inputs,
     &SMV1_ds_MUnn_LLN0_PhsMeas10,
+    &iedModel_GenericIO_LLN0_class,
     };

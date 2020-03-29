@@ -76,6 +76,7 @@ public class StaticModelGenerator_input {
 
     private List<String> inputsNames;
     private String subRefs_name = null;
+    private String LogicalNodeClass_name = null;
 
     private Communication communication;
 
@@ -245,10 +246,52 @@ public class StaticModelGenerator_input {
 
         List<LogicalDevice> logicalDevices = accessPoint.getServer().getLogicalDevices();
 
-
         printInputs();
         printSubscribeDataSets(null);
         
+        List<String> lnNames =  new LinkedList<String>();
+        List<String> lnClasses =  new LinkedList<String>();
+
+        for (int i = 0; i < logicalDevices.size(); i++) {
+            LogicalDevice logicalDevice = logicalDevices.get(i);
+            String ldName = IEDmodelPrefix + "_" + logicalDevice.getInst();
+
+            for (int y = 0; y < logicalDevice.getLogicalNodes().size(); y++) {
+                LogicalNode logicalNode = logicalDevice.getLogicalNodes().get(y);
+                String lnName = ldName + "_" + logicalNode.getName();
+
+                if(LogicalNodeClass_name == null)
+                  LogicalNodeClass_name = lnName + "_class";
+
+                lnNames.add(lnName);
+                
+                lnClasses.add(logicalNode.getLnClass());
+            }
+        }
+        //forward declarations
+        for(String lnName : lnNames) 
+        {
+          cOut.println("extern LogicalNodeClass " + lnName + "_class;");
+        }
+        cOut.println("\n");
+        int index = 0;
+        for(String lnName : lnNames) 
+        {
+            cOut.println("LogicalNodeClass " + lnName + "_class = {");
+            cOut.println("    &" + lnName + ",");
+            cOut.println("    \"" + lnClasses.get(index) + "\",");
+            cOut.println("    NULL,");
+
+            if(index + 1 < lnNames.size())
+              cOut.println("    &" + lnNames.get(index+1) + "_class,");
+            else
+              cOut.println("    NULL");
+
+            cOut.println("};\n");
+
+            index++;
+        }
+
         String firstLogicalDeviceName = logicalDevices.get(0).getInst();
         cOut.println("\nIedModel_inputs " + modelPrefix + " = {");
 
@@ -259,6 +302,11 @@ public class StaticModelGenerator_input {
         
         if (subRefs_name != null)
             cOut.println("    &" + subRefs_name + ",");
+        else
+            cOut.println("    NULL,");
+
+        if (LogicalNodeClass_name != null)
+            cOut.println("    &" + LogicalNodeClass_name + ",");
         else
             cOut.println("    NULL,");
 

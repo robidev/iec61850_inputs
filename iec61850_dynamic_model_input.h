@@ -34,6 +34,19 @@ extern "C" {
 
 LIB61850_API IedModel_inputs*
 IedModel_input_create(void);
+
+/**
+ * \brief create a new lnClass reference
+ *
+ * \param name the name of the input
+ * \param parent the logical node that hosts the input 
+ *
+ * \return the new input instance
+ */
+LIB61850_API LogicalNodeClass*
+LogicalNodeClass_create(LogicalNode* parent, IedModel_inputs* inputs, char * lnClass );
+
+
 /**
  * \brief create a new input
  *

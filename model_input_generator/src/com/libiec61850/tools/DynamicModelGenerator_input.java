@@ -115,10 +115,10 @@ public class DynamicModelGenerator_input {
     }
 
     private void exportLogicalNode(PrintStream output, LogicalNode logicalNode, LogicalDevice logicalDevice) {
+         output.println("CL(" + logicalNode.getLnClass() + ")");
 
         for (Inputs inputs : logicalNode.getInputs())
             exportInputs(output, inputs, logicalNode);//should be only one
-        
     }
 
 
