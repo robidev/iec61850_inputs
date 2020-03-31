@@ -115,7 +115,7 @@ int main(int argc, char** argv) {
 
 	subscribeToGOOSEInputs(iedInputModel2, GSEreceiver);
 	subscribeToSMVInputs(iedInputModel2, SMVreceiver);
-	subscribeToDAInputs(iedInputModel2, &iedModel,iedServer);
+	LinkedList localInputDAs = subscribeToLocalDAInputs(iedInputModel2, &iedModel,iedServer);
 
 
 

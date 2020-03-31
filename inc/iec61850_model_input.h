@@ -88,23 +88,6 @@ struct sSubscriberEntry {
     struct sSubscriberEntry* sibling;
 };
 
-/////////////////////////////////////////////////////////////////////////////////////////
-// Dynamic structures
-
-typedef struct sInputValue InputValue;
-typedef void (*callBackFunction) (InputValue* input);
-
-// struct that describes input-extref elements, and additional data
-struct sInputValue {
-  InputEntry * extRef;          // pointer to related extref
-
-  int index;                    // index of value in the dataset, if remote value
-  DataAttribute* DA;            // data-attribute-reference if local value is referenced by extref
-  callBackFunction callBack;    // callback to be called when value is updated
-
-  InputValue* sibling;          // additional extref that are related (same DA or same dataset)
-};
-
 // struct that describes the class of each logical node in the model, and allows code to be attached
 struct sLogicalNodeClass {
   LogicalNode* parent;
@@ -112,6 +95,7 @@ struct sLogicalNodeClass {
   void* initFunction;
   LogicalNodeClass* sibling;
 };
+
 
 #ifdef __cplusplus
 }

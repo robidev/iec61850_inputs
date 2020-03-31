@@ -26,6 +26,21 @@
 #include "inputs_api.h"
 #include "goose_subscriber.h"
 
+typedef struct sInputValue InputValue;
+typedef void (*callBackFunction) (InputValue* input);
+
+// struct that describes input-extref elements, and additional data
+struct sInputValue {
+  InputEntry * extRef;          // pointer to related extref
+
+  int index;                    // index of value in the dataset, if remote value
+  DataAttribute* DA;            // data-attribute-reference if local value is referenced by extref
+  callBackFunction callBack;    // callback to be called when value is updated
+
+  InputValue* sibling;          // additional extref that are related (same DA or same dataset)
+};
+
+
 int strcmp_p(const char* str1, const char* str2);
 
 InputValue* create_InputValue(int index, DataAttribute* da, InputEntry* input);
@@ -213,9 +228,9 @@ void subscribeToSMVInputs(IedModel_inputs* self, SVReceiver SMVreceiver)
 }
 
 
-void subscribeToDAInputs(IedModel_inputs* self, IedModel* model, IedServer server )
+LinkedList subscribeToLocalDAInputs(IedModel_inputs* self, IedModel* model, IedServer server )
 {
-  InputValue * inputValue_list = NULL;
+  LinkedList DAlist = LinkedList_create();
 
   Input* inputs = self->inputs;
   while(inputs != NULL)
@@ -223,7 +238,17 @@ void subscribeToDAInputs(IedModel_inputs* self, IedModel* model, IedServer serve
     InputEntry* extRef = inputs->extRefs; 
     while(extRef != NULL)//find all matching extref for this extRef
     {
-      if(strcmp_p(extRef->serviceType, "Poll") == 0 )//if type is polling, and IED is our own IED, link the mmsValue
+      char buf1 [130];
+      char buf2 [130];
+      StringUtils_copyStringToBuffer(extRef->Ref, buf1);
+      char* separator = strchr(buf1, '/');
+      *separator = 0;
+      
+      StringUtils_copyStringToBuffer(model->name, buf2);
+      separator = buf2 + strlen(buf2);
+      StringUtils_copyStringToBuffer(model->firstChild->name, separator);
+
+      if(strcmp_p(extRef->serviceType, "Poll") == 0 &&  strcmp_p(buf1, buf2) == 0)//if type is polling, and IED is our own IED, link the mmsValue
       {
         DataAttribute* da = (DataAttribute*) IedModel_getModelNodeByObjectReference(model, extRef->Ref);
         MmsValue* value = IedServer_getAttributeValue(server, da);
@@ -231,10 +256,28 @@ void subscribeToDAInputs(IedModel_inputs* self, IedModel* model, IedServer serve
 
         InputValue * inputValue = create_InputValue(0,da,extRef);
         
-        //implement callback ???
-        //polls.add(inputValue);
-        //add inputValue->next if DA is the same
-
+        LinkedList DAlist_local = DAlist;
+        while( DAlist_local != NULL)
+        {
+          InputValue * inputValue_local = (InputValue *) DAlist_local->data;
+          if(inputValue_local->DA == da)//find a similar DA
+          {
+            while(inputValue_local->sibling != NULL)//find the last entry in the list of this DA
+            {
+              inputValue_local = inputValue_local->sibling;
+            }
+            //add this entry to the list of the similar DA's
+            inputValue_local->sibling = inputValue;
+            inputValue = NULL; //ensure we add only once
+          }
+          DAlist_local = LinkedList_getNext(DAlist_local);
+        }
+        //if we did not add it to any existing list
+        if(inputValue != NULL)
+        {
+          //then add an entry to the linked list
+          LinkedList_add(DAlist,inputValue);
+        }
       }
       extRef = extRef->sibling;
     }

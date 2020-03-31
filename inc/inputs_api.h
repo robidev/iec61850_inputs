@@ -44,7 +44,7 @@ void subscribeToGOOSEInputs(IedModel_inputs* self, GooseReceiver GSEreceiver);
 
 void subscribeToSMVInputs(IedModel_inputs* self, SVReceiver SMVreceiver);
 
-void subscribeToDAInputs(IedModel_inputs* self, IedModel* model, IedServer server );
+LinkedList subscribeToLocalDAInputs(IedModel_inputs* self, IedModel* model, IedServer server );
 
 
 #ifdef __cplusplus
