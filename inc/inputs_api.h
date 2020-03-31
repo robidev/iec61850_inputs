@@ -26,6 +26,7 @@
 
 
 #include "libiec61850_platform_includes.h"
+#include "iec61850_server.h"
 #include "iec61850_common.h"
 #include "iec61850_model.h"
 
@@ -39,7 +40,11 @@ extern "C" {
 #endif
 
 
-void subscribeToInputs(IedModel_inputs* self, GooseReceiver GSEreceiver, SVReceiver SMVreceiver);
+void subscribeToGOOSEInputs(IedModel_inputs* self, GooseReceiver GSEreceiver);
+
+void subscribeToSMVInputs(IedModel_inputs* self, SVReceiver SMVreceiver);
+
+void subscribeToDAInputs(IedModel_inputs* self, IedModel* model, IedServer server );
 
 
 #ifdef __cplusplus

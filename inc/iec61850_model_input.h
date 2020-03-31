@@ -49,21 +49,15 @@ typedef struct sLogicalNodeClass LogicalNodeClass;
 typedef struct sInput Input;
 typedef struct sSubscriberEntry SubscriberEntry;
 
-
+// struct that describes the iedmodel elements that are needed to implement the input-model
+// the elements can be filled from the SCL using a static datamodel, as well as dynamic config files
 struct sIedModel_inputs {
-    Input* inputs;
-    SubscriberEntry* subRefs;
-    LogicalNodeClass* logicalNodes;
+    Input* inputs;                      // describes the input elements in the datamodel
+    SubscriberEntry* subRefs;           // describes the dataset-references that can be subscribed to from other IED's
+    LogicalNodeClass* logicalNodes;     // describes the class of each LN, so that functions can be attached
 };
 
-struct sLogicalNodeClass {
-  LogicalNode* parent;
-  char* lnClass;
-  void* initFunction;
-  LogicalNodeClass* sibling;
-};
-
-
+// struct that describes extref elements from the SCL file, as defined in the standard
 typedef struct sInputEntry {
     char* desc;
     char* Ref;
@@ -75,6 +69,7 @@ typedef struct sInputEntry {
     struct sInputEntry* sibling;
 } InputEntry;
 
+// struct that describes inputs elements from the SCL file, as defined in the standard
 struct sInput {
     LogicalNode* parent;
     int elementCount;
@@ -82,6 +77,7 @@ struct sInput {
     Input* sibling;
 };
 
+// struct that describes dataset elements from the SCL file, as defined in the standard
 struct sSubscriberEntry {
     char* variableName; //
     char* Dataset; //
@@ -92,6 +88,30 @@ struct sSubscriberEntry {
     struct sSubscriberEntry* sibling;
 };
 
+/////////////////////////////////////////////////////////////////////////////////////////
+// Dynamic structures
+
+typedef struct sInputValue InputValue;
+typedef void (*callBackFunction) (InputValue* input);
+
+// struct that describes input-extref elements, and additional data
+struct sInputValue {
+  InputEntry * extRef;          // pointer to related extref
+
+  int index;                    // index of value in the dataset, if remote value
+  DataAttribute* DA;            // data-attribute-reference if local value is referenced by extref
+  callBackFunction callBack;    // callback to be called when value is updated
+
+  InputValue* sibling;          // additional extref that are related (same DA or same dataset)
+};
+
+// struct that describes the class of each logical node in the model, and allows code to be attached
+struct sLogicalNodeClass {
+  LogicalNode* parent;
+  char* lnClass;
+  void* initFunction;
+  LogicalNodeClass* sibling;
+};
 
 #ifdef __cplusplus
 }

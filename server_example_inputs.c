@@ -113,7 +113,11 @@ int main(int argc, char** argv) {
 		SVReceiver_setInterfaceId(SMVreceiver, ethernetIfcID);
 	}
 
-	subscribeToInputs(iedInputModel2, GSEreceiver, SMVreceiver);
+	subscribeToGOOSEInputs(iedInputModel2, GSEreceiver);
+	subscribeToSMVInputs(iedInputModel2, SMVreceiver);
+	subscribeToDAInputs(iedInputModel2, &iedModel,iedServer);
+
+
 
     GooseReceiver_start(GSEreceiver);
     SVReceiver_start(SMVreceiver);

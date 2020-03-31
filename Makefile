@@ -1,17 +1,21 @@
 LIBIEC_HOME=../libiec61850
 
 PROJECT_BINARY_NAME = server_example_inputs
-PROJECT_SOURCES = server_example_inputs.c
-PROJECT_SOURCES += static_model.c
-PROJECT_SOURCES += static_input.c
-PROJECT_SOURCES += config_file_parser_input.c
-PROJECT_SOURCES += dynamic_model_input.c
-PROJECT_SOURCES += inputs.c
 
 PROJECT_ICD_FILE = simpleIO_inputs.cid
 
+PROJECT_SOURCES = input/inputs.c
+PROJECT_SOURCES += model/config_file_parser_input.c
+PROJECT_SOURCES += model/dynamic_model_input.c
+
+PROJECT_SOURCES += server_example_inputs.c
+PROJECT_SOURCES += static_model.c
+PROJECT_SOURCES += static_input.c
+
 include $(LIBIEC_HOME)/make/target_system.mk
 include $(LIBIEC_HOME)/make/stack_includes.mk
+
+INCLUDES += -I./inc
 
 all:	$(PROJECT_BINARY_NAME)
 

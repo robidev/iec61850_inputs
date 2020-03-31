@@ -26,29 +26,9 @@
 #include "inputs_api.h"
 #include "goose_subscriber.h"
 
-typedef struct sSubscribers Subscribers;
-typedef struct sInputValue InputValue;
-typedef struct sDataAttributeOutput DataAttributeOutput;
-typedef void (*callBackFunction) (InputValue* input);
-
-struct sSubscribers {
-  InputValue* inputVal;
-  SubscriberEntry* subscriberData;//initial subscriber-entry for APPID, cbRef and ID
-  Subscribers* next;
-};
-
-struct sInputValue {
-  DataAttribute* DA; //data-attrubute if local value
-  int index;          //index of value in the dataset, if remote value
-  InputEntry * extRef; //pointer to related input
-  InputValue* next;
-  callBackFunction callBack;
-};
-
-
 int strcmp_p(const char* str1, const char* str2);
 
-InputValue* create_InputValue(int index, InputEntry* input);
+InputValue* create_InputValue(int index, DataAttribute* da, InputEntry* input);
 
 void subscriber_callback_inputs_GOOSE(GooseSubscriber subscriber, void* parameter);
 void subscriber_callback_inputs_SMV(SVSubscriber subscriber, void* parameter, SVSubscriber_ASDU asdu);
@@ -68,32 +48,25 @@ int strcmp_p(const char* str1, const char* str2)
   return -1;
 }
 
-Subscribers* create_Subscribers(InputValue* inputVal, SubscriberEntry* subscriberData)
-{
-  Subscribers* self = (Subscribers *) GLOBAL_MALLOC(sizeof(struct sSubscribers));
-  self->inputVal = inputVal;
-  self->subscriberData = subscriberData;
-  self->next = NULL;
-}
-
-
-InputValue* create_InputValue(int index, InputEntry* input)
+InputValue* create_InputValue(int index, DataAttribute* da, InputEntry* input)
 {
   InputValue* self = (InputValue *) GLOBAL_MALLOC(sizeof(struct sInputValue));
   if(self == NULL)
     return NULL;
-  
-  self->DA = NULL;
-  self->index = index;
+
   self->extRef = input;
-  self->next = NULL;
+
+  self->DA = da;
+  self->index = index;
+
+  self->sibling = NULL;
   return self;
 }
 
 
 //order of elements for sampled values matter, they should appear grouped per dataset, and ordered per index
 //for goose, a new subscriber-instance is made for every extref
-void subscribeToInputs(IedModel_inputs* self, GooseReceiver GSEreceiver, SVReceiver SMVreceiver)
+void subscribeToGOOSEInputs(IedModel_inputs* self, GooseReceiver GSEreceiver)
 {
   SubscriberEntry* subscriberEntry = self->subRefs;
 
@@ -102,7 +75,6 @@ void subscribeToInputs(IedModel_inputs* self, GooseReceiver GSEreceiver, SVRecei
 
   char * previous_datset = NULL;
   int dataSetIndex = 0;
-  Subscribers* subscriberList = NULL;
   
   while(subscriberEntry != NULL)
   {
@@ -125,7 +97,7 @@ void subscribeToInputs(IedModel_inputs* self, GooseReceiver GSEreceiver, SVRecei
       {
         if(strcmp_p(subscriberEntry->variableName, extRef->Ref) == 0)//if extref and datasetname match, we subscribe to it!
         {
-          InputValue * inputValue = create_InputValue(dataSetIndex,extRef);//match a dataset index to an extref, so we know how to decode a subscribed dataset
+          InputValue * inputValue = create_InputValue(dataSetIndex,NULL,extRef);//match a dataset index to an extref, so we know how to decode a subscribed dataset
 
           if(strcmp_p(extRef->serviceType, "GOOSE") == 0 && GSEreceiver != NULL)
           {//if the extref is GOOSE subscribed, then create a subscriber
@@ -148,20 +120,57 @@ void subscribeToInputs(IedModel_inputs* self, GooseReceiver GSEreceiver, SVRecei
               GooseSubscriber_setListener(subscriber, subscriber_callback_inputs_GOOSE, inputValue);
               GooseReceiver_addSubscriber(GSEreceiver, subscriber);
 
-              if(subscriberList == NULL)
-                subscriberList = create_Subscribers(inputValue, subscriberEntry);
-              else
-                subscriberList->next = create_Subscribers(inputValue, subscriberEntry);
-
               previous_subscriberEntry = subscriberEntry; 
             }
             else//add entries to the current subscriber
             {
-              previous_inputValue->next = inputValue;
+              previous_inputValue->sibling = inputValue;
             }
             previous_inputValue = inputValue;
           }
-          else if(strcmp_p(extRef->serviceType, "SMV") == 0 && SMVreceiver != NULL)
+        }
+        extRef = extRef->sibling;
+      }
+      inputs = inputs->sibling;
+    }
+    subscriberEntry = subscriberEntry->sibling;
+  }
+}
+
+void subscribeToSMVInputs(IedModel_inputs* self, SVReceiver SMVreceiver)
+{
+  SubscriberEntry* subscriberEntry = self->subRefs;
+
+  InputValue* previous_inputValue = NULL;
+  SubscriberEntry* previous_subscriberEntry = NULL;
+
+  char * previous_datset = NULL;
+  int dataSetIndex = 0;
+
+  while(subscriberEntry != NULL)
+  {
+    //figure out index in dataset based on ordering and dataset-name
+    //limitation: we assume that a dataset is not subscribed by 2 control-blocks
+    if(strcmp_p(previous_datset, subscriberEntry->Dataset) == 0)
+      dataSetIndex++;
+    else
+    {
+      dataSetIndex = 0;
+      previous_datset = subscriberEntry->Dataset;
+    }
+
+    //find a matching input, iterate over all of them (all inputs are grouped by logical node)
+    Input* inputs = self->inputs;
+    while(inputs != NULL)
+    {
+      InputEntry* extRef = inputs->extRefs; 
+      while(extRef != NULL)//find all matching extref for this extRef
+      {
+        if(strcmp_p(subscriberEntry->variableName, extRef->Ref) == 0)//if extref and datasetname match, we subscribe to it!
+        {
+          InputValue * inputValue = create_InputValue(dataSetIndex,NULL,extRef);//match a dataset index to an extref, so we know how to decode a subscribed dataset
+
+          if(strcmp_p(extRef->serviceType, "SMV") == 0 && SMVreceiver != NULL)
           {//if the extref is SMV, then create/add a subscriber
             if(previous_subscriberEntry == NULL)//always create an initial subscriber 
             {
@@ -186,27 +195,13 @@ void subscribeToInputs(IedModel_inputs* self, GooseReceiver GSEreceiver, SVRecei
                 SVReceiver_enableDestAddrCheck(SMVreceiver);
               }
 
-              if(subscriberList == NULL)
-                subscriberList = create_Subscribers(inputValue, subscriberEntry);
-              else
-                subscriberList->next = create_Subscribers(inputValue, subscriberEntry);
-
               previous_subscriberEntry = subscriberEntry;            
             }
             else//add entries to the current subscriber
             {
-              previous_inputValue->next = inputValue;
+              previous_inputValue->sibling = inputValue;
             }
             previous_inputValue = inputValue;
-          }
-          else if(strcmp_p(extRef->serviceType, "Report") == 0 )
-          {
-            //for client only
-            printf("WARNING: for extRef: '%s' serviceType: '%s' is not supported, value will not be updated\n", extRef->Ref, extRef->serviceType);
-          }
-          else
-          {
-            printf("WARNING: could not find extRef: '%s' serviceType: '%s', value will not be updated\n", extRef->Ref, extRef->serviceType);
           }
         }
         extRef = extRef->sibling;
@@ -215,6 +210,12 @@ void subscribeToInputs(IedModel_inputs* self, GooseReceiver GSEreceiver, SVRecei
     }
     subscriberEntry = subscriberEntry->sibling;
   }
+}
+
+
+void subscribeToDAInputs(IedModel_inputs* self, IedModel* model, IedServer server )
+{
+  InputValue * inputValue_list = NULL;
 
   Input* inputs = self->inputs;
   while(inputs != NULL)
@@ -224,29 +225,23 @@ void subscribeToInputs(IedModel_inputs* self, GooseReceiver GSEreceiver, SVRecei
     {
       if(strcmp_p(extRef->serviceType, "Poll") == 0 )//if type is polling, and IED is our own IED, link the mmsValue
       {
-        DataAttribute* da = IedModel_getModelNodeByObjectReference(model, extRef->Ref);
+        DataAttribute* da = (DataAttribute*) IedModel_getModelNodeByObjectReference(model, extRef->Ref);
         MmsValue* value = IedServer_getAttributeValue(server, da);
         extRef->value = value;
 
-        InputValue * inputValue = create_InputValue(0,extRef);
-        inputValue->DA = da;
+        InputValue * inputValue = create_InputValue(0,da,extRef);
+        
         //implement callback ???
-        polls.add(inputValue);
+        //polls.add(inputValue);
         //add inputValue->next if DA is the same
-      }
-      else if (strcmp_p(extRef->serviceType, "Poll") == 0 )//if type is polling, and IED is another IED, perform a client request
-      {
-        printf("WARNING: for extRef: '%s' serviceType: '%s' is not supported, value will not be updated\n", extRef->Ref, extRef->serviceType);
-      }
-      else
-      {
-         printf("ERROR: unmatching extRef: '%s' serviceType: '%s', value will not be updated\n", extRef->Ref, extRef->serviceType);
+
       }
       extRef = extRef->sibling;
     }
     inputs = inputs->sibling;
   }
 }
+
 
 //called for subscribed GOOSE data
 void subscriber_callback_inputs_GOOSE(GooseSubscriber subscriber, void* parameter)
@@ -260,7 +255,7 @@ void subscriber_callback_inputs_GOOSE(GooseSubscriber subscriber, void* paramete
     {
       int arraySize = MmsValue_getArraySize(values);
       int arrayIndex;
-      for(arrayIndex=0;arrayIndex<arraySize;i++)
+      for(arrayIndex=0; arrayIndex<arraySize; arrayIndex++)
       {
         //find all extrefs for this index
         while(inputVal->index == arrayIndex)
@@ -284,7 +279,7 @@ void subscriber_callback_inputs_GOOSE(GooseSubscriber subscriber, void* paramete
           if(inputVal->callBack != NULL){
             inputVal->callBack(inputVal);
           }
-          inputVal = inputVal->next;
+          inputVal = inputVal->sibling;
         }
       }
     }
@@ -350,7 +345,7 @@ void subscriber_callback_inputs_SMV(SVSubscriber subscriber, void* parameter, SV
           if(inputVal->callBack != NULL){
             inputVal->callBack(inputVal);
           }
-          inputVal = inputVal->next;
+          inputVal = inputVal->sibling;
         }
       }
     }
@@ -367,17 +362,16 @@ void subscriber_callback_inputs_SMV(SVSubscriber subscriber, void* parameter, SV
 
 //todo: create struct with DA,input and callback, connect it to the model's DataAttribute
 //
-void update(IedServer self, InputValue* dataAttribute, MmsValue* value)
+void input_updateAttributeValue(IedServer self, InputValue* inputValue, MmsValue* value)
 {
-  IedServer_updateAttributeValue(self, dataAttribute->DA, value);
+  IedServer_updateAttributeValue(self, inputValue->DA, value);
 
   //call all inputVals that are associated with this (local)DA
-  while(dataAttribute != NULL)//list of associated inputvals with this DA
+  while(inputValue != NULL)//list of associated inputvals with this DA
   {
-    if(dataAttribute->callBack != NULL)
-      dataAttribute->callBack(dataAttribute);
+    if(inputValue->callBack != NULL)
+      inputValue->callBack(inputValue);
 
-    dataAttribute = dataAttribute->next;
+    inputValue = inputValue->sibling;
   }
-
 }

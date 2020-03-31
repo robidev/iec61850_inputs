@@ -25,7 +25,8 @@
 			"ostream": "c",
 			"numeric": "c",
 			"sstream": "c",
-			"streambuf": "c"
+			"streambuf": "c",
+			"functional": "c"
 		}
 	}
 }

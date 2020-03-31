@@ -1,3 +1,5 @@
+#include "iec61850_model_input.h"
+
 /*
 LN's:
 
@@ -11,7 +13,7 @@ CSWI
 CILO
 */
 
-void attachLogicalNodes(model)
+void attachLogicalNodes(IedModel_inputs* model)
 {
   //iterate over struct that attaches model-instances to LogicalNode Classes
   LogicalNodeClass* lnClass = model->logicalNodes;
