@@ -1,5 +1,5 @@
 #include "iec61850_model_input.h"
-
+#include "inputs_api.h"
 /*
 LN's:
 
@@ -21,6 +21,11 @@ void attachLogicalNodes(IedModel_inputs* model)
   {
     //  call init, to attach input-nodes of this instance to callback-items
     lnClass = lnClass->sibling;
+
+    for(;;)//for each LN with an inputs/extref defined;
+    {
+      //attach callbacks, using inputValue->callBack and lnClass->initFunction
+    }
   }
   
 }
