@@ -29,7 +29,7 @@
 
 int strcmp_p(const char* str1, const char* str2);
 
-InputValue* create_InputValue(int index, DataAttribute* da, InputEntry* input);
+InputValue* create_InputValue(int index, DataAttribute* da, Input* input, InputEntry* extRef);
 
 void subscriber_callback_inputs_GOOSE(GooseSubscriber subscriber, void* parameter);
 void subscriber_callback_inputs_SMV(SVSubscriber subscriber, void* parameter, SVSubscriber_ASDU asdu);
@@ -49,13 +49,14 @@ int strcmp_p(const char* str1, const char* str2)
   return -1;
 }
 
-InputValue* create_InputValue(int index, DataAttribute* da, InputEntry* input)
+InputValue* create_InputValue(int index, DataAttribute* da, Input* input, InputEntry* extRef)
 {
   InputValue* self = (InputValue *) GLOBAL_MALLOC(sizeof(struct sInputValue));
   if(self == NULL)
     return NULL;
 
-  self->extRef = input;
+  self->input = input;
+  self->extRef = extRef;
 
   self->DA = da;
   self->index = index;
@@ -67,8 +68,9 @@ InputValue* create_InputValue(int index, DataAttribute* da, InputEntry* input)
 
 //order of elements for sampled values matter, they should appear grouped per dataset, and ordered per index
 //for goose, a new subscriber-instance is made for every extref
-void subscribeToGOOSEInputs(IedModel_inputs* self, GooseReceiver GSEreceiver)
+LinkedList subscribeToGOOSEInputs(IedModel_inputs* self, GooseReceiver GSEreceiver)
 {
+  LinkedList GOOSElist = LinkedList_create();
   SubscriberEntry* subscriberEntry = self->subRefs;
 
   InputValue* previous_inputValue = NULL;
@@ -98,7 +100,7 @@ void subscribeToGOOSEInputs(IedModel_inputs* self, GooseReceiver GSEreceiver)
       {
         if(strcmp_p(subscriberEntry->variableName, extRef->Ref) == 0)//if extref and datasetname match, we subscribe to it!
         {
-          InputValue * inputValue = create_InputValue(dataSetIndex,NULL,extRef);//match a dataset index to an extref, so we know how to decode a subscribed dataset
+          InputValue * inputValue = create_InputValue(dataSetIndex, NULL, inputs, extRef);//match a dataset index to an extref, so we know how to decode a subscribed dataset
 
           if(strcmp_p(extRef->serviceType, "GOOSE") == 0 && GSEreceiver != NULL)
           {//if the extref is GOOSE subscribed, then create a subscriber
@@ -127,6 +129,8 @@ void subscribeToGOOSEInputs(IedModel_inputs* self, GooseReceiver GSEreceiver)
             {
               previous_inputValue->sibling = inputValue;
             }
+            LinkedList_add(GOOSElist, inputValue);
+
             previous_inputValue = inputValue;
           }
         }
@@ -136,10 +140,12 @@ void subscribeToGOOSEInputs(IedModel_inputs* self, GooseReceiver GSEreceiver)
     }
     subscriberEntry = subscriberEntry->sibling;
   }
+  return GOOSElist;
 }
 
-void subscribeToSMVInputs(IedModel_inputs* self, SVReceiver SMVreceiver)
+LinkedList subscribeToSMVInputs(IedModel_inputs* self, SVReceiver SMVreceiver)
 {
+  LinkedList SMVlist = LinkedList_create();
   SubscriberEntry* subscriberEntry = self->subRefs;
 
   InputValue* previous_inputValue = NULL;
@@ -169,7 +175,7 @@ void subscribeToSMVInputs(IedModel_inputs* self, SVReceiver SMVreceiver)
       {
         if(strcmp_p(subscriberEntry->variableName, extRef->Ref) == 0)//if extref and datasetname match, we subscribe to it!
         {
-          InputValue * inputValue = create_InputValue(dataSetIndex,NULL,extRef);//match a dataset index to an extref, so we know how to decode a subscribed dataset
+          InputValue * inputValue = create_InputValue(dataSetIndex, NULL, inputs, extRef);//match a dataset index to an extref, so we know how to decode a subscribed dataset
 
           if(strcmp_p(extRef->serviceType, "SMV") == 0 && SMVreceiver != NULL)
           {//if the extref is SMV, then create/add a subscriber
@@ -195,6 +201,7 @@ void subscribeToSMVInputs(IedModel_inputs* self, SVReceiver SMVreceiver)
               {
                 SVReceiver_enableDestAddrCheck(SMVreceiver);
               }
+              LinkedList_add(SMVlist,subscriberEntry);
 
               previous_subscriberEntry = subscriberEntry;            
             }
@@ -211,6 +218,7 @@ void subscribeToSMVInputs(IedModel_inputs* self, SVReceiver SMVreceiver)
     }
     subscriberEntry = subscriberEntry->sibling;
   }
+  return SMVlist;
 }
 
 
@@ -240,13 +248,13 @@ LinkedList subscribeToLocalDAInputs(IedModel_inputs* self, IedModel* model, IedS
         MmsValue* value = IedServer_getAttributeValue(server, da);
         extRef->value = value;
 
-        InputValue * inputValue = create_InputValue(0,da,extRef);
+        InputValue * inputValue = create_InputValue(0, da, inputs, extRef);
         
         LinkedList DAlist_local = DAlist;
-        while( DAlist_local != NULL)
+        while( DAlist_local != NULL && inputValue != NULL)
         {
           InputValue * inputValue_local = (InputValue *) DAlist_local->data;
-          if(inputValue_local->DA == da)//find a similar DA
+          if(inputValue_local != NULL && inputValue_local->DA != NULL && inputValue_local->DA == da)//find a similar DA
           {
             while(inputValue_local->sibling != NULL)//find the last entry in the list of this DA
             {
@@ -269,6 +277,7 @@ LinkedList subscribeToLocalDAInputs(IedModel_inputs* self, IedModel* model, IedS
     }
     inputs = inputs->sibling;
   }
+  return DAlist;
 }
 
 
@@ -305,8 +314,8 @@ void subscriber_callback_inputs_GOOSE(GooseSubscriber subscriber, void* paramete
           }
 
           //perform trigger for value update
-          if(inputVal->callBack != NULL){
-            inputVal->callBack(inputVal);
+          if(inputVal->extRef->callBack != NULL){
+            inputVal->extRef->callBack(inputVal);
           }
           inputVal = inputVal->sibling;
         }
@@ -321,7 +330,6 @@ void subscriber_callback_inputs_GOOSE(GooseSubscriber subscriber, void* paramete
   {
     printf("ERROR: no valid inputval struct, no data processed");
   }
-  //event trigger for value update
 }
 
 //called for subscribed SMV data
@@ -371,8 +379,8 @@ void subscriber_callback_inputs_SMV(SVSubscriber subscriber, void* parameter, SV
           }
           
           //perform trigger for value update
-          if(inputVal->callBack != NULL){
-            inputVal->callBack(inputVal);
+          if(inputVal->extRef->callBack != NULL){
+            inputVal->extRef->callBack(inputVal);
           }
           inputVal = inputVal->sibling;
         }
@@ -389,8 +397,7 @@ void subscriber_callback_inputs_SMV(SVSubscriber subscriber, void* parameter, SV
   }
 }
 
-//todo: create struct with DA,input and callback, connect it to the model's DataAttribute
-//
+//update an inputvalue that contains a DA
 void input_updateAttributeValue(IedServer self, InputValue* inputValue, MmsValue* value)
 {
   IedServer_updateAttributeValue(self, inputValue->DA, value);
@@ -398,9 +405,56 @@ void input_updateAttributeValue(IedServer self, InputValue* inputValue, MmsValue
   //call all inputVals that are associated with this (local)DA
   while(inputValue != NULL)//list of associated inputvals with this DA
   {
-    if(inputValue->callBack != NULL)
-      inputValue->callBack(inputValue);
+    if(inputValue->extRef->callBack != NULL)
+      inputValue->extRef->callBack(inputValue);
 
     inputValue = inputValue->sibling;
   }
 }
+
+Input* getInput(IedModel_inputs* model, LogicalNode* ln)
+{
+    Input* inputs = model->inputs;
+    while(inputs != NULL)//for each LN with an inputs/extref defined;
+    {
+      if(inputs->parent == ln)
+      {
+        return inputs;
+      }
+      inputs = inputs->sibling;
+    }
+    return NULL;
+}
+
+
+InputValue* getInputValueFromExtRef(InputEntry* extRef, LinkedList inputvalues)
+{
+    
+    while(inputvalues != NULL)//for each LN with an inputs/extref defined;
+    {
+      InputValue* inputValue = inputvalues->data;
+      if(inputValue->extRef == extRef)
+      {
+        return inputValue;
+      }
+      inputvalues = LinkedList_getNext(inputvalues);
+    }
+    return NULL;
+}
+
+
+InputValue* getInputValueFromDA(DataAttribute* da, LinkedList inputvalues)
+{
+    
+    while(inputvalues != NULL)//for each LN with an inputs/extref defined;
+    {
+      InputValue* inputValue = inputvalues->data;
+      if(inputValue->DA == da)
+      {
+        return inputValue;
+      }
+      inputvalues = LinkedList_getNext(inputvalues);
+    }
+    return NULL;
+}
+

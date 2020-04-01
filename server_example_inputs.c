@@ -113,11 +113,13 @@ int main(int argc, char** argv) {
 		SVReceiver_setInterfaceId(SMVreceiver, ethernetIfcID);
 	}
 
-	subscribeToGOOSEInputs(iedInputModel2, GSEreceiver);
-	subscribeToSMVInputs(iedInputModel2, SMVreceiver);
-	LinkedList localInputDAs = subscribeToLocalDAInputs(iedInputModel2, &iedModel,iedServer);
-
-
+	//subscribe to datasets and local DA's based on iput/extRef, and generate one list with all inputValues
+	LinkedList allInputValues = subscribeToGOOSEInputs(iedInputModel2, GSEreceiver);
+	LinkedList temp = allInputValues;
+	temp = LinkedList_getLastElement(temp);
+	temp->next = subscribeToSMVInputs(iedInputModel2, SMVreceiver);
+	temp = LinkedList_getLastElement(temp);
+	temp->next = subscribeToLocalDAInputs(iedInputModel2, &iedModel,iedServer);
 
     GooseReceiver_start(GSEreceiver);
     SVReceiver_start(SMVreceiver);

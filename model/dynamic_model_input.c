@@ -184,6 +184,9 @@ InputEntry_create(Input* input, const char* desc, const char* Ref, const char* i
 
     self->value = NULL;
 
+    self->callBackParam = NULL;
+    self->callBack = NULL;
+
     self->sibling = NULL;
 
     Input_addEntry(input, self);

@@ -19,13 +19,46 @@ void attachLogicalNodes(IedModel_inputs* model)
   LogicalNodeClass* lnClass = model->logicalNodes;
   while(lnClass != NULL)
   {
-    //  call init, to attach input-nodes of this instance to callback-items
-    lnClass = lnClass->sibling;
-
-    for(;;)//for each LN with an inputs/extref defined;
+    Input* input = getInput( model, lnClass->parent); 
+    if(strcmp(lnClass->lnClass,"XSWI") == 0)
     {
-      //attach callbacks, using inputValue->callBack and lnClass->initFunction
+      XSWI_init(input); // call init, to attach input-nodes of this instance to callback-items
     }
+    else if(strcmp(lnClass->lnClass,"XCBR") == 0)
+    {
+
+    }
+    else if(strcmp(lnClass->lnClass,"RADR") == 0)
+    {
+
+    }
+    else if(strcmp(lnClass->lnClass,"PTCR") == 0)
+    {
+
+    }
+    else if(strcmp(lnClass->lnClass,"PTOC") == 0)
+    {
+
+    }
+    else if(strcmp(lnClass->lnClass,"MMXU") == 0)
+    {
+
+    }
+    else if(strcmp(lnClass->lnClass,"CSWI") == 0)
+    {
+
+    }
+    else if(strcmp(lnClass->lnClass,"CILO") == 0)
+    {
+
+    }
+    else
+    {
+      printf("ERROR: Class not supported");
+    }
+    lnClass = lnClass->sibling;
   }
   
 }
+
+

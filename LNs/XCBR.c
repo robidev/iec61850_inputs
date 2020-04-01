@@ -2,28 +2,28 @@
 
 static char switch_open = 0;
 
-void open()
+void XCBR_open()
 {
   switch_open = 1;
 }
 
-void close()
+void XCBR_close()
 {
   switch_open = 0;
 }
 
-void callback(ref)
+void XCBR_callback(ref)
 {
   int input = 0;
   //read input-data from ref into input (could come from GOOSE, SMV or local data update)
   if(input == 1)
-    open();
+    XCBR_open();
   else
-    close();
+    XCBR_close();
   
 }
 
-void init()
+void XCBR_init()
 {
   //start simulation threat
 
@@ -31,7 +31,7 @@ void init()
 }
 
 //threath for process-simulation: open/close switch
-void simulate_switch()
+void XCBR_simulate_switch()
 {
   while(1)
   {

@@ -24,6 +24,8 @@ InputEntry iedInputModel_GenericIO_LLN0_inputs_extRef0 = {
   "SMV",
   "SMV1MUnn/LLN0.MSVCB01",
   NULL,
+  NULL,
+  NULL,
   &iedInputModel_GenericIO_LLN0_inputs_extRef1
 };
 
@@ -34,6 +36,8 @@ InputEntry iedInputModel_GenericIO_LLN0_inputs_extRef1 = {
   "SMV",
   "SMV1MUnn/LLN0.MSVCB01",
   NULL,
+  NULL,
+  NULL,
   &iedInputModel_GenericIO_LLN0_inputs_extRef2
 };
 
@@ -43,6 +47,8 @@ InputEntry iedInputModel_GenericIO_LLN0_inputs_extRef2 = {
   "adr_smv",
   "SMV",
   "SMV1MUnn/LLN0.MSVCB01",
+  NULL,
+  NULL,
   NULL,
   NULL
 };
@@ -64,6 +70,8 @@ InputEntry iedInputModel_GenericIO_GGIO1_inputs_extRef0 = {
   "GOOSE",
   "IED2GenericIO/GGIO1.GoCB",
   NULL,
+  NULL,
+  NULL,
   &iedInputModel_GenericIO_GGIO1_inputs_extRef1
 };
 
@@ -73,6 +81,8 @@ InputEntry iedInputModel_GenericIO_GGIO1_inputs_extRef1 = {
   "adr2",
   "GOOSE",
   "IED2GenericIO/LLN1.GoCB",
+  NULL,
+  NULL,
   NULL,
   NULL
 };

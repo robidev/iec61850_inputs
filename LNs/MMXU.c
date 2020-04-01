@@ -1,9 +1,9 @@
-void callback()
+void MMXU_callback()
 {
   //calculate values based on measurands
 }
 
-void init()
+void MMXU_init()
 {
   //register callback for input
 }

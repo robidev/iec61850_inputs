@@ -40,26 +40,35 @@ extern "C" {
 #endif
 
 typedef struct sInputValue InputValue;
-typedef void (*callBackFunction) (InputValue* input);
 
 // struct that describes input-extref elements, and additional data
+	//inputValues are lists of input/extref elements that belong to the same dataset(subscriber) or same DA's.
+	//an inputvalue describes the data reference(input/extref), the index in the dataset, or associated DA pointer. 
+	//It contains a callback that can be used when a new value arrives from the respective source 
 struct sInputValue {
-  InputEntry * extRef;          // pointer to related extref
+  Input* input;                 // pointer to related input 
+  InputEntry* extRef;           // pointer to related extref
 
   int index;                    // index of value in the dataset, if remote value
   DataAttribute* DA;            // data-attribute-reference if local value is referenced by extref
-  callBackFunction callBack;    // callback to be called when value is updated
 
   InputValue* sibling;          // additional extref that are related (same DA or same dataset)
 };
 
 
-void subscribeToGOOSEInputs(IedModel_inputs* self, GooseReceiver GSEreceiver);
+LinkedList subscribeToGOOSEInputs(IedModel_inputs* self, GooseReceiver GSEreceiver);
 
-void subscribeToSMVInputs(IedModel_inputs* self, SVReceiver SMVreceiver);
+LinkedList subscribeToSMVInputs(IedModel_inputs* self, SVReceiver SMVreceiver);
 
 LinkedList subscribeToLocalDAInputs(IedModel_inputs* self, IedModel* model, IedServer server );
 
+void input_updateAttributeValue(IedServer self, InputValue* inputValue, MmsValue* value);
+
+Input* getInput(IedModel_inputs* model, LogicalNode* ln);
+
+InputValue* getInputValueFromExtRef(InputEntry* extRef, LinkedList inputvalues);
+
+InputValue* getInputValueFromDA(DataAttribute* da, LinkedList inputvalues);
 
 #ifdef __cplusplus
 }

@@ -1,11 +1,11 @@
 //callback when SMV is received
-void callback()
+void PTOC_callback()
 {
   //check if value is outside allowed band
   //if so send to internal PTRC
 }
 
-void init()
+void PTOC_init()
 {
   //register callback for all SMV
 }

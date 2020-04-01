@@ -379,6 +379,8 @@ public class StaticModelGenerator_input {
                         cOut.println("  \"" + extref.getServiceType() + "\",");
                         cOut.println("  \"" + extref.srcToString() + "\",");
                         cOut.println("  NULL,"); // MmsValue* value;
+                        cOut.println("  NULL,"); // callback;
+                        cOut.println("  NULL,"); // callbackparam;
 
                         if (extRefCount + 1 < numberOfExtRef)
                             cOut.println("  &" + inputVarName + "_extRef" + (extRefCount + 1));

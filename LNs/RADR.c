@@ -1,10 +1,10 @@
 //read analog values
-void callback()
+void RADR_callback()
 {
   //record values in comtrade
 }
 
-void init()
+void RADR_init()
 {
   //register callback for input
 }

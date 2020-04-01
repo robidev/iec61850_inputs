@@ -48,6 +48,7 @@ typedef struct sIedModel_inputs IedModel_inputs;
 typedef struct sLogicalNodeClass LogicalNodeClass;
 typedef struct sInput Input;
 typedef struct sSubscriberEntry SubscriberEntry;
+typedef void (*callBackFunction) (void* param);
 
 // struct that describes the iedmodel elements that are needed to implement the input-model
 // the elements can be filled from the SCL using a static datamodel, as well as dynamic config files
@@ -66,6 +67,9 @@ typedef struct sInputEntry {
     char* srcRef;
 
     MmsValue* value;
+    callBackFunction callBack;    // callback to be called when value is updated
+    void* callBackParam;
+    
     struct sInputEntry* sibling;
 } InputEntry;
 
