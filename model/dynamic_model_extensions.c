@@ -1,5 +1,5 @@
 /*
- *  dynamic_model_input.c
+ *  dynamic_model_extensions.c
  *
  *  Copyright 2014-2016 Michael Zillgith
  *
@@ -21,18 +21,18 @@
  *  See COPYING file for the complete license text.
  */
 
-#include "iec61850_model_input.h"
-#include "iec61850_dynamic_model_input.h"
+#include "iec61850_model_extensions.h"
+#include "iec61850_dynamic_model_extensions.h"
 
 #include "iec61850_server.h"
 #include "libiec61850_platform_includes.h"
 #include "stack_config.h"
 
 
-IedModel_inputs*
+IedModel_extensions*
 IedModel_input_create()
 {
-    IedModel_inputs* self = (IedModel_inputs*) GLOBAL_CALLOC(1, sizeof(IedModel_inputs));
+    IedModel_extensions* self = (IedModel_extensions*) GLOBAL_CALLOC(1, sizeof(IedModel_extensions));
 
     self->inputs = NULL;
 
@@ -45,7 +45,7 @@ IedModel_input_create()
 
 
 static void
-IedModel_addInput(IedModel_inputs* self, Input* input)
+IedModel_addInput(IedModel_extensions* self, Input* input)
 {
     if (self->inputs == NULL)
         self->inputs = input;
@@ -64,7 +64,7 @@ IedModel_addInput(IedModel_inputs* self, Input* input)
 }
 
 static void
-IedModel_addLogicalNodeClass(IedModel_inputs* self, LogicalNodeClass* lnClass)
+IedModel_addLogicalNodeClass(IedModel_extensions* self, LogicalNodeClass* lnClass)
 {
     if (self->logicalNodes == NULL)
         self->logicalNodes = lnClass;
@@ -85,7 +85,7 @@ IedModel_addLogicalNodeClass(IedModel_inputs* self, LogicalNodeClass* lnClass)
 
 
 LogicalNodeClass*
-LogicalNodeClass_create(LogicalNode* parent, IedModel_inputs* inputs, char * lnClass )
+LogicalNodeClass_create(LogicalNode* parent, IedModel_extensions* model, char * lnClass )
 {
     LogicalNodeClass* self = (LogicalNodeClass*) GLOBAL_MALLOC(sizeof(LogicalNodeClass));
 
@@ -97,13 +97,13 @@ LogicalNodeClass_create(LogicalNode* parent, IedModel_inputs* inputs, char * lnC
     self->initFunction = NULL;
     self->sibling = NULL;
 
-    IedModel_addLogicalNodeClass(inputs, self);
+    IedModel_addLogicalNodeClass(model, self);
 
     return self;
 }
 
 Input*
-Input_create(LogicalNode* parent, IedModel_inputs* inputs )
+Input_create(LogicalNode* parent, IedModel_extensions* model )
 {
     Input* self = (Input*) GLOBAL_MALLOC(sizeof(Input));
 
@@ -112,7 +112,7 @@ Input_create(LogicalNode* parent, IedModel_inputs* inputs )
     self->sibling = NULL;
     self->extRefs = NULL;
 
-    IedModel_addInput(inputs, self);
+    IedModel_addInput(model, self);
 
     return self;
 }
@@ -195,7 +195,7 @@ InputEntry_create(Input* input, const char* desc, const char* Ref, const char* i
 }
 
 static void
-Subscriber_addEntry(IedModel_inputs* self, SubscriberEntry* newEntry)
+Subscriber_addEntry(IedModel_extensions* self, SubscriberEntry* newEntry)
 {
     if (self->subRefs == NULL)
         self->subRefs = newEntry;
@@ -215,7 +215,7 @@ Subscriber_addEntry(IedModel_inputs* self, SubscriberEntry* newEntry)
 }
 
 SubscriberEntry*
-SubscriberEntry_create(IedModel_inputs* model, const char* variableName, const char* Dataset, uint16_t APPID, const char* cbRef, const char* ID, uint8_t* ethAddr)
+SubscriberEntry_create(IedModel_extensions* model, const char* variableName, const char* Dataset, uint16_t APPID, const char* cbRef, const char* ID, uint8_t* ethAddr)
 {
     SubscriberEntry* self = (SubscriberEntry*) GLOBAL_MALLOC(sizeof(SubscriberEntry));
     if(self == NULL)
@@ -247,7 +247,7 @@ SubscriberEntry_create(IedModel_inputs* model, const char* variableName, const c
 
 
 void
-IedModel_destroy_inputs(IedModel_inputs* model)
+IedModel_destroy_inputs(IedModel_extensions* model)
 {
     /* delete all model nodes and dynamically created strings */
 

@@ -26,7 +26,8 @@
 			"numeric": "c",
 			"sstream": "c",
 			"streambuf": "c",
-			"functional": "c"
+			"functional": "c",
+			"iec61850_model.h": "c"
 		}
 	}
 }

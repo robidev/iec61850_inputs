@@ -7,8 +7,8 @@
  */
 
 #include "inputs_api.h"
-#include "iec61850_model_input.h"
-#include "iec61850_dynamic_model_input.h"
+#include "iec61850_model_extensions.h"
+#include "iec61850_dynamic_model_extensions.h"
 
 #include "iec61850_server.h"
 #include "hal_thread.h" /* for Thread_sleep() */
@@ -21,9 +21,9 @@
 
 /* import IEC 61850 device model created from SCL-File */
 extern IedModel iedModel;
-extern IedModel_inputs iedInputModel;
+extern IedModel_extensions iedExtendedModel;
 
-IedModel_inputs*
+IedModel_extensions*
 ConfigFileParser_createModelFromConfigFileEx_inputs(const char* filename);
 
 static int running = 0;
@@ -93,7 +93,7 @@ int main(int argc, char** argv) {
 
 	iedServer = IedServer_create(&iedModel);
 
-	IedModel_inputs* iedInputModel2 = ConfigFileParser_createModelFromConfigFileEx_inputs("config.cfg");
+	IedModel_extensions* iedInputModel2 = ConfigFileParser_createModelFromConfigFileEx_inputs("config.cfg");
 
 	GooseReceiver GSEreceiver = GooseReceiver_create();
 

@@ -1,5 +1,5 @@
 /*
- *  model_input.h
+ *  model_extensions.h
  *
  *  Copyright 2013-2016 Michael Zillgith
  *
@@ -21,8 +21,8 @@
  *  See COPYING file for the complete license text.
  */
 
-#ifndef MODEL_INPUT_H_
-#define MODEL_INPUT_H_
+#ifndef MODEL_EXTENSIONS_H_
+#define MODEL_EXTENSIONS_H_
 
 #include "iec61850_common.h"
 #include "iec61850_model.h"
@@ -44,7 +44,7 @@ extern "C" {
 /**
  * \brief Root node of the IEC 61850 data model. This is usually created by the model generator tool (genmodel.jar)
  */
-typedef struct sIedModel_inputs IedModel_inputs;
+typedef struct sIedModel_extensions IedModel_extensions;
 typedef struct sLogicalNodeClass LogicalNodeClass;
 typedef struct sInput Input;
 typedef struct sSubscriberEntry SubscriberEntry;
@@ -52,7 +52,7 @@ typedef void (*callBackFunction) (void* param);
 
 // struct that describes the iedmodel elements that are needed to implement the input-model
 // the elements can be filled from the SCL using a static datamodel, as well as dynamic config files
-struct sIedModel_inputs {
+struct sIedModel_extensions {
     Input* inputs;                      // describes the input elements in the datamodel
     SubscriberEntry* subRefs;           // describes the dataset-references that can be subscribed to from other IED's
     LogicalNodeClass* logicalNodes;     // describes the class of each LN, so that functions can be attached
@@ -106,4 +106,4 @@ struct sLogicalNodeClass {
 #endif
 
 
-#endif /* MODEL_INPUT_H_ */
+#endif /* MODEL_EXTENSIONS_H_ */

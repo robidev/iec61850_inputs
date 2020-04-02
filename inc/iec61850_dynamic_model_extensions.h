@@ -1,5 +1,5 @@
 /*
- *  dynamic_model.h
+ *  dynamic_model_extensions.h
  *
  *  Copyright 2014 Michael Zillgith
  *
@@ -21,18 +21,18 @@
  *  See COPYING file for the complete license text.
  */
 
-#ifndef DYNAMIC_MODEL_INPUT_H_
-#define DYNAMIC_MODEL_INPUT_H_
+#ifndef DYNAMIC_MODEL_EXTENSIONS_H_
+#define DYNAMIC_MODEL_EXTENSIONS_H_
 
 #include "iec61850_model.h"
-#include "iec61850_model_input.h"
+#include "iec61850_model_extensions.h"
 #include "iec61850_cdc.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-LIB61850_API IedModel_inputs*
+LIB61850_API IedModel_extensions*
 IedModel_input_create(void);
 
 /**
@@ -44,7 +44,7 @@ IedModel_input_create(void);
  * \return the new input instance
  */
 LIB61850_API LogicalNodeClass*
-LogicalNodeClass_create(LogicalNode* parent, IedModel_inputs* inputs, char * lnClass );
+LogicalNodeClass_create(LogicalNode* parent, IedModel_extensions* model, char * lnClass );
 
 
 /**
@@ -56,7 +56,7 @@ LogicalNodeClass_create(LogicalNode* parent, IedModel_inputs* inputs, char * lnC
  * \return the new input instance
  */
 LIB61850_API Input*
-Input_create(LogicalNode* parent, IedModel_inputs* inputs );
+Input_create(LogicalNode* parent, IedModel_extensions* model );
 
 /**
  * \brief returns the number of elements (entries) of the Input
@@ -107,10 +107,10 @@ InputEntry_create(Input* input, const char* desc, const char* Ref, const char* i
  * \return the new SubscriberEntry instance
  */
 LIB61850_API SubscriberEntry*
-SubscriberEntry_create(IedModel_inputs* model, const char* variableName, const char* Dataset, uint16_t APPID, const char* cbRef, const char* ID, uint8_t* ethAddr);
+SubscriberEntry_create(IedModel_extensions* model, const char* variableName, const char* Dataset, uint16_t APPID, const char* cbRef, const char* ID, uint8_t* ethAddr);
 
 LIB61850_API void
-IedModel_destroy_inputs(IedModel_inputs* model);
+IedModel_destroy_inputs(IedModel_extensions* model);
 /**@}*/
 
 /**@}*/
@@ -119,4 +119,4 @@ IedModel_destroy_inputs(IedModel_inputs* model);
 }
 #endif
 
-#endif /* DYNAMIC_MODEL_INPUT_H_ */
+#endif /* DYNAMIC_MODEL_EXTENSIONS_H_ */

@@ -30,17 +30,12 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.List;
-import java.util.Collection;
 
-import com.libiec61850.scl.DataAttributeDefinition;
 import com.libiec61850.scl.SclParser;
 import com.libiec61850.scl.SclParserException;
 import com.libiec61850.scl.communication.ConnectedAP;
 import com.libiec61850.scl.communication.PhyComAddress;
 import com.libiec61850.scl.model.AccessPoint;
-import com.libiec61850.scl.model.DataAttribute;
-import com.libiec61850.scl.model.DataModelValue;
-import com.libiec61850.scl.model.DataObject;
 import com.libiec61850.scl.model.DataSet;
 import com.libiec61850.scl.model.Inputs;
 import com.libiec61850.scl.model.ExtRef;
@@ -48,16 +43,12 @@ import com.libiec61850.scl.model.FunctionalConstraintData;
 import com.libiec61850.scl.model.GSEControl;
 import com.libiec61850.scl.model.SampledValueControl;
 import com.libiec61850.scl.model.IED;
-import com.libiec61850.scl.model.Log;
-import com.libiec61850.scl.model.LogControl;
 import com.libiec61850.scl.model.LogicalDevice;
 import com.libiec61850.scl.model.LogicalNode;
-import com.libiec61850.scl.model.ReportControlBlock;
-import com.libiec61850.scl.model.SettingControl;
 
 public class DynamicModelGenerator_input {
 
-    private ConnectedAP connectedAP;
+    //private ConnectedAP connectedAP;
     private IED ied = null;
     
     public DynamicModelGenerator_input(InputStream stream, String icdFile, PrintStream output, String iedName, String accessPointName) 
@@ -83,7 +74,7 @@ public class DynamicModelGenerator_input {
         if (accessPoint == null)
         	throw new SclParserException("No valid access point found!");
         
-        this.connectedAP = sclParser.getConnectedAP(ied, accessPoint.getName());
+        //this.connectedAP = sclParser.getConnectedAP(ied, accessPoint.getName());
         
         List<LogicalDevice> logicalDevices = accessPoint.getServer().getLogicalDevices();
 
@@ -185,7 +176,7 @@ public class DynamicModelGenerator_input {
 
     private void printSubscribeDataSets(PrintStream output, SclParser sclParser, String accessPointName_local) {
         AccessPoint accessPoint_local;
-        Collection<IED> ieds;
+        //Collection<IED> ieds;
 
         for (IED ied_local : sclParser.getIeds()){
             accessPoint_local = null;
@@ -204,7 +195,7 @@ public class DynamicModelGenerator_input {
 
                     for (DataSet dataSet : logicalNode.getDataSets()) {
 
-                        String dataSetVariableName = ied_local.getName() + "_ds_" + logicalDevice.getInst() + "_" + logicalNode.getName() + "_" + dataSet.getName();
+                        //String dataSetVariableName = ied_local.getName() + "_ds_" + logicalDevice.getInst() + "_" + logicalNode.getName() + "_" + dataSet.getName();
                         String datasetName_ = dataSet.getName();
 
                         String AppID = "0";

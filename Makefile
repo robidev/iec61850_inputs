@@ -5,8 +5,8 @@ PROJECT_BINARY_NAME = server_example_inputs
 PROJECT_ICD_FILE = simpleIO_inputs.cid
 
 PROJECT_SOURCES = input/inputs.c
-PROJECT_SOURCES += model/config_file_parser_input.c
-PROJECT_SOURCES += model/dynamic_model_input.c
+PROJECT_SOURCES += model/config_file_parser_extensions.c
+PROJECT_SOURCES += model/dynamic_model_extensions.c
 
 PROJECT_SOURCES += server_example_inputs.c
 PROJECT_SOURCES += static_model.c

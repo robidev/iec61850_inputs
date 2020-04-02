@@ -1,5 +1,5 @@
 /*
- *  config_file_parser.c
+ *  config_file_parser_extensions.c
  *
  *  Copyright 2014 Michael Zillgith
  *
@@ -25,8 +25,8 @@
 #include "iec61850_dynamic_model.h"
 #include "iec61850_config_file_parser.h"
 
-#include "iec61850_model_input.h"
-#include "iec61850_dynamic_model_input.h"
+#include "iec61850_model_extensions.h"
+#include "iec61850_dynamic_model_extensions.h"
 
 #include "libiec61850_platform_includes.h"
 #include "stack_config.h"
@@ -35,7 +35,7 @@
 
 static uint8_t lineBuffer[READ_BUFFER_MAX_SIZE];
 
-IedModel_inputs*
+IedModel_extensions*
 ConfigFileParser_createModelFromConfigFile_inputs(FileHandle fileHandle);
 
 static int
@@ -95,7 +95,7 @@ terminateString(char* string, char ch)
     }
 }
 
-IedModel_inputs*
+IedModel_extensions*
 ConfigFileParser_createModelFromConfigFileEx_inputs(const char* filename)
 {
     FileHandle configFile = FileSystem_openFile((char*)filename, false);
@@ -106,14 +106,14 @@ ConfigFileParser_createModelFromConfigFileEx_inputs(const char* filename)
         return NULL;
     }
 
-    IedModel_inputs* model = ConfigFileParser_createModelFromConfigFile_inputs(configFile);
+    IedModel_extensions* model = ConfigFileParser_createModelFromConfigFile_inputs(configFile);
 
     FileSystem_closeFile(configFile);
 
     return model;
 }
 
-IedModel_inputs*
+IedModel_extensions*
 ConfigFileParser_createModelFromConfigFile_inputs(FileHandle fileHandle)
 {
     int bytesRead = 1;
@@ -122,7 +122,7 @@ ConfigFileParser_createModelFromConfigFile_inputs(FileHandle fileHandle)
     int indendation = 0;
 
     IedModel* IEDmodel = NULL;
-    IedModel_inputs* model = NULL;
+    IedModel_extensions* model = NULL;
     LogicalDevice* currentLD = NULL;
     LogicalNode* currentLN = NULL;
     ModelNode* currentModelNode = NULL;

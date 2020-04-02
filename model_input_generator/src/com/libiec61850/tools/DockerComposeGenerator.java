@@ -23,37 +23,19 @@ package com.libiec61850.tools;
  *  See COPYING file for the complete license text.
  */
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.List;
 import java.util.Collection;
 
-import com.libiec61850.scl.DataAttributeDefinition;
 import com.libiec61850.scl.SclParser;
 import com.libiec61850.scl.SclParserException;
 import com.libiec61850.scl.communication.ConnectedAP;
-import com.libiec61850.scl.communication.PhyComAddress;
 import com.libiec61850.scl.model.AccessPoint;
-import com.libiec61850.scl.model.DataAttribute;
-import com.libiec61850.scl.model.DataModelValue;
-import com.libiec61850.scl.model.DataObject;
-import com.libiec61850.scl.model.DataSet;
-import com.libiec61850.scl.model.Inputs;
-import com.libiec61850.scl.model.ExtRef;
-import com.libiec61850.scl.model.FunctionalConstraintData;
-import com.libiec61850.scl.model.GSEControl;
-import com.libiec61850.scl.model.SampledValueControl;
 import com.libiec61850.scl.model.IED;
-import com.libiec61850.scl.model.Log;
-import com.libiec61850.scl.model.LogControl;
-import com.libiec61850.scl.model.LogicalDevice;
-import com.libiec61850.scl.model.LogicalNode;
-import com.libiec61850.scl.model.ReportControlBlock;
-import com.libiec61850.scl.model.SettingControl;
+
 
 public class DockerComposeGenerator {
 
@@ -103,8 +85,8 @@ public class DockerComposeGenerator {
 
         PrintStream outputStream = System.out;
         
-        String accessPointName = null;
-        String iedName = null;
+        //String accessPointName = null;
+        //String iedName = null;
         
 
         InputStream stream = new FileInputStream(icdFile);

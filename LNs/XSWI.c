@@ -1,4 +1,4 @@
-#include "iec61850_model_input.h"
+#include "iec61850_model_extensions.h"
 #include "inputs_api.h"
 //callback for open/close signal from GOOSE-> will trigger process threat
 

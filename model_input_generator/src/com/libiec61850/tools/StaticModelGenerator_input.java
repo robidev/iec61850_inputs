@@ -29,58 +29,34 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.PrintStream;
-import java.net.Inet4Address;
-import java.net.Inet6Address;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Collection;
 
 import com.libiec61850.scl.SclParser;
 import com.libiec61850.scl.SclParserException;
-import com.libiec61850.scl.communication.Address;
-import com.libiec61850.scl.communication.Communication;
 import com.libiec61850.scl.communication.ConnectedAP;
-import com.libiec61850.scl.communication.GSE;
-import com.libiec61850.scl.communication.P;
 import com.libiec61850.scl.communication.PhyComAddress;
-import com.libiec61850.scl.communication.SubNetwork;
 import com.libiec61850.scl.model.AccessPoint;
-import com.libiec61850.scl.model.ClientLN;
-import com.libiec61850.scl.model.DataAttribute;
-import com.libiec61850.scl.model.DataModelValue;
-import com.libiec61850.scl.model.DataObject;
 import com.libiec61850.scl.model.DataSet;
-import com.libiec61850.scl.model.FunctionalConstraint;
 import com.libiec61850.scl.model.FunctionalConstraintData;
 import com.libiec61850.scl.model.GSEControl;
 import com.libiec61850.scl.model.Inputs;
 import com.libiec61850.scl.model.ExtRef;
 import com.libiec61850.scl.model.IED;
-import com.libiec61850.scl.model.Log;
-import com.libiec61850.scl.model.LogControl;
 import com.libiec61850.scl.model.LogicalDevice;
 import com.libiec61850.scl.model.LogicalNode;
-import com.libiec61850.scl.model.ReportControlBlock;
-import com.libiec61850.scl.model.RptEnabled;
 import com.libiec61850.scl.model.SampledValueControl;
-import com.libiec61850.scl.model.Server;
-import com.libiec61850.scl.model.SettingControl;
-import com.libiec61850.scl.model.TriggerOptions;
+
 
 public class StaticModelGenerator_input {
 
-    private List<String> variablesList;
     private PrintStream cOut;
 
     private List<String> inputsNames;
     private String subRefs_name = null;
     private String LogicalNodeClass_name = null;
 
-    private Communication communication;
-
-    private ConnectedAP connectedAP;
     
     private IED ied;
     private AccessPoint accessPoint;
@@ -89,13 +65,11 @@ public class StaticModelGenerator_input {
 	private String hDefineName;
     private String IEDmodelPrefix;
 	private String modelPrefix;
-	private boolean initializeOnce;
 	
 	private SclParser sclParser;
 
     public StaticModelGenerator_input(InputStream stream, String icdFile, PrintStream cOut,
-    		String outputFileName, String iedName, String accessPointName, String modelPrefix, String IEDmodelPrefix,
-			boolean initializeOnce) throws SclParserException 
+    		String outputFileName, String iedName, String accessPointName, String modelPrefix, String IEDmodelPrefix) throws SclParserException 
     {
         this.cOut = cOut;
         
@@ -105,7 +79,7 @@ public class StaticModelGenerator_input {
 		this.hDefineName = outputFileName.toUpperCase().replace( '.', '_' ).replace( '-', '_' ) + "_H_";
         this.IEDmodelPrefix = IEDmodelPrefix;
 		this.modelPrefix = modelPrefix;
-		this.initializeOnce = initializeOnce;
+
 
 		if( hDefineName.lastIndexOf( '/' ) >= 0 )
 		{
@@ -129,8 +103,6 @@ public class StaticModelGenerator_input {
         else
         	accessPoint = ied.getAccessPointByName(accessPointName);
 
-        connectedAP = sclParser.getConnectedAP(ied, accessPoint.getName());
-
         printCFileHeader(icdFile);
         printDeviceModelDefinitions();
 
@@ -145,7 +117,7 @@ public class StaticModelGenerator_input {
         cOut.println(" */");
         cOut.println("#include <stdlib.h>");
         cOut.println("#include \"iec61850_model.h\"");
-        cOut.println("#include \"iec61850_model_input.h\"");
+        cOut.println("#include \"iec61850_model_extensions.h\"");
         cOut.println("#include \"static_model.h\"");
         cOut.println();
     }
@@ -167,9 +139,8 @@ public class StaticModelGenerator_input {
         String accessPointName = null;
         String iedName = null;
         String IEDmodelPrefix = "iedModel";
-		String modelPrefix = "iedInputModel";
-		boolean initializeOnce = false;
-        
+		String modelPrefix = "iedExtendedModel";
+
         if (args.length > 1) {
         	for (int i = 1; i < args.length; i++) {
         		if (args[i].equals("-ap")) {
@@ -212,13 +183,6 @@ public class StaticModelGenerator_input {
         			i++;
         			
         		}
-
-        		else if (args[i].equals("-initializeonce")) {
-					initializeOnce = true;
-
-        			System.out.println("Select Initialize Once");
-
-        		}
         		else {
         			 System.out.println("Unknown option: \"" + args[i] + "\"");
         		}
@@ -232,68 +196,21 @@ public class StaticModelGenerator_input {
         InputStream stream = new FileInputStream(icdFile);
 
         try {
-			new StaticModelGenerator_input(stream, icdFile, cOutStream, outputFileName, iedName, accessPointName, modelPrefix, IEDmodelPrefix,initializeOnce);
+			new StaticModelGenerator_input(stream, icdFile, cOutStream, outputFileName, iedName, accessPointName, modelPrefix, IEDmodelPrefix);
         } catch (SclParserException e) {
 			System.err.println("ERROR: " + e.getMessage());
 		}
     }
-
-    private String getLogicalDeviceInst(LogicalDevice logicalDevice) {
-    	return logicalDevice.getInst();
-    }
     
-    private void printDeviceModelDefinitions() {
 
-        List<LogicalDevice> logicalDevices = accessPoint.getServer().getLogicalDevices();
+    private void printDeviceModelDefinitions() {
 
         printInputs();
         printSubscribeDataSets(null);
+        printLogicalNodeClasses();
         
-        List<String> lnNames =  new LinkedList<String>();
-        List<String> lnClasses =  new LinkedList<String>();
 
-        for (int i = 0; i < logicalDevices.size(); i++) {
-            LogicalDevice logicalDevice = logicalDevices.get(i);
-            String ldName = IEDmodelPrefix + "_" + logicalDevice.getInst();
-
-            for (int y = 0; y < logicalDevice.getLogicalNodes().size(); y++) {
-                LogicalNode logicalNode = logicalDevice.getLogicalNodes().get(y);
-                String lnName = ldName + "_" + logicalNode.getName();
-
-                if(LogicalNodeClass_name == null)
-                  LogicalNodeClass_name = lnName + "_class";
-
-                lnNames.add(lnName);
-                
-                lnClasses.add(logicalNode.getLnClass());
-            }
-        }
-        //forward declarations
-        for(String lnName : lnNames) 
-        {
-          cOut.println("extern LogicalNodeClass " + lnName + "_class;");
-        }
-        cOut.println("\n");
-        int index = 0;
-        for(String lnName : lnNames) 
-        {
-            cOut.println("LogicalNodeClass " + lnName + "_class = {");
-            cOut.println("    &" + lnName + ",");
-            cOut.println("    \"" + lnClasses.get(index) + "\",");
-            cOut.println("    NULL,");
-
-            if(index + 1 < lnNames.size())
-              cOut.println("    &" + lnNames.get(index+1) + "_class,");
-            else
-              cOut.println("    NULL");
-
-            cOut.println("};\n");
-
-            index++;
-        }
-
-        String firstLogicalDeviceName = logicalDevices.get(0).getInst();
-        cOut.println("\nIedModel_inputs " + modelPrefix + " = {");
+        cOut.println("\nIedModel_extensions " + modelPrefix + " = {");
 
         if (inputsNames.size() > 0)
             cOut.println("    &" + inputsNames.get(0) + ",");
@@ -324,7 +241,7 @@ public class StaticModelGenerator_input {
 
                 List<Inputs> inputs = logicalNode.getInputs();
 
-                for (Inputs input : inputs) {
+                for (int i = 0; i < inputs.size(); i++) {
                     String _inputsName = modelPrefix + "_" + logicalDevice.getInst() + "_" + logicalNode.getName() + "_inputs";
                     inputsNames.add(_inputsName);
                 }
@@ -357,7 +274,7 @@ public class StaticModelGenerator_input {
                     int numberOfExtRef = input.getExtRef().size();
 
                     cOut.println();
-                    for (ExtRef extref : input.getExtRef()) {
+                    for (int i = 0; i < input.getExtRef().size();i++) {
                         String inputEntryName = inputVarName + "_extRef" + extRefCount;
 
                         cOut.println("extern InputEntry " + inputEntryName + ";");
@@ -545,7 +462,7 @@ public class StaticModelGenerator_input {
         cOut.println("");
 
         dataSetElementNameListIndex = 0;
-        for(String dataSetName : dataSetElementNames_local)
+        for(int i = 0; i < dataSetElementNames_local.size(); i++)
         {
             cOut.println("SubscriberEntry " + dataSetElementNames_local.get(dataSetElementNameListIndex) + " = {");
 
@@ -570,6 +487,54 @@ public class StaticModelGenerator_input {
 
         if(subRefs_name == null)//get first entry in the list
             subRefs_name = dataSetElementNames_local.get(0);
+    }
+
+    private void printLogicalNodeClasses()
+    {
+        List<LogicalDevice> logicalDevices = accessPoint.getServer().getLogicalDevices();
+        List<String> lnNames =  new LinkedList<String>();
+        List<String> lnClasses =  new LinkedList<String>();
+        
+        for (int i = 0; i < logicalDevices.size(); i++) {
+            LogicalDevice logicalDevice = logicalDevices.get(i);
+            String ldName = IEDmodelPrefix + "_" + logicalDevice.getInst();
+
+            for (int y = 0; y < logicalDevice.getLogicalNodes().size(); y++) {
+                LogicalNode logicalNode = logicalDevice.getLogicalNodes().get(y);
+                String lnName = ldName + "_" + logicalNode.getName();
+
+                if(LogicalNodeClass_name == null)
+                  LogicalNodeClass_name = lnName + "_class";
+
+                lnNames.add(lnName);
+                
+                lnClasses.add(logicalNode.getLnClass());
+            }
+        }
+        //forward declarations
+        for(String lnName : lnNames) 
+        {
+          cOut.println("extern LogicalNodeClass " + lnName + "_class;");
+        }
+
+        cOut.println("\n");
+        int index = 0;
+        for(String lnName : lnNames) 
+        {
+            cOut.println("LogicalNodeClass " + lnName + "_class = {");
+            cOut.println("    &" + lnName + ",");
+            cOut.println("    \"" + lnClasses.get(index) + "\",");
+            cOut.println("    NULL,");
+
+            if(index + 1 < lnNames.size())
+              cOut.println("    &" + lnNames.get(index+1) + "_class,");
+            else
+              cOut.println("    NULL");
+
+            cOut.println("};\n");
+
+            index++;
+        }
     }
 
 }

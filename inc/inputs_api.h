@@ -30,7 +30,7 @@
 #include "iec61850_common.h"
 #include "iec61850_model.h"
 
-#include "iec61850_model_input.h"
+#include "iec61850_model_extensions.h"
 
 #include "goose_receiver.h"
 #include "sv_subscriber.h"
@@ -56,15 +56,15 @@ struct sInputValue {
 };
 
 
-LinkedList subscribeToGOOSEInputs(IedModel_inputs* self, GooseReceiver GSEreceiver);
+LinkedList subscribeToGOOSEInputs(IedModel_extensions* self, GooseReceiver GSEreceiver);
 
-LinkedList subscribeToSMVInputs(IedModel_inputs* self, SVReceiver SMVreceiver);
+LinkedList subscribeToSMVInputs(IedModel_extensions* self, SVReceiver SMVreceiver);
 
-LinkedList subscribeToLocalDAInputs(IedModel_inputs* self, IedModel* model, IedServer server );
+LinkedList subscribeToLocalDAInputs(IedModel_extensions* self, IedModel* model, IedServer server );
 
 void input_updateAttributeValue(IedServer self, InputValue* inputValue, MmsValue* value);
 
-Input* getInput(IedModel_inputs* model, LogicalNode* ln);
+Input* getInput(IedModel_extensions* model, LogicalNode* ln);
 
 InputValue* getInputValueFromExtRef(InputEntry* extRef, LinkedList inputvalues);
 
