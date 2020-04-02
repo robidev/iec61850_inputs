@@ -4,7 +4,7 @@
   </Header>
   <Communication>
     <SubNetwork name="subnetwork1" type="8-MMS">
-      <ConnectedAP iedName="IED1_XCBR" apName="accessPoint1">
+      <ConnectedAP iedName="simpleIO" apName="accessPoint1">
         <Address>
           <P type="IP">10.0.0.2</P>
           <P type="IP-SUBNET">255.255.255.0</P>
@@ -22,7 +22,7 @@
            </Address>
 	    </GSE>
       </ConnectedAP>
-      <ConnectedAP iedName="IED2_PTOC" apName="accessPoint2">
+      <ConnectedAP iedName="IED2" apName="accessPoint2">
         <Address>
           <P type="IP">10.0.0.3</P>
           <P type="IP-SUBNET">255.255.255.0</P>
@@ -40,7 +40,7 @@
            </Address>
 	    </GSE>
       </ConnectedAP>
-      <ConnectedAP iedName="IED3_SMV" apName="accessPoint3">
+      <ConnectedAP iedName="SMV1" apName="accessPoint3">
         <Address>
           <P type="IP">10.0.0.4</P>
           <P type="IP-SUBNET">255.255.255.0</P>
@@ -49,14 +49,14 @@
           <P type="OSI-PSEL">00000001</P>
           <P type="OSI-SSEL">0001</P>
         </Address>
-        <SMV ldInst="MUnn" cbName="MSVCB01">
-	        <Address>
-		        <P type="VLAN-ID">1</P>
-		        <P type="VLAN-PRIORITY">4</P>
-		        <P type="MAC-Address">01-0c-cd-04-00-01</P>
-		        <P type="APPID">1002</P>
-	        </Address>
-        </SMV>
+	<SMV ldInst="MUnn" cbName="MSVCB01">
+		<Address>
+			<P type="VLAN-ID">1</P>
+			<P type="VLAN-PRIORITY">4</P>
+			<P type="MAC-Address">01-0c-cd-04-00-01</P>
+			<P type="APPID">1002</P>
+		</Address>
+	</SMV>
       </ConnectedAP>
     </SubNetwork>
   </Communication>
@@ -95,8 +95,55 @@
 			</Bay>
 		</VoltageLevel>
 	</Substation>
+	<IED name="SMV1">
+		<AccessPoint name="accessPoint3">
+			<Server>
+				<Authentication />
+				<LDevice inst="MUnn">
+					<LN0 lnType="9-2LELLN0" lnClass="LLN0" inst="">
+						<DataSet name="PhsMeas1">
 
-  <IED name="IED1_XCBR">
+							<FCDA ldInst="MUnn" lnClass="TCTR" lnInst="1" fc="MX"
+								doName="Amp" />
+							<FCDA ldInst="MUnn" lnClass="TCTR" lnInst="2" fc="MX"
+								doName="Amp" />
+							<FCDA ldInst="MUnn" lnClass="TCTR" lnInst="3" fc="MX"
+								doName="Amp" />
+							<FCDA ldInst="MUnn" lnClass="TCTR" lnInst="4" fc="MX"
+								doName="Amp" />
+							<FCDA ldInst="MUnn" lnClass="TVTR" lnInst="1" fc="MX"
+								doName="Vol" />
+							<FCDA ldInst="MUnn" lnClass="TVTR" lnInst="2" fc="MX"
+								doName="Vol" />
+							<FCDA ldInst="MUnn" lnClass="TVTR" lnInst="3" fc="MX"
+								doName="Vol" />
+							<FCDA ldInst="MUnn" lnClass="TVTR" lnInst="4" fc="MX"
+								doName="Vol" />
+
+						</DataSet>
+						<SampledValueControl name="MSVCB01" datSet="PhsMeas1"
+							smvID="xxxxMUnn01" smpRate="80" nofASDU="1" confRev="1">
+
+							<SmvOpts refreshTime="false" sampleSynchronized="true"
+								security="false" dataRef="false" />
+						</SampledValueControl>
+					</LN0>
+
+					<LN lnType="9-2LETCTR" lnClass="TCTR" inst="1" />
+					<LN lnType="9-2LETCTR" lnClass="TCTR" inst="2" />
+					<LN lnType="9-2LETCTR" lnClass="TCTR" inst="3" />
+					<LN lnType="9-2LETCTR" lnClass="TCTR" inst="4" />
+
+					<LN lnType="9-2LETVTR" lnClass="TVTR" inst="1" />
+					<LN lnType="9-2LETVTR" lnClass="TVTR" inst="2" />
+					<LN lnType="9-2LETVTR" lnClass="TVTR" inst="3" />
+					<LN lnType="9-2LETVTR" lnClass="TVTR" inst="4" />
+
+				</LDevice>
+			</Server>
+		</AccessPoint>
+	</IED>
+  <IED name="simpleIO">
     <Services>
       <DynAssociation />
       <GetDirectory />
@@ -117,12 +164,11 @@
         <Authentication />
         <LDevice inst="GenericIO">
           <LN0 lnClass="LLN0" lnType="LLN01" inst="">
-          	<DataSet name="Events" desc="Events">
-              <FCDA ldInst="GenericIO" lnClass="XCBR" fc="ST" lnInst="1" doName="Pos" daName="stVal" />
-            </DataSet>
-            
-            <GSEControl appID="events" name="gcbEvents" type="GOOSE" datSet="Events" confRev="2" minTime="1000" maxTime="3000" /> 
-
+            <Inputs>
+              <ExtRef intAddr="adr_smv" desc="sample" iedName="SMV1" ldInst="MUnn" lnClass="TVTR" lnInst="1" doName="Vol" serviceType="SMV" srcLDInst="MUnn" srcLNClass="LLN0" srcLNInst="" srcCBName="MSVCB01" />
+              <ExtRef intAddr="adr_smv" desc="sample" iedName="SMV1" ldInst="MUnn" lnClass="TVTR" lnInst="2" doName="Vol" serviceType="SMV" srcLDInst="MUnn" srcLNClass="LLN0" srcLNInst="" srcCBName="MSVCB01" />
+              <ExtRef intAddr="adr_smv" desc="sample" iedName="SMV1" ldInst="MUnn" lnClass="TCTR" lnInst="1" doName="Amp" serviceType="SMV" srcLDInst="MUnn" srcLNClass="LLN0" srcLNInst="" srcCBName="MSVCB01" />
+            </Inputs>
             <DOI name="Mod">
               <DAI name="ctlModel">
                 <Val>status-only</Val>
@@ -130,16 +176,42 @@
             </DOI>
           </LN0>
           <LN lnClass="LPHD" lnType="LPHD1" inst="1" prefix="" />
-          <LN lnClass="XCBR" lnType="XCBR1" inst="1" prefix="">
+          <LN lnClass="GGIO" lnType="GGIO1" inst="1" prefix="">
             <Inputs>
-              <ExtRef intAddr="Tr" desc="Trip" iedName="IED2_PTOC" ldInst="GenericIO" lnClass="PTOC" lnInst="1" doName="Op" daName="general" serviceType="GOOSE" srcLDInst="GenericIO" srcLNClass="LLN0" srcLNInst="" srcCBName="GoCB" />
+              <ExtRef intAddr="adr1" desc="one" iedName="IED2" ldInst="GenericIO" lnClass="GGIO" lnInst="1" doName="SPCSO1" daName="stVal" serviceType="GOOSE" srcLDInst="GenericIO" srcLNClass="GGIO" srcLNInst="1" srcCBName="GoCB" />
+              <ExtRef intAddr="adr2" desc="two" iedName="IED2" ldInst="GenericIO" lnClass="LLN0" lnInst="" doName="Mod" daName="ctlModel" serviceType="GOOSE" srcLDInst="GenericIO" srcLNClass="LLN" srcLNInst="1" srcCBName="GoCB" />
             </Inputs>
+            <DOI name="Mod">
+              <DAI name="ctlModel">
+                <Val>status-only</Val>
+              </DAI>
+            </DOI>
+            <DOI name="SPCSO1">
+              <DAI name="ctlModel">
+                <Val>direct-with-normal-security</Val>
+              </DAI>
+            </DOI>
+            <DOI name="SPCSO2">
+              <DAI name="ctlModel">
+                <Val>direct-with-normal-security</Val>
+              </DAI>
+            </DOI>
+            <DOI name="SPCSO3">
+              <DAI name="ctlModel">
+                <Val>direct-with-normal-security</Val>
+              </DAI>
+            </DOI>
+            <DOI name="SPCSO4">
+              <DAI name="ctlModel">
+                <Val>direct-with-normal-security</Val>
+              </DAI>
+            </DOI>
           </LN>
         </LDevice>
       </Server>
     </AccessPoint>
   </IED>
-  <IED name="IED2_PTOC">
+  <IED name="IED2">
     <Services>
       <DynAssociation />
       <GetDirectory />
@@ -162,7 +234,9 @@
           <LN0 lnClass="LLN0" lnType="LLN01" inst="">
           	<DataSet name="Events" desc="Events">
               <FCDA ldInst="GenericIO" lnClass="GGIO" fc="ST" lnInst="1" doName="SPCSO1" daName="stVal" />
-              <FCDA ldInst="GenericIO" lnClass="PTOC" fc="ST" lnInst="1" doName="Op" daName="general" />
+              <FCDA ldInst="GenericIO" lnClass="GGIO" fc="ST" lnInst="1" doName="SPCSO2" daName="stVal" />
+              <FCDA ldInst="GenericIO" lnClass="GGIO" fc="ST" lnInst="1" doName="SPCSO3" daName="stVal" />
+              <FCDA ldInst="GenericIO" lnClass="GGIO" fc="ST" lnInst="1" doName="SPCSO4" daName="stVal" />
             </DataSet>
             
             <GSEControl appID="events" name="gcbEvents" type="GOOSE" datSet="Events" confRev="2" minTime="1000" maxTime="3000" /> 
@@ -174,21 +248,6 @@
             </DOI>
           </LN0>
           <LN lnClass="LPHD" lnType="LPHD1" inst="1" prefix="" />
-          <LN lnClass="PTOC" lnType="PTOC1" inst="1" prefix="" >
-            <Inputs>
-              <ExtRef intAddr="Amp1" desc="sample_a1" iedName="IED3_SMV" ldInst="MUnn" lnClass="TCTR" lnInst="1" doName="Amp" serviceType="SMV" srcLDInst="MUnn" srcLNClass="LLN0" srcLNInst="" srcCBName="MSVCB01" />
-              <ExtRef intAddr="Amp2" desc="sample_a2" iedName="IED3_SMV" ldInst="MUnn" lnClass="TCTR" lnInst="2" doName="Amp" serviceType="SMV" srcLDInst="MUnn" srcLNClass="LLN0" srcLNInst="" srcCBName="MSVCB01" />
-              <ExtRef intAddr="Amp3" desc="sample_a3" iedName="IED3_SMV" ldInst="MUnn" lnClass="TCTR" lnInst="3" doName="Amp" serviceType="SMV" srcLDInst="MUnn" srcLNClass="LLN0" srcLNInst="" srcCBName="MSVCB01" />
-              <ExtRef intAddr="Amp4" desc="sample_a4" iedName="IED3_SMV" ldInst="MUnn" lnClass="TCTR" lnInst="4" doName="Amp" serviceType="SMV" srcLDInst="MUnn" srcLNClass="LLN0" srcLNInst="" srcCBName="MSVCB01" />
-              <ExtRef intAddr="Vol1" desc="sample_v1" iedName="IED3_SMV" ldInst="MUnn" lnClass="TVTR" lnInst="1" doName="Vol" serviceType="SMV" srcLDInst="MUnn" srcLNClass="LLN0" srcLNInst="" srcCBName="MSVCB01" />
-              <ExtRef intAddr="Vol2" desc="sample_v2" iedName="IED3_SMV" ldInst="MUnn" lnClass="TVTR" lnInst="2" doName="Vol" serviceType="SMV" srcLDInst="MUnn" srcLNClass="LLN0" srcLNInst="" srcCBName="MSVCB01" />
-              <ExtRef intAddr="Vol3" desc="sample_v3" iedName="IED3_SMV" ldInst="MUnn" lnClass="TVTR" lnInst="3" doName="Vol" serviceType="SMV" srcLDInst="MUnn" srcLNClass="LLN0" srcLNInst="" srcCBName="MSVCB01" />
-              <ExtRef intAddr="Vol4" desc="sample_v4" iedName="IED3_SMV" ldInst="MUnn" lnClass="TVTR" lnInst="4" doName="Vol" serviceType="SMV" srcLDInst="MUnn" srcLNClass="LLN0" srcLNInst="" srcCBName="MSVCB01" />
-
-              <ExtRef intAddr="xcbr_stval" desc="xcbr_status" iedName="IED1_XCBR" ldInst="GenericIO" lnClass="XCBR" lnInst="1" doName="Pos" daName="stVal" serviceType="GOOSE" srcLDInst="GenericIO" srcLNClass="LLN0" srcLNInst="" srcCBName="GoCB" />
-
-            </Inputs>
-          </LN>
           <LN lnClass="GGIO" lnType="GGIO1" inst="1" prefix="">
             <DOI name="Mod">
               <DAI name="ctlModel">
@@ -220,46 +279,6 @@
       </Server>
     </AccessPoint>
   </IED>
-	<IED name="IED3_SMV">
-		<AccessPoint name="accessPoint3">
-			<Server>
-				<Authentication />
-				<LDevice inst="MUnn">
-					<LN0 lnType="9-2LELLN0" lnClass="LLN0" inst="">
-						<DataSet name="PhsMeas1">
-
-							<FCDA ldInst="MUnn" lnClass="TCTR" lnInst="1" fc="MX" doName="Amp" />
-							<FCDA ldInst="MUnn" lnClass="TCTR" lnInst="2" fc="MX"	doName="Amp" />
-							<FCDA ldInst="MUnn" lnClass="TCTR" lnInst="3" fc="MX" doName="Amp" />
-							<FCDA ldInst="MUnn" lnClass="TCTR" lnInst="4" fc="MX"	doName="Amp" />
-							<FCDA ldInst="MUnn" lnClass="TVTR" lnInst="1" fc="MX"	doName="Vol" />
-							<FCDA ldInst="MUnn" lnClass="TVTR" lnInst="2" fc="MX"	doName="Vol" />
-							<FCDA ldInst="MUnn" lnClass="TVTR" lnInst="3" fc="MX"	doName="Vol" />
-							<FCDA ldInst="MUnn" lnClass="TVTR" lnInst="4" fc="MX"	doName="Vol" />
-
-						</DataSet>
-						<SampledValueControl name="MSVCB01" datSet="PhsMeas1"
-							smvID="xxxxMUnn01" smpRate="80" nofASDU="1" confRev="1">
-
-							<SmvOpts refreshTime="false" sampleSynchronized="true"
-								security="false" dataRef="false" />
-						</SampledValueControl>
-					</LN0>
-
-					<LN lnType="9-2LETCTR" lnClass="TCTR" inst="1" />
-					<LN lnType="9-2LETCTR" lnClass="TCTR" inst="2" />
-					<LN lnType="9-2LETCTR" lnClass="TCTR" inst="3" />
-					<LN lnType="9-2LETCTR" lnClass="TCTR" inst="4" />
-
-					<LN lnType="9-2LETVTR" lnClass="TVTR" inst="1" />
-					<LN lnType="9-2LETVTR" lnClass="TVTR" inst="2" />
-					<LN lnType="9-2LETVTR" lnClass="TVTR" inst="3" />
-					<LN lnType="9-2LETVTR" lnClass="TVTR" inst="4" />
-
-				</LDevice>
-			</Server>
-		</AccessPoint>
-	</IED>
   <DataTypeTemplates>
 
 	<LNodeType id="9-2LELLN0" lnClass="LLN0">
@@ -285,28 +304,6 @@
       <DO name="PhyHealth" type="INS_1_Beh" />
       <DO name="Proxy" type="SPS_1_Proxy" />
     </LNodeType>
-
-    <LNodeType id="PTOC1" lnClass="PTOC">
-      <DO name="Mod" type="INC_2_Mod" />
-      <DO name="Beh" type="INS_1_Beh" />
-      <DO name="Health" type="INS_1_Beh" />
-      <DO name="NamPlt" type="LPL_2_NamPlt" />
-      <DO name="Str" type="ACD" />
-      <DO name="Op" type="ACT" />
-    </LNodeType>
-
-    <LNodeType id="XCBR1" lnClass="XCBR" desc="Circuit breaker">
-      <DO name="Mod" type="INC_2_Mod" />
-      <DO name="Beh" type="INS_1_Beh" />
-      <DO name="Health" type="INS_1_Beh" />
-      <DO name="NamPlt" type="LPL_2_NamPlt" />
-      <DO name="Loc" type="SPC_1_SPCSO1" />
-      <DO name="OpCnt" type="INS_1_Beh" />
-      <DO name="Pos" type="DPC" />
-      <DO name="BlkOpn" type="SPC_1_SPCSO1" />
-      <DO name="BlkCls" type="SPC_1_SPCSO1" />
-    </LNodeType>
-
     <LNodeType id="GGIO1" lnClass="GGIO">
       <DO name="Mod" type="INC_2_Mod" />
       <DO name="Beh" type="INS_1_Beh" />
@@ -325,23 +322,6 @@
       <DO name="Ind3" type="SPS_1_Proxy" />
       <DO name="Ind4" type="SPS_1_Proxy" />
     </LNodeType>
-
-  <DOType cdc="DPC" id="DPC" desc="Controllable double point CDC.">
-    <DA name="stVal" bType="Dbpos" fc="ST" dchg="true" desc="intermediate-state | off | on | bad-state" />
-    <DA name="q" bType="Quality" fc="ST" qchg="true" desc="Quality of the data value: 'stVal'." />
-    <DA name="t" bType="Timestamp" fc="ST" desc="Timestamp of the last change in one of the attributes representing the data value ('stVal') or the data quality ('q'), i.e., those which have 'dchg' or 'qchg'." />
-  </DOType>
-  <DOType id="ACD" cdc="ACD">
-    <DA name="general" fc="ST" dchg="true" bType="BOOLEAN" />
-    <DA name="dirGeneral" fc="ST" dchg="true" bType="Enum" type="ACDdir" />
-    <DA name="q" fc="ST" qchg="true" bType="Quality" />
-    <DA name="t" fc="ST" bType="Timestamp" />
-  </DOType>
-  <DOType id="ACT" cdc="ACT">
-    <DA name="general" fc="ST" dchg="true" bType="BOOLEAN" />
-    <DA name="q" fc="ST" qchg="true" bType="Quality" />
-    <DA name="t" fc="ST" bType="Timestamp" />
-  </DOType>
 
 	<DOType id="9-2LESAVAmp" cdc="SAV">
 		<DA name="instMag" bType="Struct" type="9-2LEAV" fc="MX" />
@@ -482,12 +462,6 @@
       <EnumVal ord="6">automatic-remote</EnumVal>
       <EnumVal ord="7">maintenance</EnumVal>
       <EnumVal ord="8">process</EnumVal>
-    </EnumType>
-    <EnumType id="ACDdir">
-      <EnumVal ord="0">unknown</EnumVal>
-      <EnumVal ord="1">forward</EnumVal>
-      <EnumVal ord="2">backward</EnumVal>
-      <EnumVal ord="3">both</EnumVal>
     </EnumType>
   </DataTypeTemplates>
 </SCL>

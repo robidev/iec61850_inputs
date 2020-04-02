@@ -1,8 +1,7 @@
 /*
- *  server_example_goose.c
+ *  server_example_inputs.c
  *
- *  This example demonstrates how to use GOOSE publishing, Reporting and the
- *  control model.
+ *  This example demonstrates how to use inputs, GOOSE and SMV subscribing.
  *
  */
 

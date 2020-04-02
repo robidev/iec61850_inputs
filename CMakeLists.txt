@@ -3,11 +3,12 @@ include_directories(
 )
 
 set(server_example_inputs_SRCS
-   config_file_parser_input.c
-   dynamic_model_input.c
+   config_file_parser_extensions.c
+   dynamic_model_extensions.c
    inputs.c
    server_example_inputs.c
    static_model.c
+   static_input.c
 )
 
 IF(WIN32)
