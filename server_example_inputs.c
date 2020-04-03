@@ -8,6 +8,7 @@
 #include "inputs_api.h"
 #include "iec61850_model_extensions.h"
 #include "iec61850_dynamic_model_extensions.h"
+#include "LNParse.h"
 
 #include "iec61850_server.h"
 #include "hal_thread.h" /* for Thread_sleep() */
@@ -92,7 +93,7 @@ int main(int argc, char** argv) {
 
 	iedServer = IedServer_create(&iedModel);
 
-	IedModel_extensions* iedInputModel2 = ConfigFileParser_createModelFromConfigFileEx_inputs("config.cfg");
+	//IedModel_extensions* iedInputModel2 = ConfigFileParser_createModelFromConfigFileEx_inputs("config.cfg");
 
 	GooseReceiver GSEreceiver = GooseReceiver_create();
 
@@ -113,12 +114,12 @@ int main(int argc, char** argv) {
 	}
 
 	//subscribe to datasets and local DA's based on iput/extRef, and generate one list with all inputValues
-	LinkedList allInputValues = subscribeToGOOSEInputs(iedInputModel2, GSEreceiver);
+	LinkedList allInputValues = subscribeToGOOSEInputs(&iedExtendedModel, GSEreceiver);
 	LinkedList temp = allInputValues;
 	temp = LinkedList_getLastElement(temp);
-	temp->next = subscribeToSMVInputs(iedInputModel2, SMVreceiver);
+	temp->next = subscribeToSMVInputs(&iedExtendedModel, SMVreceiver);
 	temp = LinkedList_getLastElement(temp);
-	temp->next = subscribeToLocalDAInputs(iedInputModel2, &iedModel,iedServer);
+	temp->next = subscribeToLocalDAInputs(&iedExtendedModel, &iedModel,iedServer);
 
     GooseReceiver_start(GSEreceiver);
     SVReceiver_start(SMVreceiver);
@@ -141,8 +142,8 @@ int main(int argc, char** argv) {
 
 	running = 1;
 
-	InputEntry* ee = iedInputModel2->inputs->extRefs;
-	char aa[] = "adr_smv3";
+	InputEntry* ee = iedExtendedModel.inputs->extRefs;
+	char aa[] = "Vol1";
 	while(ee != NULL)
 	{
 		if(strcmp(ee->intAddr,aa) == 0)
@@ -154,6 +155,8 @@ int main(int argc, char** argv) {
 	
 
 	signal(SIGINT, sigint_handler);
+
+	attachLogicalNodes(&iedExtendedModel);
 
 	while (running) {
 		if(ee->value != NULL)

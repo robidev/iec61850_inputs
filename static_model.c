@@ -2066,7 +2066,7 @@ extern GSEControlBlock iedModel_GenericIO_LLN0_gse0;
 static PhyComAddress iedModel_GenericIO_LLN0_gse0_address = {
   4,
   1,
-  4097,
+  4098,
   {0x1, 0xc, 0xcd, 0x1, 0x0, 0x2}
 };
 

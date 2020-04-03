@@ -17,7 +17,7 @@
            <Address>
                 <P type="VLAN-ID">1</P>
                 <P type="VLAN-PRIORITY">4</P>
-                <P type="MAC-Address">01-0c-cd-01-00-01</P>
+                <P type="MAC-Address">01-0c-cd-04-00-01</P>
                 <P type="APPID">1000</P>
            </Address>
 	    </GSE>
@@ -36,7 +36,7 @@
                 <P type="VLAN-ID">1</P>
                 <P type="VLAN-PRIORITY">4</P>
                 <P type="MAC-Address">01-0c-cd-01-00-02</P>
-                <P type="APPID">1001</P>
+                <P type="APPID">1002</P>
            </Address>
 	    </GSE>
       </ConnectedAP>
@@ -53,8 +53,8 @@
 	        <Address>
 		        <P type="VLAN-ID">1</P>
 		        <P type="VLAN-PRIORITY">4</P>
-		        <P type="MAC-Address">01-0c-cd-04-00-01</P>
-		        <P type="APPID">1002</P>
+		        <P type="MAC-Address">01-0c-cd-01-00-01</P>
+		        <P type="APPID">4000</P>
 	        </Address>
         </SMV>
       </ConnectedAP>

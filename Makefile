@@ -7,6 +7,8 @@ PROJECT_ICD_FILE = simpleIO_inputs.cid
 PROJECT_SOURCES = input/inputs.c
 PROJECT_SOURCES += model/config_file_parser_extensions.c
 PROJECT_SOURCES += model/dynamic_model_extensions.c
+PROJECT_SOURCES += LNs/LNParse.c
+PROJECT_SOURCES += LNs/XSWI.c
 
 PROJECT_SOURCES += server_example_inputs.c
 PROJECT_SOURCES += static_model.c

@@ -13,14 +13,15 @@ void XSWI_close(int * switch_open)
   *switch_open = false;
 }
 
-void callback(InputValue* input)//add param
+void callback(void* param)//add param
 {
+  InputEntry* extRef = (InputEntry*) param;
   //only one type of extref is expected: ctlVal
   //TODO: check extRef->intaddr
-  if(input->extRef->value == 1)
-    XSWI_open(input->extRef->callBackParam);
+  if(extRef->value == 1)
+    XSWI_open(extRef->callBackParam);
   else
-    XSWI_close(input->extRef->callBackParam);
+    XSWI_close(extRef->callBackParam);
 }
 
 void XSWI_init(Input* input)

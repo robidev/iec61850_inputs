@@ -1,5 +1,7 @@
 #include "iec61850_model_extensions.h"
 #include "inputs_api.h"
+#include "LNParse.h"
+#include "XSWI.h"
 /*
 LN's:
 
@@ -54,7 +56,7 @@ void attachLogicalNodes(IedModel_extensions* model)
     }
     else
     {
-      printf("ERROR: Class not supported");
+      printf("ERROR: Class not supported\n");
     }
     lnClass = lnClass->sibling;
   }

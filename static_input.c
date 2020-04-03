@@ -154,13 +154,13 @@ SubscriberEntry IED1_XCBR_ds_GenericIO_LLN0_Events0 = {
   4096,
   "IED1_XCBRGenericIO/LLN0$GO$gcbEvents",
   "events",
-  {0x1, 0xc, 0xcd, 0x1, 0x0, 0x1},
+  {0x1, 0xc, 0xcd, 0x4, 0x0, 0x1},
   &IED2_PTOC_ds_GenericIO_LLN0_Events0,
 };
 SubscriberEntry IED2_PTOC_ds_GenericIO_LLN0_Events0 = {
   "IED2_PTOCGenericIO/GGIO1.SPCSO1.stVal",
   "Events",
-  4097,
+  4098,
   "IED2_PTOCGenericIO/LLN0$GO$gcbEvents",
   "events",
   {0x1, 0xc, 0xcd, 0x1, 0x0, 0x2},
@@ -169,7 +169,7 @@ SubscriberEntry IED2_PTOC_ds_GenericIO_LLN0_Events0 = {
 SubscriberEntry IED2_PTOC_ds_GenericIO_LLN0_Events1 = {
   "IED2_PTOCGenericIO/PTOC1.Op.general",
   "Events",
-  4097,
+  4098,
   "IED2_PTOCGenericIO/LLN0$GO$gcbEvents",
   "events",
   {0x1, 0xc, 0xcd, 0x1, 0x0, 0x2},
@@ -178,73 +178,73 @@ SubscriberEntry IED2_PTOC_ds_GenericIO_LLN0_Events1 = {
 SubscriberEntry IED3_SMV_ds_MUnn_LLN0_PhsMeas10 = {
   "IED3_SMVMUnn/TCTR1.Amp",
   "PhsMeas1",
-  4098,
+  16384,
   "IED3_SMVMUnn/LLN0$SV$MSVCB01",
   "xxxxMUnn01",
-  {0x1, 0xc, 0xcd, 0x4, 0x0, 0x1},
+  {0x1, 0xc, 0xcd, 0x1, 0x0, 0x1},
   &IED3_SMV_ds_MUnn_LLN0_PhsMeas11,
 };
 SubscriberEntry IED3_SMV_ds_MUnn_LLN0_PhsMeas11 = {
   "IED3_SMVMUnn/TCTR2.Amp",
   "PhsMeas1",
-  4098,
+  16384,
   "IED3_SMVMUnn/LLN0$SV$MSVCB01",
   "xxxxMUnn01",
-  {0x1, 0xc, 0xcd, 0x4, 0x0, 0x1},
+  {0x1, 0xc, 0xcd, 0x1, 0x0, 0x1},
   &IED3_SMV_ds_MUnn_LLN0_PhsMeas12,
 };
 SubscriberEntry IED3_SMV_ds_MUnn_LLN0_PhsMeas12 = {
   "IED3_SMVMUnn/TCTR3.Amp",
   "PhsMeas1",
-  4098,
+  16384,
   "IED3_SMVMUnn/LLN0$SV$MSVCB01",
   "xxxxMUnn01",
-  {0x1, 0xc, 0xcd, 0x4, 0x0, 0x1},
+  {0x1, 0xc, 0xcd, 0x1, 0x0, 0x1},
   &IED3_SMV_ds_MUnn_LLN0_PhsMeas13,
 };
 SubscriberEntry IED3_SMV_ds_MUnn_LLN0_PhsMeas13 = {
   "IED3_SMVMUnn/TCTR4.Amp",
   "PhsMeas1",
-  4098,
+  16384,
   "IED3_SMVMUnn/LLN0$SV$MSVCB01",
   "xxxxMUnn01",
-  {0x1, 0xc, 0xcd, 0x4, 0x0, 0x1},
+  {0x1, 0xc, 0xcd, 0x1, 0x0, 0x1},
   &IED3_SMV_ds_MUnn_LLN0_PhsMeas14,
 };
 SubscriberEntry IED3_SMV_ds_MUnn_LLN0_PhsMeas14 = {
   "IED3_SMVMUnn/TVTR1.Vol",
   "PhsMeas1",
-  4098,
+  16384,
   "IED3_SMVMUnn/LLN0$SV$MSVCB01",
   "xxxxMUnn01",
-  {0x1, 0xc, 0xcd, 0x4, 0x0, 0x1},
+  {0x1, 0xc, 0xcd, 0x1, 0x0, 0x1},
   &IED3_SMV_ds_MUnn_LLN0_PhsMeas15,
 };
 SubscriberEntry IED3_SMV_ds_MUnn_LLN0_PhsMeas15 = {
   "IED3_SMVMUnn/TVTR2.Vol",
   "PhsMeas1",
-  4098,
+  16384,
   "IED3_SMVMUnn/LLN0$SV$MSVCB01",
   "xxxxMUnn01",
-  {0x1, 0xc, 0xcd, 0x4, 0x0, 0x1},
+  {0x1, 0xc, 0xcd, 0x1, 0x0, 0x1},
   &IED3_SMV_ds_MUnn_LLN0_PhsMeas16,
 };
 SubscriberEntry IED3_SMV_ds_MUnn_LLN0_PhsMeas16 = {
   "IED3_SMVMUnn/TVTR3.Vol",
   "PhsMeas1",
-  4098,
+  16384,
   "IED3_SMVMUnn/LLN0$SV$MSVCB01",
   "xxxxMUnn01",
-  {0x1, 0xc, 0xcd, 0x4, 0x0, 0x1},
+  {0x1, 0xc, 0xcd, 0x1, 0x0, 0x1},
   &IED3_SMV_ds_MUnn_LLN0_PhsMeas17,
 };
 SubscriberEntry IED3_SMV_ds_MUnn_LLN0_PhsMeas17 = {
   "IED3_SMVMUnn/TVTR4.Vol",
   "PhsMeas1",
-  4098,
+  16384,
   "IED3_SMVMUnn/LLN0$SV$MSVCB01",
   "xxxxMUnn01",
-  {0x1, 0xc, 0xcd, 0x4, 0x0, 0x1},
+  {0x1, 0xc, 0xcd, 0x1, 0x0, 0x1},
   NULL,
 };
 

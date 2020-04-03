@@ -315,7 +315,7 @@ void subscriber_callback_inputs_GOOSE(GooseSubscriber subscriber, void* paramete
 
           //perform trigger for value update
           if(inputVal->extRef->callBack != NULL){
-            inputVal->extRef->callBack(inputVal);
+            inputVal->extRef->callBack(inputVal->extRef);
           }
           inputVal = inputVal->sibling;
         }
@@ -380,9 +380,12 @@ void subscriber_callback_inputs_SMV(SVSubscriber subscriber, void* parameter, SV
           
           //perform trigger for value update
           if(inputVal->extRef->callBack != NULL){
-            inputVal->extRef->callBack(inputVal);
+            inputVal->extRef->callBack(inputVal->extRef);
           }
-          inputVal = inputVal->sibling;
+          if(inputVal->sibling != NULL)
+            inputVal = inputVal->sibling;
+          else
+            break;
         }
       }
     }
@@ -406,7 +409,7 @@ void input_updateAttributeValue(IedServer self, InputValue* inputValue, MmsValue
   while(inputValue != NULL)//list of associated inputvals with this DA
   {
     if(inputValue->extRef->callBack != NULL)
-      inputValue->extRef->callBack(inputValue);
+      inputValue->extRef->callBack(inputValue->extRef);
 
     inputValue = inputValue->sibling;
   }
