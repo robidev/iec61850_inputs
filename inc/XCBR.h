@@ -1,5 +1,5 @@
-#ifndef XSWI_H_
-#define XSWI_H_
+#ifndef XCBR_H_
+#define XCBR_H_
 
 #include "iec61850_model_extensions.h"
 #include "inputs_api.h"
@@ -9,13 +9,13 @@
 extern "C" {
 #endif
 
-void XSWI_callback(void* param);
+void callback(void* param);
 
-void XSWI_init(Input* input);
+void XCBR_init(Input* input);
 
 #ifdef __cplusplus
 }
 #endif
 
 
-#endif /* XSWI_H_ */
+#endif /* XCBR_H_ */

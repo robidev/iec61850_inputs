@@ -34,69 +34,14 @@ void sigint_handler(int signalId)
 	running = 0;
 }
 
-void
-Conversions_intToStringBuffer2(int intValue, int numberOfDigits, uint8_t* buffer)
-{
-    int digitBase = 1;
-
-    int i = 1;
-
-    while (i < numberOfDigits) {
-        digitBase = digitBase * 10;
-        i++;
-    }
-
-    int remainder = intValue;
-
-    for (i = 0; i < numberOfDigits; i++) {
-        int digit = remainder / digitBase;
-
-        buffer[i] = (uint8_t) (digit + 48);
-
-        remainder = remainder % digitBase;
-
-        digitBase = digitBase / 10;
-    }
-
-    buffer[i] = 0;
-}
-
-void
-Conversions_msTimeToGeneralizedTime2(uint64_t msTime, uint8_t* buffer)
-{
-    int msPart = (msTime % 1000);
-
-    time_t unixTime = (msTime / 1000);
-
-    struct tm tmTime;
-
-    gmtime_r(&unixTime, &tmTime);
-
-    Conversions_intToStringBuffer2(tmTime.tm_year + 1900, 4, buffer);
-
-    Conversions_intToStringBuffer2(tmTime.tm_mon + 1, 2, buffer + 4);
-    Conversions_intToStringBuffer2(tmTime.tm_mday, 2, buffer + 6);
-    Conversions_intToStringBuffer2(tmTime.tm_hour, 2, buffer + 8);
-    Conversions_intToStringBuffer2(tmTime.tm_min, 2, buffer + 10);
-    Conversions_intToStringBuffer2(tmTime.tm_sec, 2, buffer + 12);
-
-    buffer[14] = '.';
-
-    Conversions_intToStringBuffer2(msPart, 3, buffer + 15);
-
-    buffer[18] = 'Z';
-
-    buffer[19] = 0;
-}
-
 int main(int argc, char** argv) {
 
 	iedServer = IedServer_create(&iedModel);
 
-	//IedModel_extensions* iedInputModel2 = ConfigFileParser_createModelFromConfigFileEx_inputs("config.cfg");
+	//IedModel* iedModel_dynamic = ConfigFileParser_createModelFromConfigFileEx("config.cfg");
+	//IedModel_extensions* iedInputModel_dynamic = ConfigFileParser_createModelFromConfigFileEx_inputs("model.cfg");
 
 	GooseReceiver GSEreceiver = GooseReceiver_create();
-
     SVReceiver SMVreceiver = SVReceiver_create();
 
 	char* ethernetIfcID = "eth0";
@@ -104,7 +49,7 @@ int main(int argc, char** argv) {
 	if (argc > 1) {
 		ethernetIfcID = argv[1];
 
-		printf("Using GOOSE interface: %s\n", ethernetIfcID);
+		printf("Using interface: %s\n", ethernetIfcID);
 
 		/* set GOOSE interface for all GOOSE publishers (GCBs) */
 		IedServer_setGooseInterfaceId(iedServer, ethernetIfcID);
@@ -121,6 +66,7 @@ int main(int argc, char** argv) {
 	temp = LinkedList_getLastElement(temp);
 	temp->next = subscribeToLocalDAInputs(&iedExtendedModel, &iedModel,iedServer);
 
+	//start subscribers
     GooseReceiver_start(GSEreceiver);
     SVReceiver_start(SMVreceiver);
 
@@ -128,8 +74,14 @@ int main(int argc, char** argv) {
 	{
 		printf("receivers working...\n");
 	}
+	else
+	{
+		printf("WARNING: no receivers are running\n");
+	}
+	
+
 	/* MMS server will be instructed to start listening to client connections. */
-	IedServer_start(iedServer, 8102);
+	IedServer_start(iedServer, 102);
 
 	if (!IedServer_isRunning(iedServer)) {
 		printf("Starting server failed! Exit.\n");
@@ -137,44 +89,18 @@ int main(int argc, char** argv) {
 		exit(-1);
 	}
 
+	//call all initializers for logical nodes in the model
+	attachLogicalNodes(&iedExtendedModel);
+
 	/* Start GOOSE publishing */
 	IedServer_enableGoosePublishing(iedServer);
 
 	running = 1;
 
-	InputEntry* ee = iedExtendedModel.inputs->extRefs;
-	char aa[] = "Vol1";
-	while(ee != NULL)
-	{
-		if(strcmp(ee->intAddr,aa) == 0)
-		{
-			break;
-		}
-		ee = ee->sibling;
-	}
-	
-
 	signal(SIGINT, sigint_handler);
 
-	attachLogicalNodes(&iedExtendedModel);
-
 	while (running) {
-		if(ee->value != NULL)
-		{
-			MmsValue * stVal = MmsValue_getElement(ee->value,0);
-			uint8_t tempBuf[20];
-			Conversions_msTimeToGeneralizedTime2(MmsValue_getUtcTimeInMs(MmsValue_getElement(ee->value,2)), tempBuf);
-			printf("val :%lld, q: %08X, time: %s\n",                    
-				(long long) MmsValue_toInt64(stVal) , 
-				MmsValue_toUint32(MmsValue_getElement(ee->value,1)) ,
-            	tempBuf);
-		}
-		else
-		{
-			printf("no value received yet\n");
-		}
-		
-		Thread_sleep(590);
+		Thread_sleep(1000);
 	}
 
 	/* stop MMS server - close TCP server socket and all client sockets */

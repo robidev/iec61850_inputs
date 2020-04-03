@@ -8,6 +8,13 @@ PROJECT_SOURCES = input/inputs.c
 PROJECT_SOURCES += model/config_file_parser_extensions.c
 PROJECT_SOURCES += model/dynamic_model_extensions.c
 PROJECT_SOURCES += LNs/LNParse.c
+PROJECT_SOURCES += LNs/CILO.c
+PROJECT_SOURCES += LNs/CSWI.c
+PROJECT_SOURCES += LNs/MMXU.c
+PROJECT_SOURCES += LNs/PTOC.c
+PROJECT_SOURCES += LNs/PTRC.c
+PROJECT_SOURCES += LNs/RADR.c
+PROJECT_SOURCES += LNs/XCBR.c
 PROJECT_SOURCES += LNs/XSWI.c
 
 PROJECT_SOURCES += server_example_inputs.c

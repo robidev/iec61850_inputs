@@ -1,5 +1,5 @@
-#ifndef XSWI_H_
-#define XSWI_H_
+#ifndef RADR_H_
+#define RADR_H_
 
 #include "iec61850_model_extensions.h"
 #include "inputs_api.h"
@@ -9,13 +9,13 @@
 extern "C" {
 #endif
 
-void XSWI_callback(void* param);
+void RADR_callback(void* param);
 
-void XSWI_init(Input* input);
+void RADR_init(Input* input);
 
 #ifdef __cplusplus
 }
 #endif
 
 
-#endif /* XSWI_H_ */
+#endif /* RADR_H_ */

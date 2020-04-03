@@ -66,10 +66,6 @@ void input_updateAttributeValue(IedServer self, InputValue* inputValue, MmsValue
 
 Input* getInput(IedModel_extensions* model, LogicalNode* ln);
 
-InputValue* getInputValueFromExtRef(InputEntry* extRef, LinkedList inputvalues);
-
-InputValue* getInputValueFromDA(DataAttribute* da, LinkedList inputvalues);
-
 #ifdef __cplusplus
 }
 #endif

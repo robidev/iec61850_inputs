@@ -1,3 +1,9 @@
+#include "iec61850_model_extensions.h"
+#include "inputs_api.h"
+#include "hal_thread.h"
+
+void XCBR_simulate_switch(InputValue* input);
+
 //callback for open/close signal from GOOSE-> will trigger process threat
 
 static char switch_open = 0;
@@ -12,41 +18,54 @@ void XCBR_close()
   switch_open = 0;
 }
 
-void XCBR_callback(ref)
+void XCBR_callback(InputEntry* extRef )
 {
-  int input = 0;
-  //read input-data from ref into input (could come from GOOSE, SMV or local data update)
-  if(input == 1)
-    XCBR_open();
+  //only one type of extref is expected: ctlVal
+  //TODO: check extRef->intaddr
+  if(extRef->value == 1)
+    XCBR_open(extRef->callBackParam);
   else
-    XCBR_close();
-  
+    XCBR_close(extRef->callBackParam);
 }
 
-void XCBR_init()
+void XCBR_init(Input* input)
 {
-  //start simulation threat
+  int* inst = malloc(sizeof(int));//create new instance with MALLOC
 
-  //register callbacks for GOOSE-subscription
+  if(input != NULL)
+  {
+    InputEntry* extref = input->extRefs;
+    while(extref != NULL)
+    {
+      //register callbacks for GOOSE-subscription
+      extref->callBack = (callBackFunction) XCBR_callback;
+      extref->callBackParam = inst;//pass instance in param
+
+      extref = extref->sibling;
+    }
+  }
+  //TODO start simulation threat
+  Thread thread = Thread_create((ThreadExecutionFunction)XCBR_simulate_switch, input, true);
+  Thread_start(thread);
 }
 
 //threath for process-simulation: open/close switch
-void XCBR_simulate_switch()
+void XCBR_simulate_switch(InputValue* input)
 {
   while(1)
   {
-    while(switch_open == 0){ sleep(10); }
+    while(switch_open == 0){ Thread_sleep(10); }
     printf("XCBR: opening\n");
     //stVal = 00
     //send GOOSE stVal
-    sleep(20);
+    Thread_sleep(20);
     printf("XCBR: opened\n");
     //stVal = 01
-    while(switch_open == 1){ sleep(10); }
+    while(switch_open == 1){ Thread_sleep(10); }
     printf("XSWI: closing\n");
     //stVal = 00
     //send GOOSE stVal
-    sleep(20);
+    Thread_sleep(20);
     printf("XCBR: closed\n");
     //stVal = 10
     //send GOOSE stVal
