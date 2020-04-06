@@ -9,7 +9,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/server_example_inputs",
-            "args": ["lo"],
+            "args": ["lo","dyn"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],

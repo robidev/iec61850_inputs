@@ -9,7 +9,7 @@
 extern "C" {
 #endif
 
-void callback(void* param);
+void XCBR_callback(void* param);
 
 void XCBR_init(Input* input);
 

@@ -76,19 +76,25 @@ LinkedList subscribeToGOOSEInputs(IedModel_extensions* self, GooseReceiver GSEre
   InputValue* previous_inputValue = NULL;
   SubscriberEntry* previous_subscriberEntry = NULL;
 
-  char * previous_datset = NULL;
+  char* previous_datset = NULL;
+  uint16_t previous_APPID = 0;
+  uint8_t* previous_ethAddr[6] = {0,0,0,0,0,0};
   int dataSetIndex = 0;
-  
+
   while(subscriberEntry != NULL)
   {
     //figure out index in dataset based on ordering and dataset-name
     //limitation: we assume that a dataset is not subscribed by 2 control-blocks
-    if(strcmp_p(previous_datset, subscriberEntry->Dataset) == 0)
+    if(strcmp_p(previous_datset, subscriberEntry->Dataset) == 0 \
+        && previous_APPID == subscriberEntry->APPID \
+        && memcmp(previous_ethAddr,subscriberEntry->ethAddr,6) == 0)
       dataSetIndex++;
     else
     {
       dataSetIndex = 0;
       previous_datset = subscriberEntry->Dataset;
+      previous_APPID = subscriberEntry->APPID;
+      memcpy(previous_ethAddr,subscriberEntry->ethAddr,6);
     }
 
     //find a matching input, iterate over all of them (all inputs are grouped by logical node)
@@ -284,7 +290,6 @@ LinkedList subscribeToLocalDAInputs(IedModel_extensions* self, IedModel* model, 
 //called for subscribed GOOSE data
 void subscriber_callback_inputs_GOOSE(GooseSubscriber subscriber, void* parameter)
 {
-  printf("GOOSE received\n");
   InputValue* inputVal = (InputValue*)parameter;
   if(inputVal != NULL && inputVal->extRef != NULL)  //iterate trough list of value-indexes that need to be copied, and
   {
@@ -301,34 +306,37 @@ void subscriber_callback_inputs_GOOSE(GooseSubscriber subscriber, void* paramete
           MmsValue* value = MmsValue_getElement(values, inputVal->index);
           if(value == NULL)
           {
-            printf("ERROR: could not retrieve element from subscribed dataset, '%s' value not updated",inputVal->extRef->Ref);
+            printf("ERROR: could not retrieve element from subscribed GOOSE dataset, '%s' value not updated\n",inputVal->extRef->Ref);
             return;
           }
-          printf("copying value %i to extRef:'%s'", inputVal->index, inputVal->extRef->Ref);
+          printf("GOOSE: copying value-index %i to extRef:'%s'\n", inputVal->index, inputVal->extRef->Ref);
           if(inputVal->extRef->value == NULL)
             inputVal->extRef->value = MmsValue_clone(value);
           else
           {
             if(!MmsValue_update(inputVal->extRef->value, value))
-              printf("ERROR: datatype does not match, '%s' value not updated",inputVal->extRef->Ref);
+              printf("ERROR: GOOSE datatype does not match, '%s' value not updated\n",inputVal->extRef->Ref);
           }
 
           //perform trigger for value update
           if(inputVal->extRef->callBack != NULL){
             inputVal->extRef->callBack(inputVal->extRef);
           }
-          inputVal = inputVal->sibling;
+          if(inputVal->sibling != NULL)
+            inputVal = inputVal->sibling;
+          else
+            break;
         }
       }
     }
     else
     {
-      printf("ERROR: general datatype does not match, '%s' value not updated",inputVal->extRef->Ref);
+      printf("ERROR: general GOOSE datatype does not match, '%s' value not updated\n",inputVal->extRef->Ref);
     }
   }
   else
   {
-    printf("ERROR: no valid inputval struct, no data processed");
+    printf("ERROR: no valid GOOSE inputval struct, no data processed\n");
   }
 }
 
@@ -374,7 +382,7 @@ void subscriber_callback_inputs_SMV(SVSubscriber subscriber, void* parameter, SV
           else
           {
             if(!MmsValue_update(inputVal->extRef->value,value))
-              printf("update ERROR");
+              printf("ERROR: SMV datatype does not match, '%s' value not updated\n",inputVal->extRef->Ref);
             MmsValue_delete(value);
           }
           
@@ -391,12 +399,12 @@ void subscriber_callback_inputs_SMV(SVSubscriber subscriber, void* parameter, SV
     }
     else
     {
-      printf("ERROR: no valid size");
+      printf("ERROR: SMV dataset not a valid size\n");
     }
   }
   else
   {
-    printf("ERROR: no valid inputval struct, no data processed");
+    printf("ERROR: no valid SMV inputval struct, no data processed\n");
   }
 }
 

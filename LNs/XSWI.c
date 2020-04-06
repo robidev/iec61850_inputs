@@ -17,8 +17,8 @@ void XSWI_close(int * switch_open)
 void XSWI_callback(InputEntry* extRef)
 {
   //only one type of extref is expected: ctlVal
-  //TODO: check extRef->intaddr
-  if(extRef->value == 1)
+  int state = MmsValue_toUint32(extRef->value);
+  if(state == 1)
     XSWI_open(extRef->callBackParam);
   else
     XSWI_close(extRef->callBackParam);

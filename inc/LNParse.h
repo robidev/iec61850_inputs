@@ -21,7 +21,7 @@ CILO
 extern "C" {
 #endif
 
-void attachLogicalNodes(IedModel_extensions* model);
+void attachLogicalNodes(IedServer server, IedModel_extensions* model);
 
 #ifdef __cplusplus
 }

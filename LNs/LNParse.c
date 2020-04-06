@@ -22,7 +22,7 @@ CSWI
 CILO
 */
 
-void attachLogicalNodes(IedModel_extensions* model)
+void attachLogicalNodes(IedServer server, IedModel_extensions* model)
 {
   //iterate over struct that attaches model-instances to LogicalNode Classes
   LogicalNodeClass* lnClass = model->logicalNodes;
@@ -47,7 +47,7 @@ void attachLogicalNodes(IedModel_extensions* model)
     }
     else if(strcmp(lnClass->lnClass,"PTOC") == 0)
     {
-      PTOC_init(input);
+      PTOC_init(server, input);
     }
     else if(strcmp(lnClass->lnClass,"MMXU") == 0)
     {

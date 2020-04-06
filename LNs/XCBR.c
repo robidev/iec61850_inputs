@@ -8,12 +8,12 @@ void XCBR_simulate_switch(InputValue* input);
 
 static char switch_open = 0;
 
-void XCBR_open()
+void XCBR_open(void * param)
 {
   switch_open = 1;
 }
 
-void XCBR_close()
+void XCBR_close(void * param)
 {
   switch_open = 0;
 }
@@ -21,8 +21,8 @@ void XCBR_close()
 void XCBR_callback(InputEntry* extRef )
 {
   //only one type of extref is expected: ctlVal
-  //TODO: check extRef->intaddr
-  if(extRef->value == 1)
+  bool state = MmsValue_getBoolean(extRef->value);
+  if(state == true)
     XCBR_open(extRef->callBackParam);
   else
     XCBR_close(extRef->callBackParam);
@@ -62,7 +62,7 @@ void XCBR_simulate_switch(InputValue* input)
     printf("XCBR: opened\n");
     //stVal = 01
     while(switch_open == 1){ Thread_sleep(10); }
-    printf("XSWI: closing\n");
+    printf("XCBR: closing\n");
     //stVal = 00
     //send GOOSE stVal
     Thread_sleep(20);

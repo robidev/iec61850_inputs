@@ -36,15 +36,29 @@ void sigint_handler(int signalId)
 
 int main(int argc, char** argv) {
 
-	iedServer = IedServer_create(&iedModel);
+	IedModel* iedModel_local = &iedModel;
+	IedModel_extensions* iedExtendedModel_local = &iedExtendedModel;
 
-	//IedModel* iedModel_dynamic = ConfigFileParser_createModelFromConfigFileEx("config.cfg");
-	//IedModel_extensions* iedInputModel_dynamic = ConfigFileParser_createModelFromConfigFileEx_inputs("model.cfg");
+	int port = 8102;
+
+	if(argc > 2 && strcmp(argv[2],"dyn") == 0 )
+	{
+		port = 9102;
+		iedModel_local = ConfigFileParser_createModelFromConfigFileEx("config.cfg");
+		iedExtendedModel_local = ConfigFileParser_createModelFromConfigFileEx_inputs("model.cfg");
+		if(iedModel_local == NULL|| iedExtendedModel_local == NULL)
+		{
+			printf("Parsing dynamic config failed! Exit.\n");
+			exit(-1);
+		}
+	}
+
+	iedServer = IedServer_create(iedModel_local);
 
 	GooseReceiver GSEreceiver = GooseReceiver_create();
     SVReceiver SMVreceiver = SVReceiver_create();
 
-	char* ethernetIfcID = "eth0";
+	char* ethernetIfcID = "lo";
 
 	if (argc > 1) {
 		ethernetIfcID = argv[1];
@@ -59,12 +73,12 @@ int main(int argc, char** argv) {
 	}
 
 	//subscribe to datasets and local DA's based on iput/extRef, and generate one list with all inputValues
-	LinkedList allInputValues = subscribeToGOOSEInputs(&iedExtendedModel, GSEreceiver);
+	LinkedList allInputValues = subscribeToGOOSEInputs(iedExtendedModel_local, GSEreceiver);
 	LinkedList temp = allInputValues;
 	temp = LinkedList_getLastElement(temp);
-	temp->next = subscribeToSMVInputs(&iedExtendedModel, SMVreceiver);
+	temp->next = subscribeToSMVInputs(iedExtendedModel_local, SMVreceiver);
 	temp = LinkedList_getLastElement(temp);
-	temp->next = subscribeToLocalDAInputs(&iedExtendedModel, &iedModel,iedServer);
+	temp->next = subscribeToLocalDAInputs(iedExtendedModel_local, iedModel_local,iedServer);
 
 	//start subscribers
     GooseReceiver_start(GSEreceiver);
@@ -81,7 +95,7 @@ int main(int argc, char** argv) {
 	
 
 	/* MMS server will be instructed to start listening to client connections. */
-	IedServer_start(iedServer, 102);
+	IedServer_start(iedServer, port);
 
 	if (!IedServer_isRunning(iedServer)) {
 		printf("Starting server failed! Exit.\n");
@@ -90,7 +104,7 @@ int main(int argc, char** argv) {
 	}
 
 	//call all initializers for logical nodes in the model
-	attachLogicalNodes(&iedExtendedModel);
+	attachLogicalNodes(iedServer, iedExtendedModel_local);
 
 	/* Start GOOSE publishing */
 	IedServer_enableGoosePublishing(iedServer);

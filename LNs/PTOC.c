@@ -1,7 +1,12 @@
 #include "iec61850_model_extensions.h"
 #include "inputs_api.h"
 #include "hal_thread.h"
+#include "../static_model.h"
+
 #include <time.h>
+
+static IedServer static_server;
+static int flip;
 
 void
 Conversions_intToStringBuffer2(int intValue, int numberOfDigits, uint8_t* buffer)
@@ -58,9 +63,39 @@ Conversions_msTimeToGeneralizedTime2(uint64_t msTime, uint8_t* buffer)
     buffer[19] = 0;
 }
 
+//callback when SMV is received
+void PTOC_callback_GOOSE(InputEntry* extRef)
+{
+  //InputEntry* extRef = (InputEntry*) param;
+  if(extRef->value != NULL)
+  {
+    char printBuf[1024];
+
+    MmsValue_printToBuffer(extRef->value, printBuf, 1024);
+
+    printf("GOOSE value: %s\n", printBuf);
+  }
+  if(flip == 0)
+  {
+    MmsValue* tripValue = MmsValue_newBoolean(true);
+    IedServer_updateAttributeValue(static_server,&iedModel_GenericIO_PTOC1_Op_general,tripValue);
+    MmsValue_delete(tripValue);
+    flip = 1;
+  }
+  else
+  {
+    MmsValue* tripValue = MmsValue_newBoolean(false);
+    IedServer_updateAttributeValue(static_server,&iedModel_GenericIO_PTOC1_Op_general,tripValue);
+    MmsValue_delete(tripValue);
+    flip = 0;
+  }
+  
+  //check if value is outside allowed band
+  //if so send to internal PTRC
+}
 
 //callback when SMV is received
-void PTOC_callback(InputEntry* extRef)
+void PTOC_callback_SMV(InputEntry* extRef)
 {
   //InputEntry* extRef = (InputEntry*) param;
   if(extRef->value != NULL)
@@ -71,26 +106,30 @@ void PTOC_callback(InputEntry* extRef)
     printf("val :%lld, q: %08X, time: %s\n", (long long) MmsValue_toInt64(stVal), MmsValue_toUint32(MmsValue_getElement(extRef->value,1)), tempBuf);
   }
   //check if value is outside allowed band
+  MmsValue* tripValue = MmsValue_newBoolean(true);
+  IedServer_updateAttributeValue(static_server,&iedModel_GenericIO_PTOC1_Op_general,tripValue);
   //if so send to internal PTRC
 }
 
-void PTOC_init(Input* input)
+void PTOC_init(IedServer server, Input* input)
 {
+  static_server = server;
+  flip = 0;
   //find extref for the last SMV, using the intaddr
   InputEntry* extRef = input->extRefs;
-	char lastElement[] = "Vol4";
+
 	while(extRef != NULL)
 	{
-		if(strcmp(extRef->intAddr,lastElement) == 0)
+		if(strcmp(extRef->intAddr,"Vol4") == 0)
 		{
-			break;
+      extRef->callBack = (callBackFunction) PTOC_callback_SMV;
+      extRef->callBackParam = NULL;
+		}
+    if(strcmp(extRef->intAddr,"xcbr_stval") == 0)
+		{
+      extRef->callBack = (callBackFunction) PTOC_callback_GOOSE;
+      extRef->callBackParam = NULL;
 		}
 		extRef = extRef->sibling;
 	}
-  //register the callback
-  if(extRef != NULL)
-  {
-    extRef->callBack = (callBackFunction) PTOC_callback;
-    extRef->callBackParam = NULL;
-  }
 }
