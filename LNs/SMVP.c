@@ -9,9 +9,6 @@
 
 
 typedef struct sSMVP {
-    IedServer server;
-    IedModel* iedModel;
-    LogicalNode* logicalNode;
     int svcbEnabled;
     SVPublisher_ASDU asdu;
     SVPublisher svPublisher;
@@ -30,15 +27,12 @@ void sVCBEventHandler (SVControlBlock* svcb, int event, void* parameter)
         inst->svcbEnabled = 0;
 }
 
-void* SMVP_init(IedServer server, IedModel* model, LogicalNode* logicalNode, char* svInterface, char* dataSet, char* svcbName)
+void* SMVP_init(SVPublisher SMVPublisher, IedServer server, IedModel* model,   LogicalNode* logicalNode, char* dataSet, char* svcbName)
 {
     SMVP* inst = (SMVP *) malloc(sizeof(SMVP));
-    inst->server = server;
-    inst->iedModel = model;
-    inst->logicalNode = logicalNode;
     inst->running = false;
 
-    inst->svPublisher = SVPublisher_create(NULL, svInterface);
+    inst->svPublisher = SMVPublisher;
 
     if (inst->svPublisher == NULL) {
         printf("ERROR: could not create sampled value publisher");
@@ -69,7 +63,7 @@ void* SMVP_init(IedServer server, IedModel* model, LogicalNode* logicalNode, cha
 
     SVPublisher_setupComplete(inst->svPublisher);
 
-    SVControlBlock* svcb = IedModel_getSVControlBlock(inst->iedModel, logicalNode, svcbName);
+    SVControlBlock* svcb = IedModel_getSVControlBlock(model, logicalNode, svcbName);
 
     if (svcb == NULL) {
         printf("ERROR: Lookup svcb failed!\n");

@@ -10,6 +10,7 @@
 #include "iec61850_dynamic_model_extensions.h"
 #include "iec61850_config_file_parser_extensions.h"
 #include "LNParse.h"
+#include "sv_publisher.h"
 
 #include "iec61850_server.h"
 #include "hal_thread.h" /* for Thread_sleep() */
@@ -55,6 +56,7 @@ int main(int argc, char** argv) {
 
 	GooseReceiver GSEreceiver = GooseReceiver_create();
     SVReceiver SMVreceiver = SVReceiver_create();
+	SVPublisher SMVPublisher = NULL;
 
 	char* ethernetIfcID = "lo";
 
@@ -62,13 +64,17 @@ int main(int argc, char** argv) {
 		ethernetIfcID = argv[1];
 
 		printf("Using interface: %s\n", ethernetIfcID);
-
-		/* set GOOSE interface for all GOOSE publishers (GCBs) */
-		IedServer_setGooseInterfaceId(iedServer, ethernetIfcID);
-		//goose subscriber
-		GooseReceiver_setInterfaceId(GSEreceiver, ethernetIfcID);
-		SVReceiver_setInterfaceId(SMVreceiver, ethernetIfcID);
 	}
+	/* set GOOSE interface for all GOOSE publishers (GCBs) */
+	IedServer_setGooseInterfaceId(iedServer, ethernetIfcID);
+	//goose subscriber
+	GooseReceiver_setInterfaceId(GSEreceiver, ethernetIfcID);
+
+	//smv publisher
+	SMVPublisher = SVPublisher_create(NULL, ethernetIfcID);
+	//smv subscriber
+	SVReceiver_setInterfaceId(SMVreceiver, ethernetIfcID);
+
 
 	//subscribe to datasets and local DA's based on iput/extRef, and generate one list with all inputValues
 	LinkedList allInputValues = subscribeToGOOSEInputs(iedExtendedModel_local, GSEreceiver);
