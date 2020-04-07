@@ -238,45 +238,48 @@ LinkedList subscribeToLocalDAInputs(IedModel_extensions* self, IedModel* model, 
     InputEntry* extRef = inputs->extRefs; 
     while(extRef != NULL)//find all matching extref for this extRef
     {
-      char buf1 [130];
-      char buf2 [130];
-      StringUtils_copyStringToBuffer(extRef->Ref, buf1);
-      char* separator = strchr(buf1, '/');
-      *separator = 0;
-      
-      StringUtils_copyStringToBuffer(model->name, buf2);
-      separator = buf2 + strlen(buf2);
-      StringUtils_copyStringToBuffer(model->firstChild->name, separator);
-
-      if(strcmp_p(extRef->serviceType, "Poll") == 0 &&  strcmp_p(buf1, buf2) == 0)//if type is polling, and IED is our own IED, link the mmsValue
-      {
-        DataAttribute* da = (DataAttribute*) IedModel_getModelNodeByObjectReference(model, extRef->Ref);
-        MmsValue* value = IedServer_getAttributeValue(server, da);
-        extRef->value = value;
-
-        InputValue * inputValue = create_InputValue(0, da, inputs, extRef);
+      if(strcmp_p(extRef->serviceType, "Poll") == 0)//if type is polling
+      { 
+        char buf1 [130];
+        char buf2 [130];
+        StringUtils_copyStringToBuffer(extRef->Ref, buf1);
+        char* separator = strchr(buf1, '/');
+        *separator = 0;
         
-        LinkedList DAlist_local = DAlist;
-        while( DAlist_local != NULL && inputValue != NULL)
+        StringUtils_copyStringToBuffer(model->name, buf2);
+        separator = buf2 + strlen(buf2);
+        StringUtils_copyStringToBuffer(model->firstChild->name, separator);
+
+        if(strcmp_p(buf1, buf2) == 0)// IED is our own IED, link the mmsValue
         {
-          InputValue * inputValue_local = (InputValue *) DAlist_local->data;
-          if(inputValue_local != NULL && inputValue_local->DA != NULL && inputValue_local->DA == da)//find a similar DA
+          DataAttribute* da = (DataAttribute*) IedModel_getModelNodeByObjectReference(model, extRef->Ref);
+          MmsValue* value = IedServer_getAttributeValue(server, da);
+          extRef->value = value;
+
+          InputValue * inputValue = create_InputValue(0, da, inputs, extRef);
+          
+          LinkedList DAlist_local = DAlist;
+          while( DAlist_local != NULL && inputValue != NULL)
           {
-            while(inputValue_local->sibling != NULL)//find the last entry in the list of this DA
+            InputValue * inputValue_local = (InputValue *) DAlist_local->data;
+            if(inputValue_local != NULL && inputValue_local->DA != NULL && inputValue_local->DA == da)//find a similar DA
             {
-              inputValue_local = inputValue_local->sibling;
+              while(inputValue_local->sibling != NULL)//find the last entry in the list of this DA
+              {
+                inputValue_local = inputValue_local->sibling;
+              }
+              //add this entry to the list of the similar DA's
+              inputValue_local->sibling = inputValue;
+              inputValue = NULL; //ensure we add only once
             }
-            //add this entry to the list of the similar DA's
-            inputValue_local->sibling = inputValue;
-            inputValue = NULL; //ensure we add only once
+            DAlist_local = LinkedList_getNext(DAlist_local);
           }
-          DAlist_local = LinkedList_getNext(DAlist_local);
-        }
-        //if we did not add it to any existing list
-        if(inputValue != NULL)
-        {
-          //then add an entry to the linked list
-          LinkedList_add(DAlist,inputValue);
+          //if we did not add it to any existing list
+          if(inputValue != NULL)
+          {
+            //then add an entry to the linked list
+            LinkedList_add(DAlist,inputValue);
+          }
         }
       }
       extRef = extRef->sibling;
@@ -408,21 +411,6 @@ void subscriber_callback_inputs_SMV(SVSubscriber subscriber, void* parameter, SV
   }
 }
 
-//update an inputvalue that contains a DA
-void input_updateAttributeValue(IedServer self, InputValue* inputValue, MmsValue* value)
-{
-  IedServer_updateAttributeValue(self, inputValue->DA, value);
-
-  //call all inputVals that are associated with this (local)DA
-  while(inputValue != NULL)//list of associated inputvals with this DA
-  {
-    if(inputValue->extRef->callBack != NULL)
-      inputValue->extRef->callBack(inputValue->extRef);
-
-    inputValue = inputValue->sibling;
-  }
-}
-
 Input* getInput(IedModel_extensions* model, LogicalNode* ln)
 {
     Input* inputs = model->inputs;
@@ -438,13 +426,47 @@ Input* getInput(IedModel_extensions* model, LogicalNode* ln)
 }
 
 
-InputValue* getInputValueFromExtRef(InputEntry* extRef, LinkedList inputvalues)
+//update an inputvalue that contains a DA
+void input_updateAttributeValue(IedServer self, InputValue* inputValue, MmsValue* value)
 {
-    
+  IedServer_updateAttributeValue(self, inputValue->DA, value);
+
+  //call all inputVals that are associated with this (local)DA
+  while(inputValue != NULL)//list of associated inputvals with this DA
+  {
+    if(inputValue->extRef->callBack != NULL)
+      inputValue->extRef->callBack(inputValue->extRef);
+
+    inputValue = inputValue->sibling;
+  }
+}
+
+void IedServer_updateAttributeValueEx(DataAttribute* dataAttribute, LinkedList inputvalues)
+{
     while(inputvalues != NULL)//for each LN with an inputs/extref defined;
     {
       InputValue* inputValue = inputvalues->data;
-      if(inputValue->extRef == extRef)
+      if(inputValue->DA == dataAttribute)
+      {
+        //call all inputVals that are associated with this (local)DA
+        while(inputValue != NULL)//list of associated inputvals with this DA
+        {
+          if(inputValue->extRef->callBack != NULL)
+            inputValue->extRef->callBack(inputValue->extRef);
+
+          inputValue = inputValue->sibling;
+        }
+      }
+      inputvalues = LinkedList_getNext(inputvalues);
+    }
+}
+
+InputValue* IedServer_findAttributeValueEx(DataAttribute* dataAttribute, LinkedList inputvalues)
+{
+    while(inputvalues != NULL)//for each LN with an inputs/extref defined;
+    {
+      InputValue* inputValue = inputvalues->data;
+      if(inputValue->DA == dataAttribute)
       {
         return inputValue;
       }
@@ -454,18 +476,5 @@ InputValue* getInputValueFromExtRef(InputEntry* extRef, LinkedList inputvalues)
 }
 
 
-InputValue* getInputValueFromDA(DataAttribute* da, LinkedList inputvalues)
-{
-    
-    while(inputvalues != NULL)//for each LN with an inputs/extref defined;
-    {
-      InputValue* inputValue = inputvalues->data;
-      if(inputValue->DA == da)
-      {
-        return inputValue;
-      }
-      inputvalues = LinkedList_getNext(inputvalues);
-    }
-    return NULL;
-}
+
 

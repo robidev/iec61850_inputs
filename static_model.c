@@ -405,7 +405,7 @@ LogicalNode iedModel_GenericIO_PTOC1 = {
     LogicalNodeModelType,
     "PTOC1",
     (ModelNode*) &iedModel_GenericIO,
-    (ModelNode*) &iedModel_GenericIO_PTCR1,
+    (ModelNode*) &iedModel_GenericIO_PTRC1,
     (ModelNode*) &iedModel_GenericIO_PTOC1_Mod,
 };
 
@@ -710,28 +710,28 @@ DataAttribute iedModel_GenericIO_PTOC1_Op_t = {
     NULL,
     0};
 
-LogicalNode iedModel_GenericIO_PTCR1 = {
+LogicalNode iedModel_GenericIO_PTRC1 = {
     LogicalNodeModelType,
-    "PTCR1",
+    "PTRC1",
     (ModelNode*) &iedModel_GenericIO,
     (ModelNode*) &iedModel_GenericIO_GGIO1,
-    (ModelNode*) &iedModel_GenericIO_PTCR1_Mod,
+    (ModelNode*) &iedModel_GenericIO_PTRC1_Mod,
 };
 
-DataObject iedModel_GenericIO_PTCR1_Mod = {
+DataObject iedModel_GenericIO_PTRC1_Mod = {
     DataObjectModelType,
     "Mod",
-    (ModelNode*) &iedModel_GenericIO_PTCR1,
-    (ModelNode*) &iedModel_GenericIO_PTCR1_Beh,
-    (ModelNode*) &iedModel_GenericIO_PTCR1_Mod_q,
+    (ModelNode*) &iedModel_GenericIO_PTRC1,
+    (ModelNode*) &iedModel_GenericIO_PTRC1_Beh,
+    (ModelNode*) &iedModel_GenericIO_PTRC1_Mod_q,
     0
 };
 
-DataAttribute iedModel_GenericIO_PTCR1_Mod_q = {
+DataAttribute iedModel_GenericIO_PTRC1_Mod_q = {
     DataAttributeModelType,
     "q",
-    (ModelNode*) &iedModel_GenericIO_PTCR1_Mod,
-    (ModelNode*) &iedModel_GenericIO_PTCR1_Mod_t,
+    (ModelNode*) &iedModel_GenericIO_PTRC1_Mod,
+    (ModelNode*) &iedModel_GenericIO_PTRC1_Mod_t,
     NULL,
     0,
     IEC61850_FC_ST,
@@ -740,11 +740,11 @@ DataAttribute iedModel_GenericIO_PTCR1_Mod_q = {
     NULL,
     0};
 
-DataAttribute iedModel_GenericIO_PTCR1_Mod_t = {
+DataAttribute iedModel_GenericIO_PTRC1_Mod_t = {
     DataAttributeModelType,
     "t",
-    (ModelNode*) &iedModel_GenericIO_PTCR1_Mod,
-    (ModelNode*) &iedModel_GenericIO_PTCR1_Mod_ctlModel,
+    (ModelNode*) &iedModel_GenericIO_PTRC1_Mod,
+    (ModelNode*) &iedModel_GenericIO_PTRC1_Mod_ctlModel,
     NULL,
     0,
     IEC61850_FC_ST,
@@ -753,10 +753,10 @@ DataAttribute iedModel_GenericIO_PTCR1_Mod_t = {
     NULL,
     0};
 
-DataAttribute iedModel_GenericIO_PTCR1_Mod_ctlModel = {
+DataAttribute iedModel_GenericIO_PTRC1_Mod_ctlModel = {
     DataAttributeModelType,
     "ctlModel",
-    (ModelNode*) &iedModel_GenericIO_PTCR1_Mod,
+    (ModelNode*) &iedModel_GenericIO_PTRC1_Mod,
     NULL,
     NULL,
     0,
@@ -766,20 +766,20 @@ DataAttribute iedModel_GenericIO_PTCR1_Mod_ctlModel = {
     NULL,
     0};
 
-DataObject iedModel_GenericIO_PTCR1_Beh = {
+DataObject iedModel_GenericIO_PTRC1_Beh = {
     DataObjectModelType,
     "Beh",
-    (ModelNode*) &iedModel_GenericIO_PTCR1,
-    (ModelNode*) &iedModel_GenericIO_PTCR1_Health,
-    (ModelNode*) &iedModel_GenericIO_PTCR1_Beh_stVal,
+    (ModelNode*) &iedModel_GenericIO_PTRC1,
+    (ModelNode*) &iedModel_GenericIO_PTRC1_Health,
+    (ModelNode*) &iedModel_GenericIO_PTRC1_Beh_stVal,
     0
 };
 
-DataAttribute iedModel_GenericIO_PTCR1_Beh_stVal = {
+DataAttribute iedModel_GenericIO_PTRC1_Beh_stVal = {
     DataAttributeModelType,
     "stVal",
-    (ModelNode*) &iedModel_GenericIO_PTCR1_Beh,
-    (ModelNode*) &iedModel_GenericIO_PTCR1_Beh_q,
+    (ModelNode*) &iedModel_GenericIO_PTRC1_Beh,
+    (ModelNode*) &iedModel_GenericIO_PTRC1_Beh_q,
     NULL,
     0,
     IEC61850_FC_ST,
@@ -788,11 +788,11 @@ DataAttribute iedModel_GenericIO_PTCR1_Beh_stVal = {
     NULL,
     0};
 
-DataAttribute iedModel_GenericIO_PTCR1_Beh_q = {
+DataAttribute iedModel_GenericIO_PTRC1_Beh_q = {
     DataAttributeModelType,
     "q",
-    (ModelNode*) &iedModel_GenericIO_PTCR1_Beh,
-    (ModelNode*) &iedModel_GenericIO_PTCR1_Beh_t,
+    (ModelNode*) &iedModel_GenericIO_PTRC1_Beh,
+    (ModelNode*) &iedModel_GenericIO_PTRC1_Beh_t,
     NULL,
     0,
     IEC61850_FC_ST,
@@ -801,10 +801,10 @@ DataAttribute iedModel_GenericIO_PTCR1_Beh_q = {
     NULL,
     0};
 
-DataAttribute iedModel_GenericIO_PTCR1_Beh_t = {
+DataAttribute iedModel_GenericIO_PTRC1_Beh_t = {
     DataAttributeModelType,
     "t",
-    (ModelNode*) &iedModel_GenericIO_PTCR1_Beh,
+    (ModelNode*) &iedModel_GenericIO_PTRC1_Beh,
     NULL,
     NULL,
     0,
@@ -814,20 +814,20 @@ DataAttribute iedModel_GenericIO_PTCR1_Beh_t = {
     NULL,
     0};
 
-DataObject iedModel_GenericIO_PTCR1_Health = {
+DataObject iedModel_GenericIO_PTRC1_Health = {
     DataObjectModelType,
     "Health",
-    (ModelNode*) &iedModel_GenericIO_PTCR1,
-    (ModelNode*) &iedModel_GenericIO_PTCR1_NamPlt,
-    (ModelNode*) &iedModel_GenericIO_PTCR1_Health_stVal,
+    (ModelNode*) &iedModel_GenericIO_PTRC1,
+    (ModelNode*) &iedModel_GenericIO_PTRC1_NamPlt,
+    (ModelNode*) &iedModel_GenericIO_PTRC1_Health_stVal,
     0
 };
 
-DataAttribute iedModel_GenericIO_PTCR1_Health_stVal = {
+DataAttribute iedModel_GenericIO_PTRC1_Health_stVal = {
     DataAttributeModelType,
     "stVal",
-    (ModelNode*) &iedModel_GenericIO_PTCR1_Health,
-    (ModelNode*) &iedModel_GenericIO_PTCR1_Health_q,
+    (ModelNode*) &iedModel_GenericIO_PTRC1_Health,
+    (ModelNode*) &iedModel_GenericIO_PTRC1_Health_q,
     NULL,
     0,
     IEC61850_FC_ST,
@@ -836,11 +836,11 @@ DataAttribute iedModel_GenericIO_PTCR1_Health_stVal = {
     NULL,
     0};
 
-DataAttribute iedModel_GenericIO_PTCR1_Health_q = {
+DataAttribute iedModel_GenericIO_PTRC1_Health_q = {
     DataAttributeModelType,
     "q",
-    (ModelNode*) &iedModel_GenericIO_PTCR1_Health,
-    (ModelNode*) &iedModel_GenericIO_PTCR1_Health_t,
+    (ModelNode*) &iedModel_GenericIO_PTRC1_Health,
+    (ModelNode*) &iedModel_GenericIO_PTRC1_Health_t,
     NULL,
     0,
     IEC61850_FC_ST,
@@ -849,10 +849,10 @@ DataAttribute iedModel_GenericIO_PTCR1_Health_q = {
     NULL,
     0};
 
-DataAttribute iedModel_GenericIO_PTCR1_Health_t = {
+DataAttribute iedModel_GenericIO_PTRC1_Health_t = {
     DataAttributeModelType,
     "t",
-    (ModelNode*) &iedModel_GenericIO_PTCR1_Health,
+    (ModelNode*) &iedModel_GenericIO_PTRC1_Health,
     NULL,
     NULL,
     0,
@@ -862,20 +862,20 @@ DataAttribute iedModel_GenericIO_PTCR1_Health_t = {
     NULL,
     0};
 
-DataObject iedModel_GenericIO_PTCR1_NamPlt = {
+DataObject iedModel_GenericIO_PTRC1_NamPlt = {
     DataObjectModelType,
     "NamPlt",
-    (ModelNode*) &iedModel_GenericIO_PTCR1,
-    (ModelNode*) &iedModel_GenericIO_PTCR1_Op,
-    (ModelNode*) &iedModel_GenericIO_PTCR1_NamPlt_vendor,
+    (ModelNode*) &iedModel_GenericIO_PTRC1,
+    (ModelNode*) &iedModel_GenericIO_PTRC1_Op,
+    (ModelNode*) &iedModel_GenericIO_PTRC1_NamPlt_vendor,
     0
 };
 
-DataAttribute iedModel_GenericIO_PTCR1_NamPlt_vendor = {
+DataAttribute iedModel_GenericIO_PTRC1_NamPlt_vendor = {
     DataAttributeModelType,
     "vendor",
-    (ModelNode*) &iedModel_GenericIO_PTCR1_NamPlt,
-    (ModelNode*) &iedModel_GenericIO_PTCR1_NamPlt_swRev,
+    (ModelNode*) &iedModel_GenericIO_PTRC1_NamPlt,
+    (ModelNode*) &iedModel_GenericIO_PTRC1_NamPlt_swRev,
     NULL,
     0,
     IEC61850_FC_DC,
@@ -884,11 +884,11 @@ DataAttribute iedModel_GenericIO_PTCR1_NamPlt_vendor = {
     NULL,
     0};
 
-DataAttribute iedModel_GenericIO_PTCR1_NamPlt_swRev = {
+DataAttribute iedModel_GenericIO_PTRC1_NamPlt_swRev = {
     DataAttributeModelType,
     "swRev",
-    (ModelNode*) &iedModel_GenericIO_PTCR1_NamPlt,
-    (ModelNode*) &iedModel_GenericIO_PTCR1_NamPlt_d,
+    (ModelNode*) &iedModel_GenericIO_PTRC1_NamPlt,
+    (ModelNode*) &iedModel_GenericIO_PTRC1_NamPlt_d,
     NULL,
     0,
     IEC61850_FC_DC,
@@ -897,10 +897,10 @@ DataAttribute iedModel_GenericIO_PTCR1_NamPlt_swRev = {
     NULL,
     0};
 
-DataAttribute iedModel_GenericIO_PTCR1_NamPlt_d = {
+DataAttribute iedModel_GenericIO_PTRC1_NamPlt_d = {
     DataAttributeModelType,
     "d",
-    (ModelNode*) &iedModel_GenericIO_PTCR1_NamPlt,
+    (ModelNode*) &iedModel_GenericIO_PTRC1_NamPlt,
     NULL,
     NULL,
     0,
@@ -910,20 +910,20 @@ DataAttribute iedModel_GenericIO_PTCR1_NamPlt_d = {
     NULL,
     0};
 
-DataObject iedModel_GenericIO_PTCR1_Op = {
+DataObject iedModel_GenericIO_PTRC1_Op = {
     DataObjectModelType,
     "Op",
-    (ModelNode*) &iedModel_GenericIO_PTCR1,
-    (ModelNode*) &iedModel_GenericIO_PTCR1_Tr,
-    (ModelNode*) &iedModel_GenericIO_PTCR1_Op_general,
+    (ModelNode*) &iedModel_GenericIO_PTRC1,
+    (ModelNode*) &iedModel_GenericIO_PTRC1_Tr,
+    (ModelNode*) &iedModel_GenericIO_PTRC1_Op_general,
     0
 };
 
-DataAttribute iedModel_GenericIO_PTCR1_Op_general = {
+DataAttribute iedModel_GenericIO_PTRC1_Op_general = {
     DataAttributeModelType,
     "general",
-    (ModelNode*) &iedModel_GenericIO_PTCR1_Op,
-    (ModelNode*) &iedModel_GenericIO_PTCR1_Op_q,
+    (ModelNode*) &iedModel_GenericIO_PTRC1_Op,
+    (ModelNode*) &iedModel_GenericIO_PTRC1_Op_q,
     NULL,
     0,
     IEC61850_FC_ST,
@@ -932,11 +932,11 @@ DataAttribute iedModel_GenericIO_PTCR1_Op_general = {
     NULL,
     0};
 
-DataAttribute iedModel_GenericIO_PTCR1_Op_q = {
+DataAttribute iedModel_GenericIO_PTRC1_Op_q = {
     DataAttributeModelType,
     "q",
-    (ModelNode*) &iedModel_GenericIO_PTCR1_Op,
-    (ModelNode*) &iedModel_GenericIO_PTCR1_Op_t,
+    (ModelNode*) &iedModel_GenericIO_PTRC1_Op,
+    (ModelNode*) &iedModel_GenericIO_PTRC1_Op_t,
     NULL,
     0,
     IEC61850_FC_ST,
@@ -945,10 +945,10 @@ DataAttribute iedModel_GenericIO_PTCR1_Op_q = {
     NULL,
     0};
 
-DataAttribute iedModel_GenericIO_PTCR1_Op_t = {
+DataAttribute iedModel_GenericIO_PTRC1_Op_t = {
     DataAttributeModelType,
     "t",
-    (ModelNode*) &iedModel_GenericIO_PTCR1_Op,
+    (ModelNode*) &iedModel_GenericIO_PTRC1_Op,
     NULL,
     NULL,
     0,
@@ -958,20 +958,20 @@ DataAttribute iedModel_GenericIO_PTCR1_Op_t = {
     NULL,
     0};
 
-DataObject iedModel_GenericIO_PTCR1_Tr = {
+DataObject iedModel_GenericIO_PTRC1_Tr = {
     DataObjectModelType,
     "Tr",
-    (ModelNode*) &iedModel_GenericIO_PTCR1,
+    (ModelNode*) &iedModel_GenericIO_PTRC1,
     NULL,
-    (ModelNode*) &iedModel_GenericIO_PTCR1_Tr_general,
+    (ModelNode*) &iedModel_GenericIO_PTRC1_Tr_general,
     0
 };
 
-DataAttribute iedModel_GenericIO_PTCR1_Tr_general = {
+DataAttribute iedModel_GenericIO_PTRC1_Tr_general = {
     DataAttributeModelType,
     "general",
-    (ModelNode*) &iedModel_GenericIO_PTCR1_Tr,
-    (ModelNode*) &iedModel_GenericIO_PTCR1_Tr_q,
+    (ModelNode*) &iedModel_GenericIO_PTRC1_Tr,
+    (ModelNode*) &iedModel_GenericIO_PTRC1_Tr_q,
     NULL,
     0,
     IEC61850_FC_ST,
@@ -980,11 +980,11 @@ DataAttribute iedModel_GenericIO_PTCR1_Tr_general = {
     NULL,
     0};
 
-DataAttribute iedModel_GenericIO_PTCR1_Tr_q = {
+DataAttribute iedModel_GenericIO_PTRC1_Tr_q = {
     DataAttributeModelType,
     "q",
-    (ModelNode*) &iedModel_GenericIO_PTCR1_Tr,
-    (ModelNode*) &iedModel_GenericIO_PTCR1_Tr_t,
+    (ModelNode*) &iedModel_GenericIO_PTRC1_Tr,
+    (ModelNode*) &iedModel_GenericIO_PTRC1_Tr_t,
     NULL,
     0,
     IEC61850_FC_ST,
@@ -993,10 +993,10 @@ DataAttribute iedModel_GenericIO_PTCR1_Tr_q = {
     NULL,
     0};
 
-DataAttribute iedModel_GenericIO_PTCR1_Tr_t = {
+DataAttribute iedModel_GenericIO_PTRC1_Tr_t = {
     DataAttributeModelType,
     "t",
-    (ModelNode*) &iedModel_GenericIO_PTCR1_Tr,
+    (ModelNode*) &iedModel_GenericIO_PTRC1_Tr,
     NULL,
     NULL,
     0,

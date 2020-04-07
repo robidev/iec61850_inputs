@@ -10,7 +10,7 @@
 
 
 extern Input iedExtendedModel_GenericIO_PTOC1_inputs;
-extern Input iedExtendedModel_GenericIO_PTCR1_inputs;
+extern Input iedExtendedModel_GenericIO_PTRC1_inputs;
 
 
 extern InputEntry iedExtendedModel_GenericIO_PTOC1_inputs_extRef0;
@@ -135,12 +135,13 @@ Input iedExtendedModel_GenericIO_PTOC1_inputs = {
   &iedModel_GenericIO_PTOC1,
   9,
   &iedExtendedModel_GenericIO_PTOC1_inputs_extRef0,
-  &iedExtendedModel_GenericIO_PTCR1_inputs
+  &iedExtendedModel_GenericIO_PTRC1_inputs
 };
 
-extern InputEntry iedExtendedModel_GenericIO_PTCR1_inputs_extRef0;
+extern InputEntry iedExtendedModel_GenericIO_PTRC1_inputs_extRef0;
+extern InputEntry iedExtendedModel_GenericIO_PTRC1_inputs_extRef1;
 
-InputEntry iedExtendedModel_GenericIO_PTCR1_inputs_extRef0 = {
+InputEntry iedExtendedModel_GenericIO_PTRC1_inputs_extRef0 = {
   "PTOC_trip",
   "IED2_PTOCGenericIO/PTOC1.Op.general",
   "PTOC_Op",
@@ -149,13 +150,25 @@ InputEntry iedExtendedModel_GenericIO_PTCR1_inputs_extRef0 = {
   NULL,
   NULL,
   NULL,
+  &iedExtendedModel_GenericIO_PTRC1_inputs_extRef1
+};
+
+InputEntry iedExtendedModel_GenericIO_PTRC1_inputs_extRef1 = {
+  "xcbr_status",
+  "IED1_XCBRGenericIO/XCBR1.Pos.stVal",
+  "xcbr_stval",
+  "GOOSE",
+  "IED1_XCBRGenericIO/LLN0.GoCB",
+  NULL,
+  NULL,
+  NULL,
   NULL
 };
 
-Input iedExtendedModel_GenericIO_PTCR1_inputs = {
-  &iedModel_GenericIO_PTCR1,
-  1,
-  &iedExtendedModel_GenericIO_PTCR1_inputs_extRef0,
+Input iedExtendedModel_GenericIO_PTRC1_inputs = {
+  &iedModel_GenericIO_PTRC1,
+  2,
+  &iedExtendedModel_GenericIO_PTRC1_inputs_extRef0,
   NULL
 };
 extern SubscriberEntry IED1_XCBR_ds_GenericIO_LLN0_Events0;
@@ -273,7 +286,7 @@ SubscriberEntry IED3_SMV_ds_MUnn_LLN0_PhsMeas17 = {
 extern LogicalNodeClass iedModel_GenericIO_LLN0_class;
 extern LogicalNodeClass iedModel_GenericIO_LPHD1_class;
 extern LogicalNodeClass iedModel_GenericIO_PTOC1_class;
-extern LogicalNodeClass iedModel_GenericIO_PTCR1_class;
+extern LogicalNodeClass iedModel_GenericIO_PTRC1_class;
 extern LogicalNodeClass iedModel_GenericIO_GGIO1_class;
 
 
@@ -295,12 +308,12 @@ LogicalNodeClass iedModel_GenericIO_PTOC1_class = {
     &iedModel_GenericIO_PTOC1,
     "PTOC",
     NULL,
-    &iedModel_GenericIO_PTCR1_class,
+    &iedModel_GenericIO_PTRC1_class,
 };
 
-LogicalNodeClass iedModel_GenericIO_PTCR1_class = {
-    &iedModel_GenericIO_PTCR1,
-    "PTCR",
+LogicalNodeClass iedModel_GenericIO_PTRC1_class = {
+    &iedModel_GenericIO_PTRC1,
+    "PTRC",
     NULL,
     &iedModel_GenericIO_GGIO1_class,
 };

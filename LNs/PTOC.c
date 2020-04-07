@@ -77,7 +77,7 @@ void PTOC_callback_GOOSE(InputEntry* extRef)
     char printBuf[1024];
 
     MmsValue_printToBuffer(extRef->value, printBuf, 1024);
-    printf("Breaker position: %s\n", printBuf);
+    printf("PTOC: Received Breaker position: %s\n", printBuf);
   }
 }
 

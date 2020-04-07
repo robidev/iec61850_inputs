@@ -3,19 +3,6 @@
 
 #include "iec61850_model_extensions.h"
 
-/*
-LN's:
-
-XSWI
-XCBR
-RADR
-PTCR
-PTOC
-MMXU
-CSWI
-CILO
-*/
-
 
 #ifdef __cplusplus
 extern "C" {
