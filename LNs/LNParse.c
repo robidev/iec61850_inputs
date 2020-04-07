@@ -9,17 +9,19 @@
 #include "MMXU.h"
 #include "CSWI.h"
 #include "CILO.h"
+#include "LLN0.h"
 
-void attachLogicalNodes(IedServer server, IedModel_extensions* model)
+void attachLogicalNodes(IedServer server, IedModel_extensions* model, LinkedList allInputValues)
 {
   //iterate over struct that attaches model-instances to LogicalNode Classes
   LogicalNodeClass* lnClass = model->logicalNodes;
   while(lnClass != NULL)
   {
     Input* input = getInput( model, lnClass->parent); 
+
     if(strcmp(lnClass->lnClass,"LLN0") == 0)
     {
-      printf("Found mandatory Class LLN0\n");
+      LLN0_init(server, lnClass->parent);
     }
     else if(strcmp(lnClass->lnClass,"LPHD") == 0)
     {
@@ -39,11 +41,11 @@ void attachLogicalNodes(IedServer server, IedModel_extensions* model)
     }
     else if(strcmp(lnClass->lnClass,"PTRC") == 0)
     {
-      PTRC_init(server, input);
+      PTRC_init(server, input, allInputValues);
     }
     else if(strcmp(lnClass->lnClass,"PTOC") == 0)
     {
-      PTOC_init(server, input);
+      PTOC_init(server, input, allInputValues);
     }
     else if(strcmp(lnClass->lnClass,"MMXU") == 0)
     {

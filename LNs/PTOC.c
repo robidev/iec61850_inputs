@@ -10,6 +10,7 @@ typedef struct sPTOC
 {
   IedServer server;
   DataAttribute* Op_general;
+  void * Op_general_callback;
 } PTOC;
 
 void
@@ -93,21 +94,23 @@ void PTOC_callback_SMV(InputEntry* extRef)
     Conversions_msTimeToGeneralizedTime2(MmsValue_getUtcTimeInMs(MmsValue_getElement(extRef->value,2)), tempBuf);
     printf("val :%lld, q: %08X, time: %s\n", (long long) MmsValue_toInt64(stVal), MmsValue_toUint32(MmsValue_getElement(extRef->value,1)), tempBuf);
     //check if value is outside allowed band
-    if(MmsValue_toInt64(stVal) > 10000){
+    if(MmsValue_toInt64(stVal) < 0){
       MmsValue* tripValue = MmsValue_newBoolean(true);
       IedServer_updateAttributeValue(inst->server,inst->Op_general,tripValue);
+      InputValueHandleExtensionCallbacks(inst->Op_general_callback); //update the associated callbacks with this Data Element
       MmsValue_delete(tripValue);
       //if so send to internal PTRC
     }
   }
 }
 
-void PTOC_init(IedServer server, Input* input)
+void PTOC_init(IedServer server, Input* input, LinkedList allInputValues)
 {
   PTOC* inst = (PTOC *) malloc(sizeof(PTOC));//create new instance with MALLOC
   inst->server = server;
   inst->Op_general = (DataAttribute*) ModelNode_getChild((ModelNode*) input->parent, "Op.general");//the node to operate on
- 
+  inst->Op_general_callback = _findAttributeValueEx(inst->Op_general, allInputValues);
+  
   //find extref for the last SMV, using the intaddr
   InputEntry* extRef = input->extRefs;
 

@@ -8,7 +8,7 @@
 extern "C" {
 #endif
 
-void attachLogicalNodes(IedServer server, IedModel_extensions* model);
+void attachLogicalNodes(IedServer server, IedModel_extensions* model, LinkedList allInputValues);
 
 #ifdef __cplusplus
 }

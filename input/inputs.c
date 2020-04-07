@@ -411,6 +411,7 @@ void subscriber_callback_inputs_SMV(SVSubscriber subscriber, void* parameter, SV
   }
 }
 
+
 Input* getInput(IedModel_extensions* model, LogicalNode* ln)
 {
     Input* inputs = model->inputs;
@@ -425,12 +426,10 @@ Input* getInput(IedModel_extensions* model, LogicalNode* ln)
     return NULL;
 }
 
-
 //update an inputvalue that contains a DA
-void input_updateAttributeValue(IedServer self, InputValue* inputValue, MmsValue* value)
+void InputValueHandleExtensionCallbacks(void* param)
 {
-  IedServer_updateAttributeValue(self, inputValue->DA, value);
-
+  InputValue* inputValue = param;
   //call all inputVals that are associated with this (local)DA
   while(inputValue != NULL)//list of associated inputvals with this DA
   {
@@ -441,39 +440,45 @@ void input_updateAttributeValue(IedServer self, InputValue* inputValue, MmsValue
   }
 }
 
-void IedServer_updateAttributeValueEx(DataAttribute* dataAttribute, LinkedList inputvalues)
+//update an inputvalue that contains a DA
+void UpdateAttributeValueEx(IedServer self, InputValue* inputValue, MmsValue* value)
 {
-    while(inputvalues != NULL)//for each LN with an inputs/extref defined;
-    {
-      InputValue* inputValue = inputvalues->data;
-      if(inputValue->DA == dataAttribute)
-      {
-        //call all inputVals that are associated with this (local)DA
-        while(inputValue != NULL)//list of associated inputvals with this DA
-        {
-          if(inputValue->extRef->callBack != NULL)
-            inputValue->extRef->callBack(inputValue->extRef);
+  IedServer_updateAttributeValue(self, inputValue->DA, value);
 
-          inputValue = inputValue->sibling;
-        }
-      }
-      inputvalues = LinkedList_getNext(inputvalues);
-    }
+  //call all inputVals that are associated with this (local)DA
+  InputValueHandleExtensionCallbacks(inputValue);
 }
 
-InputValue* IedServer_findAttributeValueEx(DataAttribute* dataAttribute, LinkedList inputvalues)
+
+InputValue* _findAttributeValueEx(DataAttribute* dataAttribute, LinkedList inputvalues)
 {
-    while(inputvalues != NULL)//for each LN with an inputs/extref defined;
+  while(inputvalues != NULL)//for each LN with an inputs/extref defined;
+  {
+    if(inputvalues->data != NULL)
     {
       InputValue* inputValue = inputvalues->data;
       if(inputValue->DA == dataAttribute)
       {
         return inputValue;
       }
-      inputvalues = LinkedList_getNext(inputvalues);
     }
-    return NULL;
+    inputvalues = LinkedList_getNext(inputvalues);
+  }
+  return NULL;
 }
+
+//slow, as it will iterate trough the whole list
+void AttributeValueHandleExtensionCallbacks(DataAttribute* dataAttribute, LinkedList inputvalues)
+{
+  InputValue* inputValue = _findAttributeValueEx(dataAttribute, inputvalues);
+  if(inputValue != NULL)
+  {
+    InputValueHandleExtensionCallbacks(inputValue);
+  }
+}
+
+
+
 
 
 

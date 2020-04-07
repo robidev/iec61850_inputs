@@ -9,7 +9,7 @@
 extern "C" {
 #endif
 
-void PTRC_init(IedServer server, Input* input);
+void PTRC_init(IedServer server, Input* input, LinkedList allInputValues);
 
 #ifdef __cplusplus
 }

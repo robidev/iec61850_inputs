@@ -62,9 +62,11 @@ LinkedList subscribeToSMVInputs(IedModel_extensions* self, SVReceiver SMVreceive
 
 LinkedList subscribeToLocalDAInputs(IedModel_extensions* self, IedModel* model, IedServer server );
 
-void input_updateAttributeValue(IedServer self, InputValue* inputValue, MmsValue* value);
-
 Input* getInput(IedModel_extensions* model, LogicalNode* ln);
+
+void InputValueHandleExtensionCallbacks(void* param);
+
+InputValue* _findAttributeValueEx(DataAttribute* dataAttribute, LinkedList inputvalues);
 
 #ifdef __cplusplus
 }

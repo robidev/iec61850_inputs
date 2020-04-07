@@ -6,6 +6,7 @@ typedef struct sPTRC
 {
   IedServer server;
   DataAttribute* Tr_general;
+  void * Tr_general_callback;
 } PTRC;
 
 //receive trip command from input LN's
@@ -17,6 +18,7 @@ void PTRC_input_callback(InputEntry* extRef)
   {
     MmsValue* tripValue = MmsValue_newBoolean(true);
     IedServer_updateAttributeValue(inst->server,inst->Tr_general,tripValue);
+    InputValueHandleExtensionCallbacks(inst->Tr_general_callback); //update the associated callbacks with this Data Element
     MmsValue_delete(tripValue);
   }
 }
@@ -35,11 +37,12 @@ void PTRC_xcbr_callback(InputEntry* extRef)
   }
 }
 
-void PTRC_init(IedServer server, Input* input)
+void PTRC_init(IedServer server, Input* input, LinkedList allInputValues)
 {
   PTRC* inst = (PTRC *) malloc(sizeof(PTRC));//create new instance with MALLOC
   inst->server = server;
   inst->Tr_general = (DataAttribute*) ModelNode_getChild((ModelNode*) input->parent, "Tr.general");//the node to operate on
+  inst->Tr_general_callback = _findAttributeValueEx(inst->Tr_general, allInputValues);
  
   //find extref for the last SMV, using the intaddr
   InputEntry* extRef = input->extRefs;

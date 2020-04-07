@@ -102,7 +102,7 @@ int main(int argc, char** argv) {
 	}
 
 	//call all initializers for logical nodes in the model
-	attachLogicalNodes(iedServer, iedExtendedModel_local);
+	attachLogicalNodes(iedServer, iedExtendedModel_local, allInputValues);
 
 	/* Start GOOSE publishing */
 	IedServer_enableGoosePublishing(iedServer);

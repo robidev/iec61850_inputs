@@ -1,5 +1,5 @@
-#ifndef PTOC_H_
-#define PTOC_H_
+#ifndef LLN0_H_
+#define LLN0_H_
 
 #include "iec61850_model_extensions.h"
 #include "inputs_api.h"
@@ -9,11 +9,11 @@
 extern "C" {
 #endif
 
-void PTOC_init(IedServer server, Input* input, LinkedList allInputValues);
+void LLN0_init(IedServer server, LogicalNode* logicalNode);
 
 #ifdef __cplusplus
 }
 #endif
 
 
-#endif /* PTOC_H_ */
+#endif /* LLN0_H_ */
