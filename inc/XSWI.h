@@ -9,9 +9,7 @@
 extern "C" {
 #endif
 
-void XSWI_callback(void* param);
-
-void XSWI_init(Input* input);
+void XSWI_init(IedServer server, Input* input);
 
 #ifdef __cplusplus
 }

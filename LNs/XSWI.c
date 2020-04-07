@@ -1,32 +1,51 @@
 #include "iec61850_model_extensions.h"
+#include "iec61850_server.h"
 #include "inputs_api.h"
 #include "hal_thread.h"
+#include "XSWI.h"
 
-void XSWI_simulate_switch(InputValue* input);
-//callback for open/close signal from GOOSE-> will trigger process threat
-void XSWI_open(int * switch_open)
+//process simulator
+void XSWI_simulate_switch(Input* input);
+
+typedef struct sXSWI
 {
-  *switch_open = true;
+  IedServer server;
+  DataAttribute* Pos_stVal;
+  bool conducting;
+} XSWI;
+
+
+//open the circuit breaker(i.e. make it isolating)
+void XSWI_open(XSWI * inst)
+{
+  inst->conducting = false;
 }
 
-void XSWI_close(int * switch_open)
+//close the circuit breaker switch(i.e. make it conducting)
+void XSWI_close(XSWI * inst)
 {
-  *switch_open = false;
+  inst->conducting = true;
 }
 
-void XSWI_callback(InputEntry* extRef)
+//callback for open/close signal from GOOSE-> will trigger process simulator threat
+void XSWI_callback(InputEntry* extRef )
 {
   //only one type of extref is expected: ctlVal
-  int state = MmsValue_toUint32(extRef->value);
-  if(state == 1)
+  bool state = MmsValue_getBoolean(extRef->value);
+  if(state == true)
     XSWI_open(extRef->callBackParam);
   else
     XSWI_close(extRef->callBackParam);
 }
 
-void XSWI_init(Input* input)
+//initialise XSWI instance for process simulation, and publish/subscription of GOOSE
+void XSWI_init(IedServer server, Input* input)
 {
-  int* inst = malloc(sizeof(int));//create new instance with MALLOC
+  XSWI* inst = (XSWI *) malloc(sizeof(XSWI));//create new instance with MALLOC
+  inst->server = server;
+  inst->Pos_stVal = (DataAttribute*) ModelNode_getChild((ModelNode*) input->parent, "Pos.stVal");
+  inst->conducting = true;
+
 
   if(input != NULL)
   {
@@ -40,31 +59,41 @@ void XSWI_init(Input* input)
       extref = extref->sibling;
     }
   }
-  //TODO start simulation threat
+  //start simulation threat
   Thread thread = Thread_create((ThreadExecutionFunction)XSWI_simulate_switch, input, true);
   Thread_start(thread);
 }
 
-//threath for process-simulation: open/close switch
-void XSWI_simulate_switch(InputValue* input)
+void XSWI_change_switch(XSWI * inst, Dbpos value)
 {
-  int *switch_open = input->extRef->callBackParam;
+  IedServer_updateDbposValue(inst->server,inst->Pos_stVal,value);
+}
+
+//threath for process-simulation: open/close switch
+void XSWI_simulate_switch(Input* input)
+{
+  XSWI* inst = input->extRefs->callBackParam;//take the initial callback, as they all contain the same object instance
+
+  inst->conducting = true;//initial state
+  XSWI_change_switch(inst,DBPOS_ON);//initial state
   while(1)
   {
-    while(*switch_open == false){ Thread_sleep(100); }
-    printf("XSWI: opening\n");
-    //stVal = 00
-    //send GOOSE stVal
+    while(inst->conducting == true){ Thread_sleep(1000); }
+    printf("XSWI: opening, ZZZZT\n");
+    XSWI_change_switch(inst,DBPOS_INTERMEDIATE_STATE);
+
     Thread_sleep(2000);
+
     printf("XSWI: opened\n");
-    //stVal = 01
-    while(*switch_open == true){ Thread_sleep(100); }
+    XSWI_change_switch(inst,DBPOS_OFF);
+
+    while(inst->conducting == false){ Thread_sleep(2000); }
     printf("XSWI: closing\n");
-    //stVal = 00
-    //send GOOSE stVal
+    XSWI_change_switch(inst,DBPOS_INTERMEDIATE_STATE);
+
     Thread_sleep(2000);
+
     printf("XSWI: closed\n");
-    //stVal = 10
-    //send GOOSE stVal
+    XSWI_change_switch(inst,DBPOS_ON);
   }
 }

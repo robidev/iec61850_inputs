@@ -9,18 +9,6 @@
 #include "MMXU.h"
 #include "CSWI.h"
 #include "CILO.h"
-/*
-LN's:
-
-XSWI
-XCBR
-RADR
-PTRC
-PTOC
-MMXU
-CSWI
-CILO
-*/
 
 void attachLogicalNodes(IedServer server, IedModel_extensions* model)
 {
@@ -29,13 +17,21 @@ void attachLogicalNodes(IedServer server, IedModel_extensions* model)
   while(lnClass != NULL)
   {
     Input* input = getInput( model, lnClass->parent); 
-    if(strcmp(lnClass->lnClass,"XSWI") == 0)
+    if(strcmp(lnClass->lnClass,"LLN0") == 0)
     {
-      XSWI_init(input); // call init, to attach input-nodes of this instance to callback-items
+      printf("Found mandatory Class LLN0\n");
+    }
+    else if(strcmp(lnClass->lnClass,"LPHD") == 0)
+    {
+      printf("Found mandatory Class LPHD\n");
+    }
+    else if(strcmp(lnClass->lnClass,"XSWI") == 0)
+    {
+      XSWI_init(server, input); // call init, to attach input-nodes of this instance to callback-items
     }
     else if(strcmp(lnClass->lnClass,"XCBR") == 0)
     {
-      XCBR_init(input);
+      XCBR_init(server, input);
     }
     else if(strcmp(lnClass->lnClass,"RADR") == 0)
     {
@@ -43,7 +39,7 @@ void attachLogicalNodes(IedServer server, IedModel_extensions* model)
     }
     else if(strcmp(lnClass->lnClass,"PTRC") == 0)
     {
-      PTRC_init(input);
+      PTRC_init(server, input);
     }
     else if(strcmp(lnClass->lnClass,"PTOC") == 0)
     {

@@ -1,23 +1,32 @@
 #include "iec61850_model_extensions.h"
+#include "iec61850_server.h"
 #include "inputs_api.h"
 #include "hal_thread.h"
+#include "XCBR.h"
+//process simulator
+void XCBR_simulate_switch(Input* input);
 
-void XCBR_simulate_switch(InputValue* input);
-
-//callback for open/close signal from GOOSE-> will trigger process threat
-
-static char switch_open = 0;
-
-void XCBR_open(void * param)
+typedef struct sXCBR
 {
-  switch_open = 1;
+  IedServer server;
+  DataAttribute* Pos_stVal;
+  bool conducting;
+} XCBR;
+
+
+//open the circuit breaker(i.e. make it isolating)
+void XCBR_open(XCBR * inst)
+{
+  inst->conducting = false;
 }
 
-void XCBR_close(void * param)
+//close the circuit breaker switch(i.e. make it conducting)
+void XCBR_close(XCBR * inst)
 {
-  switch_open = 0;
+  inst->conducting = true;
 }
 
+//callback for open/close signal from GOOSE-> will trigger process simulator threat
 void XCBR_callback(InputEntry* extRef )
 {
   //only one type of extref is expected: ctlVal
@@ -28,9 +37,14 @@ void XCBR_callback(InputEntry* extRef )
     XCBR_close(extRef->callBackParam);
 }
 
-void XCBR_init(Input* input)
+//initialise XCBR instance for process simulation, and publish/subscription of GOOSE
+void XCBR_init(IedServer server, Input* input)
 {
-  int* inst = malloc(sizeof(int));//create new instance with MALLOC
+  XCBR* inst = (XCBR *) malloc(sizeof(XCBR));//create new instance with MALLOC
+  inst->server = server;
+  inst->Pos_stVal = (DataAttribute*) ModelNode_getChild((ModelNode*) input->parent, "Pos.stVal");
+  inst->conducting = true;
+
 
   if(input != NULL)
   {
@@ -44,30 +58,41 @@ void XCBR_init(Input* input)
       extref = extref->sibling;
     }
   }
-  //TODO start simulation threat
+  //start simulation threat
   Thread thread = Thread_create((ThreadExecutionFunction)XCBR_simulate_switch, input, true);
   Thread_start(thread);
 }
 
-//threath for process-simulation: open/close switch
-void XCBR_simulate_switch(InputValue* input)
+void XCBR_change_switch(XCBR * inst, Dbpos value)
 {
+  IedServer_updateDbposValue(inst->server,inst->Pos_stVal,value);
+}
+
+//threath for process-simulation: open/close switch
+void XCBR_simulate_switch(Input* input)
+{
+  XCBR* inst = input->extRefs->callBackParam;//take the initial callback, as they all contain the same object instance
+
+  inst->conducting = true;//initial state
+  XCBR_change_switch(inst,DBPOS_ON);//initial state
   while(1)
   {
-    while(switch_open == 0){ Thread_sleep(10); }
-    printf("XCBR: opening\n");
-    //stVal = 00
-    //send GOOSE stVal
+    while(inst->conducting == true){ Thread_sleep(10); }
+    printf("XCBR: opening, BANG!\n");
+    XCBR_change_switch(inst,DBPOS_INTERMEDIATE_STATE);
+
     Thread_sleep(20);
+
     printf("XCBR: opened\n");
-    //stVal = 01
-    while(switch_open == 1){ Thread_sleep(10); }
+    XCBR_change_switch(inst,DBPOS_OFF);
+
+    while(inst->conducting == false){ Thread_sleep(1000); }
     printf("XCBR: closing\n");
-    //stVal = 00
-    //send GOOSE stVal
-    Thread_sleep(20);
+    XCBR_change_switch(inst,DBPOS_INTERMEDIATE_STATE);
+
+    Thread_sleep(2000);
+
     printf("XCBR: closed\n");
-    //stVal = 10
-    //send GOOSE stVal
+    XCBR_change_switch(inst,DBPOS_ON);
   }
 }

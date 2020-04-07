@@ -9,8 +9,6 @@
 extern "C" {
 #endif
 
-void PTOC_callback(void* param);
-
 void PTOC_init(IedServer server, Input* input);
 
 #ifdef __cplusplus

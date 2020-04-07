@@ -132,7 +132,7 @@
           <LN lnClass="LPHD" lnType="LPHD1" inst="1" prefix="" />
           <LN lnClass="XCBR" lnType="XCBR1" inst="1" prefix="">
             <Inputs>
-              <ExtRef intAddr="Tr" desc="Trip" iedName="IED2_PTOC" ldInst="GenericIO" lnClass="PTOC" lnInst="1" doName="Op" daName="general" serviceType="GOOSE" srcLDInst="GenericIO" srcLNClass="LLN0" srcLNInst="" srcCBName="GoCB" />
+              <ExtRef intAddr="Tr" desc="Trip" iedName="IED2_PTOC" ldInst="GenericIO" lnClass="PTRC" lnInst="1" doName="Tr" daName="general" serviceType="GOOSE" srcLDInst="GenericIO" srcLNClass="LLN0" srcLNInst="" srcCBName="GoCB" />
             </Inputs>
           </LN>
         </LDevice>
@@ -162,7 +162,7 @@
           <LN0 lnClass="LLN0" lnType="LLN01" inst="">
           	<DataSet name="Events" desc="Events">
               <FCDA ldInst="GenericIO" lnClass="GGIO" fc="ST" lnInst="1" doName="SPCSO1" daName="stVal" />
-              <FCDA ldInst="GenericIO" lnClass="PTOC" fc="ST" lnInst="1" doName="Op" daName="general" />
+              <FCDA ldInst="GenericIO" lnClass="PTRC" fc="ST" lnInst="1" doName="Tr" daName="general" />
             </DataSet>
             
             <GSEControl appID="events" name="gcbEvents" type="GOOSE" datSet="Events" confRev="2" minTime="1000" maxTime="3000" /> 
@@ -186,7 +186,11 @@
               <ExtRef intAddr="Vol4" desc="sample_v4" iedName="IED3_SMV" ldInst="MUnn" lnClass="TVTR" lnInst="4" doName="Vol" serviceType="SMV" srcLDInst="MUnn" srcLNClass="LLN0" srcLNInst="" srcCBName="MSVCB01" />
 
               <ExtRef intAddr="xcbr_stval" desc="xcbr_status" iedName="IED1_XCBR" ldInst="GenericIO" lnClass="XCBR" lnInst="1" doName="Pos" daName="stVal" serviceType="GOOSE" srcLDInst="GenericIO" srcLNClass="LLN0" srcLNInst="" srcCBName="GoCB" />
-
+            </Inputs>
+          </LN>
+          <LN lnClass="PTCR" lnType="PTCR1" inst="1" prefix="" >
+            <Inputs>
+              <ExtRef intAddr="PTOC_Op" desc="PTOC_trip" iedName="IED2_PTOC" ldInst="GenericIO" lnClass="PTOC" lnInst="1" doName="Op" daName="general" serviceType="Poll" />
             </Inputs>
           </LN>
           <LN lnClass="GGIO" lnType="GGIO1" inst="1" prefix="">
@@ -284,6 +288,15 @@
       <DO name="PhyNam" type="DPL_1_PhyNam" />
       <DO name="PhyHealth" type="INS_1_Beh" />
       <DO name="Proxy" type="SPS_1_Proxy" />
+    </LNodeType>
+
+    <LNodeType id="PTCR1" lnClass="PTRC">
+      <DO name="Mod" type="INC_2_Mod" />
+      <DO name="Beh" type="INS_1_Beh" />
+      <DO name="Health" type="INS_1_Beh" />
+      <DO name="NamPlt" type="LPL_2_NamPlt" />
+      <DO name="Op" type="ACT" />
+      <DO name="Tr" type="ACT" />
     </LNodeType>
 
     <LNodeType id="PTOC1" lnClass="PTOC">

@@ -10,6 +10,7 @@
 
 
 extern Input iedExtendedModel_GenericIO_PTOC1_inputs;
+extern Input iedExtendedModel_GenericIO_PTCR1_inputs;
 
 
 extern InputEntry iedExtendedModel_GenericIO_PTOC1_inputs_extRef0;
@@ -134,6 +135,27 @@ Input iedExtendedModel_GenericIO_PTOC1_inputs = {
   &iedModel_GenericIO_PTOC1,
   9,
   &iedExtendedModel_GenericIO_PTOC1_inputs_extRef0,
+  &iedExtendedModel_GenericIO_PTCR1_inputs
+};
+
+extern InputEntry iedExtendedModel_GenericIO_PTCR1_inputs_extRef0;
+
+InputEntry iedExtendedModel_GenericIO_PTCR1_inputs_extRef0 = {
+  "PTOC_trip",
+  "IED2_PTOCGenericIO/PTOC1.Op.general",
+  "PTOC_Op",
+  "Poll",
+  "IED2_PTOC/",
+  NULL,
+  NULL,
+  NULL,
+  NULL
+};
+
+Input iedExtendedModel_GenericIO_PTCR1_inputs = {
+  &iedModel_GenericIO_PTCR1,
+  1,
+  &iedExtendedModel_GenericIO_PTCR1_inputs_extRef0,
   NULL
 };
 extern SubscriberEntry IED1_XCBR_ds_GenericIO_LLN0_Events0;
@@ -167,7 +189,7 @@ SubscriberEntry IED2_PTOC_ds_GenericIO_LLN0_Events0 = {
   &IED2_PTOC_ds_GenericIO_LLN0_Events1,
 };
 SubscriberEntry IED2_PTOC_ds_GenericIO_LLN0_Events1 = {
-  "IED2_PTOCGenericIO/PTOC1.Op.general",
+  "IED2_PTOCGenericIO/PTRC1.Tr.general",
   "Events",
   4098,
   "IED2_PTOCGenericIO/LLN0$GO$gcbEvents",
@@ -251,6 +273,7 @@ SubscriberEntry IED3_SMV_ds_MUnn_LLN0_PhsMeas17 = {
 extern LogicalNodeClass iedModel_GenericIO_LLN0_class;
 extern LogicalNodeClass iedModel_GenericIO_LPHD1_class;
 extern LogicalNodeClass iedModel_GenericIO_PTOC1_class;
+extern LogicalNodeClass iedModel_GenericIO_PTCR1_class;
 extern LogicalNodeClass iedModel_GenericIO_GGIO1_class;
 
 
@@ -271,6 +294,13 @@ LogicalNodeClass iedModel_GenericIO_LPHD1_class = {
 LogicalNodeClass iedModel_GenericIO_PTOC1_class = {
     &iedModel_GenericIO_PTOC1,
     "PTOC",
+    NULL,
+    &iedModel_GenericIO_PTCR1_class,
+};
+
+LogicalNodeClass iedModel_GenericIO_PTCR1_class = {
+    &iedModel_GenericIO_PTCR1,
+    "PTCR",
     NULL,
     &iedModel_GenericIO_GGIO1_class,
 };

@@ -27,6 +27,7 @@
 
 #include "iec61850_model_extensions.h"
 #include "iec61850_dynamic_model_extensions.h"
+#include "iec61850_config_file_parser_extensions.h"
 
 #include "libiec61850_platform_includes.h"
 #include "stack_config.h"
@@ -36,7 +37,7 @@
 static uint8_t lineBuffer[READ_BUFFER_MAX_SIZE];
 
 IedModel_extensions*
-ConfigFileParser_createModelFromConfigFile_inputs(FileHandle fileHandle);
+ConfigFileParser_createModelFromConfigFile_inputs(FileHandle fileHandle,IedModel* iedModel);
 
 static int
 readLine(FileHandle fileHandle, uint8_t* buffer, int maxSize)
@@ -96,7 +97,7 @@ terminateString(char* string, char ch)
 }
 
 IedModel_extensions*
-ConfigFileParser_createModelFromConfigFileEx_inputs(const char* filename)
+ConfigFileParser_createModelFromConfigFileEx_inputs(const char* filename,IedModel* iedModel)
 {
     FileHandle configFile = FileSystem_openFile((char*)filename, false);
 
@@ -106,7 +107,7 @@ ConfigFileParser_createModelFromConfigFileEx_inputs(const char* filename)
         return NULL;
     }
 
-    IedModel_extensions* model = ConfigFileParser_createModelFromConfigFile_inputs(configFile);
+    IedModel_extensions* model = ConfigFileParser_createModelFromConfigFile_inputs(configFile, iedModel);
 
     FileSystem_closeFile(configFile);
 
@@ -114,14 +115,14 @@ ConfigFileParser_createModelFromConfigFileEx_inputs(const char* filename)
 }
 
 IedModel_extensions*
-ConfigFileParser_createModelFromConfigFile_inputs(FileHandle fileHandle)
+ConfigFileParser_createModelFromConfigFile_inputs(FileHandle fileHandle,IedModel* iedModel)
 {
     int bytesRead = 1;
 
     bool stateInModel = false;
     int indendation = 0;
 
-    IedModel* IEDmodel = NULL;
+    IedModel* IEDmodel = iedModel;
     IedModel_extensions* model = NULL;
     LogicalDevice* currentLD = NULL;
     LogicalNode* currentLN = NULL;
@@ -175,7 +176,17 @@ ConfigFileParser_createModelFromConfigFile_inputs(FileHandle fileHandle)
 
                         terminateString(nameString, ')');
 
-                        currentLD = LogicalDevice_create(nameString, IEDmodel);
+                        // find the LD in the existing model
+                        currentLD = IEDmodel->firstChild;
+                        while(currentLD != NULL)
+                        {
+                            if(strcmp(currentLD->name,nameString) == 0)
+                                break;
+                            currentLD = (LogicalDevice*)currentLD->sibling;
+                        }
+                        //if the LDname cannot be found in the model, create it
+                        if(currentLD == NULL)
+                            currentLD = LogicalDevice_create(nameString, IEDmodel);
                     }
                     else if (StringUtils_startsWith((char*) lineBuffer, "SD")) {
                         uint32_t appid = 0;
@@ -207,7 +218,18 @@ ConfigFileParser_createModelFromConfigFile_inputs(FileHandle fileHandle)
 
                         terminateString(nameString, ')');
 
-                        currentLN = LogicalNode_create(nameString, currentLD);
+                        
+                        // find the LN in the existing model
+                        currentLN = (LogicalNode*)currentLD->firstChild;
+                        while(currentLN != NULL)
+                        {
+                            if(strcmp(currentLN->name,nameString) == 0)
+                                break;
+                            currentLN = (LogicalNode*)currentLN->sibling;
+                        }
+                        //if the LNname cannot be found in the model, create it
+                        if(currentLN == NULL)
+                            currentLN = LogicalNode_create(nameString, currentLD);
                     }
                     else
                         goto exit_error;
@@ -249,16 +271,23 @@ ConfigFileParser_createModelFromConfigFile_inputs(FileHandle fileHandle)
             else {
                 if (StringUtils_startsWith((char*) lineBuffer, "MODEL{")) {
 
-                    model = IedModel_input_create();
-                    IEDmodel = IedModel_create("");
+                    model = IedModel_extensions_create();
+                    if(IEDmodel == NULL)
+                        IEDmodel = IedModel_create("");
+
                     stateInModel = true;
                     indendation = 1;
                 }
                 else if (StringUtils_startsWith((char*) lineBuffer, "MODEL(")) {
                     sscanf((char*) lineBuffer, "MODEL(%s)", nameString);
                     terminateString(nameString, ')');
-                    model = IedModel_input_create();
-                    IEDmodel = IedModel_create(nameString);
+                    model = IedModel_extensions_create();
+
+                    if(IEDmodel == NULL) 
+                        IEDmodel = IedModel_create(nameString);
+                    else if(strcmp(IEDmodel->name,nameString) != 0)
+                        IEDmodel = IedModel_create(nameString);
+                    
                     stateInModel = true;
                     indendation = 1;
                 }

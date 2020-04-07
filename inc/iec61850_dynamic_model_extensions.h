@@ -33,7 +33,7 @@ extern "C" {
 #endif
 
 LIB61850_API IedModel_extensions*
-IedModel_input_create(void);
+IedModel_extensions_create(void);
 
 /**
  * \brief create a new lnClass reference

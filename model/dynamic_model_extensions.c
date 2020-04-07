@@ -30,7 +30,7 @@
 
 
 IedModel_extensions*
-IedModel_input_create()
+IedModel_extensions_create()
 {
     IedModel_extensions* self = (IedModel_extensions*) GLOBAL_CALLOC(1, sizeof(IedModel_extensions));
 

@@ -2,11 +2,15 @@
 #include "inputs_api.h"
 #include "hal_thread.h"
 #include "../static_model.h"
+#include "PTOC.h"
 
 #include <time.h>
 
-static IedServer static_server;
-static int flip;
+typedef struct sPTOC
+{
+  IedServer server;
+  DataAttribute* Op_general;
+} PTOC;
 
 void
 Conversions_intToStringBuffer2(int intValue, int numberOfDigits, uint8_t* buffer)
@@ -63,58 +67,47 @@ Conversions_msTimeToGeneralizedTime2(uint64_t msTime, uint8_t* buffer)
     buffer[19] = 0;
 }
 
-//callback when SMV is received
+//callback when GOOSE is received
 void PTOC_callback_GOOSE(InputEntry* extRef)
 {
-  //InputEntry* extRef = (InputEntry*) param;
+  PTOC* inst = extRef->callBackParam;
+
   if(extRef->value != NULL)
   {
     char printBuf[1024];
 
     MmsValue_printToBuffer(extRef->value, printBuf, 1024);
-
-    printf("GOOSE value: %s\n", printBuf);
+    printf("Breaker position: %s\n", printBuf);
   }
-  if(flip == 0)
-  {
-    MmsValue* tripValue = MmsValue_newBoolean(true);
-    IedServer_updateAttributeValue(static_server,&iedModel_GenericIO_PTOC1_Op_general,tripValue);
-    MmsValue_delete(tripValue);
-    flip = 1;
-  }
-  else
-  {
-    MmsValue* tripValue = MmsValue_newBoolean(false);
-    IedServer_updateAttributeValue(static_server,&iedModel_GenericIO_PTOC1_Op_general,tripValue);
-    MmsValue_delete(tripValue);
-    flip = 0;
-  }
-  
-  //check if value is outside allowed band
-  //if so send to internal PTRC
 }
 
 //callback when SMV is received
 void PTOC_callback_SMV(InputEntry* extRef)
 {
-  //InputEntry* extRef = (InputEntry*) param;
+  PTOC* inst = extRef->callBackParam;
+
   if(extRef->value != NULL)
   {
     MmsValue * stVal = MmsValue_getElement(extRef->value,0);
     uint8_t tempBuf[20];
     Conversions_msTimeToGeneralizedTime2(MmsValue_getUtcTimeInMs(MmsValue_getElement(extRef->value,2)), tempBuf);
     printf("val :%lld, q: %08X, time: %s\n", (long long) MmsValue_toInt64(stVal), MmsValue_toUint32(MmsValue_getElement(extRef->value,1)), tempBuf);
+    //check if value is outside allowed band
+    if(MmsValue_toInt64(stVal) > 10000){
+      MmsValue* tripValue = MmsValue_newBoolean(true);
+      IedServer_updateAttributeValue(inst->server,inst->Op_general,tripValue);
+      MmsValue_delete(tripValue);
+      //if so send to internal PTRC
+    }
   }
-  //check if value is outside allowed band
-  MmsValue* tripValue = MmsValue_newBoolean(true);
-  IedServer_updateAttributeValue(static_server,&iedModel_GenericIO_PTOC1_Op_general,tripValue);
-  //if so send to internal PTRC
 }
 
 void PTOC_init(IedServer server, Input* input)
 {
-  static_server = server;
-  flip = 0;
+  PTOC* inst = (PTOC *) malloc(sizeof(PTOC));//create new instance with MALLOC
+  inst->server = server;
+  inst->Op_general = (DataAttribute*) ModelNode_getChild((ModelNode*) input->parent, "Op.general");//the node to operate on
+ 
   //find extref for the last SMV, using the intaddr
   InputEntry* extRef = input->extRefs;
 
@@ -123,12 +116,12 @@ void PTOC_init(IedServer server, Input* input)
 		if(strcmp(extRef->intAddr,"Vol4") == 0)
 		{
       extRef->callBack = (callBackFunction) PTOC_callback_SMV;
-      extRef->callBackParam = NULL;
+      extRef->callBackParam = inst;
 		}
     if(strcmp(extRef->intAddr,"xcbr_stval") == 0)
 		{
       extRef->callBack = (callBackFunction) PTOC_callback_GOOSE;
-      extRef->callBackParam = NULL;
+      extRef->callBackParam = inst;
 		}
 		extRef = extRef->sibling;
 	}

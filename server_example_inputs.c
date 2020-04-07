@@ -8,6 +8,7 @@
 #include "inputs_api.h"
 #include "iec61850_model_extensions.h"
 #include "iec61850_dynamic_model_extensions.h"
+#include "iec61850_config_file_parser_extensions.h"
 #include "LNParse.h"
 
 #include "iec61850_server.h"
@@ -22,9 +23,6 @@
 /* import IEC 61850 device model created from SCL-File */
 extern IedModel iedModel;
 extern IedModel_extensions iedExtendedModel;
-
-IedModel_extensions*
-ConfigFileParser_createModelFromConfigFileEx_inputs(const char* filename);
 
 static int running = 0;
 static IedServer iedServer = NULL;
@@ -45,7 +43,7 @@ int main(int argc, char** argv) {
 	{
 		port = 9102;
 		iedModel_local = ConfigFileParser_createModelFromConfigFileEx("config.cfg");
-		iedExtendedModel_local = ConfigFileParser_createModelFromConfigFileEx_inputs("model.cfg");
+		iedExtendedModel_local = ConfigFileParser_createModelFromConfigFileEx_inputs("model.cfg",iedModel_local);
 		if(iedModel_local == NULL|| iedExtendedModel_local == NULL)
 		{
 			printf("Parsing dynamic config failed! Exit.\n");
