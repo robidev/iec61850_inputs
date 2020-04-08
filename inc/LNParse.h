@@ -10,7 +10,7 @@ extern "C" {
 
 void attachLogicalNodes(IedServer server, IedModel_extensions* model, LinkedList allInputValues);
 
-void attachSMV(SVPublisher SMVPublisher, IedServer server, IedModel* model);
+void attachSMV(IedServer server, IedModel* model, char* ethernetIfcID);
 
 #ifdef __cplusplus
 }

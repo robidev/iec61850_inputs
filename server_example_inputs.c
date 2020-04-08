@@ -56,7 +56,6 @@ int main(int argc, char** argv) {
 
 	GooseReceiver GSEreceiver = GooseReceiver_create();
     SVReceiver SMVreceiver = SVReceiver_create();
-	SVPublisher SMVPublisher = NULL;
 
 	char* ethernetIfcID = "lo";
 
@@ -69,9 +68,6 @@ int main(int argc, char** argv) {
 	IedServer_setGooseInterfaceId(iedServer, ethernetIfcID);
 	//goose subscriber
 	GooseReceiver_setInterfaceId(GSEreceiver, ethernetIfcID);
-
-	//smv publisher
-	SMVPublisher = SVPublisher_create(NULL, ethernetIfcID);
 	//smv subscriber
 	SVReceiver_setInterfaceId(SMVreceiver, ethernetIfcID);
 
@@ -96,7 +92,6 @@ int main(int argc, char** argv) {
 	{
 		printf("WARNING: no receivers are running\n");
 	}
-	
 
 	/* MMS server will be instructed to start listening to client connections. */
 	IedServer_start(iedServer, port);
@@ -106,12 +101,12 @@ int main(int argc, char** argv) {
 		IedServer_destroy(iedServer);
 		exit(-1);
 	}
+	
+	//call initializers for sampled value control blocks and start publishing
+	attachSMV(iedServer, iedModel_local, ethernetIfcID);
 
 	//call all initializers for logical nodes in the model
 	attachLogicalNodes(iedServer, iedExtendedModel_local, allInputValues);
-
-	//call initializers for sampled value control blocks
-	attachSMV(SMVPublisher, iedServer, iedModel_local);
 
 	/* Start GOOSE publishing */
 	IedServer_enableGoosePublishing(iedServer);

@@ -38,11 +38,11 @@ model:	$(PROJECT_ICD_FILE)
 	java -jar $(LIBIEC_HOME)/tools/model_generator/genconfig.jar $(PROJECT_ICD_FILE) -ied IED1_XCBR config.cfg
 	java -jar model_input_generator/genconfig_input.jar $(PROJECT_ICD_FILE) -ied IED1_XCBR model.cfg
 
-	java -jar $(LIBIEC_HOME)/tools/model_generator/genmodel.jar $(PROJECT_ICD_FILE) -ied IED2_PTOC
-	java -jar model_input_generator/genmodel_input.jar $(PROJECT_ICD_FILE) -ied IED2_PTOC
+	java -jar $(LIBIEC_HOME)/tools/model_generator/genconfig.jar $(PROJECT_ICD_FILE) -ied IED2_PTOC config_ptoc.cfg
+	java -jar model_input_generator/genconfig_input.jar $(PROJECT_ICD_FILE) -ied IED2_PTOC model_ptoc.cfg
 
-	java -jar $(LIBIEC_HOME)/tools/model_generator/genconfig.jar $(PROJECT_ICD_FILE) -ied IED3_SMV config_smv.cfg
-	java -jar model_input_generator/genconfig_input.jar $(PROJECT_ICD_FILE) -ied IED3_SMV model_smv.cfg
+	java -jar $(LIBIEC_HOME)/tools/model_generator/genmodel.jar $(PROJECT_ICD_FILE) -ied IED3_SMV
+	java -jar model_input_generator/genmodel_input.jar $(PROJECT_ICD_FILE) -ied IED3_SMV
 
 $(PROJECT_BINARY_NAME):	$(PROJECT_SOURCES) $(LIB_NAME)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $(PROJECT_BINARY_NAME) $(PROJECT_SOURCES) $(INCLUDES) $(LIB_NAME) $(LDFLAGS) $(LDLIBS)

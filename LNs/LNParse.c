@@ -69,13 +69,13 @@ void attachLogicalNodes(IedServer server, IedModel_extensions* model, LinkedList
   
 }
 
-void attachSMV(SVPublisher SMVPublisher, IedServer server, IedModel* model)
+void attachSMV(IedServer server, IedModel* model, char* ethernetIfcID)
 {
   SVControlBlock* svCBs = model->svCBs;
   while(svCBs != NULL)
   {
-    LogicalNode* logicalNode;
-
+    	//smv publisher
+	  SVPublisher SMVPublisher = SVPublisher_create((CommParameters *)svCBs->dstAddress, ethernetIfcID);
     SMVP_init(SMVPublisher, server, model, svCBs->parent, svCBs->dataSetName, svCBs->name);
 
     svCBs = svCBs->sibling;

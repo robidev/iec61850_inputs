@@ -9,168 +9,7 @@
 #include "static_model.h"
 
 
-extern Input iedExtendedModel_GenericIO_PTOC1_inputs;
-extern Input iedExtendedModel_GenericIO_PTRC1_inputs;
 
-
-extern InputEntry iedExtendedModel_GenericIO_PTOC1_inputs_extRef0;
-extern InputEntry iedExtendedModel_GenericIO_PTOC1_inputs_extRef1;
-extern InputEntry iedExtendedModel_GenericIO_PTOC1_inputs_extRef2;
-extern InputEntry iedExtendedModel_GenericIO_PTOC1_inputs_extRef3;
-extern InputEntry iedExtendedModel_GenericIO_PTOC1_inputs_extRef4;
-extern InputEntry iedExtendedModel_GenericIO_PTOC1_inputs_extRef5;
-extern InputEntry iedExtendedModel_GenericIO_PTOC1_inputs_extRef6;
-extern InputEntry iedExtendedModel_GenericIO_PTOC1_inputs_extRef7;
-extern InputEntry iedExtendedModel_GenericIO_PTOC1_inputs_extRef8;
-
-InputEntry iedExtendedModel_GenericIO_PTOC1_inputs_extRef0 = {
-  "sample_a1",
-  "IED3_SMVMUnn/TCTR1.Amp",
-  "Amp1",
-  "SMV",
-  "IED3_SMVMUnn/LLN0.MSVCB01",
-  NULL,
-  NULL,
-  NULL,
-  &iedExtendedModel_GenericIO_PTOC1_inputs_extRef1
-};
-
-InputEntry iedExtendedModel_GenericIO_PTOC1_inputs_extRef1 = {
-  "sample_a2",
-  "IED3_SMVMUnn/TCTR2.Amp",
-  "Amp2",
-  "SMV",
-  "IED3_SMVMUnn/LLN0.MSVCB01",
-  NULL,
-  NULL,
-  NULL,
-  &iedExtendedModel_GenericIO_PTOC1_inputs_extRef2
-};
-
-InputEntry iedExtendedModel_GenericIO_PTOC1_inputs_extRef2 = {
-  "sample_a3",
-  "IED3_SMVMUnn/TCTR3.Amp",
-  "Amp3",
-  "SMV",
-  "IED3_SMVMUnn/LLN0.MSVCB01",
-  NULL,
-  NULL,
-  NULL,
-  &iedExtendedModel_GenericIO_PTOC1_inputs_extRef3
-};
-
-InputEntry iedExtendedModel_GenericIO_PTOC1_inputs_extRef3 = {
-  "sample_a4",
-  "IED3_SMVMUnn/TCTR4.Amp",
-  "Amp4",
-  "SMV",
-  "IED3_SMVMUnn/LLN0.MSVCB01",
-  NULL,
-  NULL,
-  NULL,
-  &iedExtendedModel_GenericIO_PTOC1_inputs_extRef4
-};
-
-InputEntry iedExtendedModel_GenericIO_PTOC1_inputs_extRef4 = {
-  "sample_v1",
-  "IED3_SMVMUnn/TVTR1.Vol",
-  "Vol1",
-  "SMV",
-  "IED3_SMVMUnn/LLN0.MSVCB01",
-  NULL,
-  NULL,
-  NULL,
-  &iedExtendedModel_GenericIO_PTOC1_inputs_extRef5
-};
-
-InputEntry iedExtendedModel_GenericIO_PTOC1_inputs_extRef5 = {
-  "sample_v2",
-  "IED3_SMVMUnn/TVTR2.Vol",
-  "Vol2",
-  "SMV",
-  "IED3_SMVMUnn/LLN0.MSVCB01",
-  NULL,
-  NULL,
-  NULL,
-  &iedExtendedModel_GenericIO_PTOC1_inputs_extRef6
-};
-
-InputEntry iedExtendedModel_GenericIO_PTOC1_inputs_extRef6 = {
-  "sample_v3",
-  "IED3_SMVMUnn/TVTR3.Vol",
-  "Vol3",
-  "SMV",
-  "IED3_SMVMUnn/LLN0.MSVCB01",
-  NULL,
-  NULL,
-  NULL,
-  &iedExtendedModel_GenericIO_PTOC1_inputs_extRef7
-};
-
-InputEntry iedExtendedModel_GenericIO_PTOC1_inputs_extRef7 = {
-  "sample_v4",
-  "IED3_SMVMUnn/TVTR4.Vol",
-  "Vol4",
-  "SMV",
-  "IED3_SMVMUnn/LLN0.MSVCB01",
-  NULL,
-  NULL,
-  NULL,
-  &iedExtendedModel_GenericIO_PTOC1_inputs_extRef8
-};
-
-InputEntry iedExtendedModel_GenericIO_PTOC1_inputs_extRef8 = {
-  "xcbr_status",
-  "IED1_XCBRGenericIO/XCBR1.Pos.stVal",
-  "xcbr_stval",
-  "GOOSE",
-  "IED1_XCBRGenericIO/LLN0.GoCB",
-  NULL,
-  NULL,
-  NULL,
-  NULL
-};
-
-Input iedExtendedModel_GenericIO_PTOC1_inputs = {
-  &iedModel_GenericIO_PTOC1,
-  9,
-  &iedExtendedModel_GenericIO_PTOC1_inputs_extRef0,
-  &iedExtendedModel_GenericIO_PTRC1_inputs
-};
-
-extern InputEntry iedExtendedModel_GenericIO_PTRC1_inputs_extRef0;
-extern InputEntry iedExtendedModel_GenericIO_PTRC1_inputs_extRef1;
-
-InputEntry iedExtendedModel_GenericIO_PTRC1_inputs_extRef0 = {
-  "PTOC_trip",
-  "IED2_PTOCGenericIO/PTOC1.Op.general",
-  "PTOC_Op",
-  "Poll",
-  "IED2_PTOC/",
-  NULL,
-  NULL,
-  NULL,
-  &iedExtendedModel_GenericIO_PTRC1_inputs_extRef1
-};
-
-InputEntry iedExtendedModel_GenericIO_PTRC1_inputs_extRef1 = {
-  "xcbr_status",
-  "IED1_XCBRGenericIO/XCBR1.Pos.stVal",
-  "xcbr_stval",
-  "GOOSE",
-  "IED1_XCBRGenericIO/LLN0.GoCB",
-  NULL,
-  NULL,
-  NULL,
-  NULL
-};
-
-Input iedExtendedModel_GenericIO_PTRC1_inputs = {
-  &iedModel_GenericIO_PTRC1,
-  2,
-  &iedExtendedModel_GenericIO_PTRC1_inputs_extRef0,
-  NULL
-};
 extern SubscriberEntry IED1_XCBR_ds_GenericIO_LLN0_Events0;
 extern SubscriberEntry IED2_PTOC_ds_GenericIO_LLN0_Events0;
 extern SubscriberEntry IED2_PTOC_ds_GenericIO_LLN0_Events1;
@@ -283,51 +122,83 @@ SubscriberEntry IED3_SMV_ds_MUnn_LLN0_PhsMeas17 = {
   NULL,
 };
 
-extern LogicalNodeClass iedModel_GenericIO_LLN0_class;
-extern LogicalNodeClass iedModel_GenericIO_LPHD1_class;
-extern LogicalNodeClass iedModel_GenericIO_PTOC1_class;
-extern LogicalNodeClass iedModel_GenericIO_PTRC1_class;
-extern LogicalNodeClass iedModel_GenericIO_GGIO1_class;
+extern LogicalNodeClass iedModel_MUnn_LLN0_class;
+extern LogicalNodeClass iedModel_MUnn_TCTR1_class;
+extern LogicalNodeClass iedModel_MUnn_TCTR2_class;
+extern LogicalNodeClass iedModel_MUnn_TCTR3_class;
+extern LogicalNodeClass iedModel_MUnn_TCTR4_class;
+extern LogicalNodeClass iedModel_MUnn_TVTR1_class;
+extern LogicalNodeClass iedModel_MUnn_TVTR2_class;
+extern LogicalNodeClass iedModel_MUnn_TVTR3_class;
+extern LogicalNodeClass iedModel_MUnn_TVTR4_class;
 
 
-LogicalNodeClass iedModel_GenericIO_LLN0_class = {
-    &iedModel_GenericIO_LLN0,
+LogicalNodeClass iedModel_MUnn_LLN0_class = {
+    &iedModel_MUnn_LLN0,
     "LLN0",
     NULL,
-    &iedModel_GenericIO_LPHD1_class,
+    &iedModel_MUnn_TCTR1_class,
 };
 
-LogicalNodeClass iedModel_GenericIO_LPHD1_class = {
-    &iedModel_GenericIO_LPHD1,
-    "LPHD",
+LogicalNodeClass iedModel_MUnn_TCTR1_class = {
+    &iedModel_MUnn_TCTR1,
+    "TCTR",
     NULL,
-    &iedModel_GenericIO_PTOC1_class,
+    &iedModel_MUnn_TCTR2_class,
 };
 
-LogicalNodeClass iedModel_GenericIO_PTOC1_class = {
-    &iedModel_GenericIO_PTOC1,
-    "PTOC",
+LogicalNodeClass iedModel_MUnn_TCTR2_class = {
+    &iedModel_MUnn_TCTR2,
+    "TCTR",
     NULL,
-    &iedModel_GenericIO_PTRC1_class,
+    &iedModel_MUnn_TCTR3_class,
 };
 
-LogicalNodeClass iedModel_GenericIO_PTRC1_class = {
-    &iedModel_GenericIO_PTRC1,
-    "PTRC",
+LogicalNodeClass iedModel_MUnn_TCTR3_class = {
+    &iedModel_MUnn_TCTR3,
+    "TCTR",
     NULL,
-    &iedModel_GenericIO_GGIO1_class,
+    &iedModel_MUnn_TCTR4_class,
 };
 
-LogicalNodeClass iedModel_GenericIO_GGIO1_class = {
-    &iedModel_GenericIO_GGIO1,
-    "GGIO",
+LogicalNodeClass iedModel_MUnn_TCTR4_class = {
+    &iedModel_MUnn_TCTR4,
+    "TCTR",
+    NULL,
+    &iedModel_MUnn_TVTR1_class,
+};
+
+LogicalNodeClass iedModel_MUnn_TVTR1_class = {
+    &iedModel_MUnn_TVTR1,
+    "TVTR",
+    NULL,
+    &iedModel_MUnn_TVTR2_class,
+};
+
+LogicalNodeClass iedModel_MUnn_TVTR2_class = {
+    &iedModel_MUnn_TVTR2,
+    "TVTR",
+    NULL,
+    &iedModel_MUnn_TVTR3_class,
+};
+
+LogicalNodeClass iedModel_MUnn_TVTR3_class = {
+    &iedModel_MUnn_TVTR3,
+    "TVTR",
+    NULL,
+    &iedModel_MUnn_TVTR4_class,
+};
+
+LogicalNodeClass iedModel_MUnn_TVTR4_class = {
+    &iedModel_MUnn_TVTR4,
+    "TVTR",
     NULL,
     NULL
 };
 
 
 IedModel_extensions iedExtendedModel = {
-    &iedExtendedModel_GenericIO_PTOC1_inputs,
+    NULL,
     &IED1_XCBR_ds_GenericIO_LLN0_Events0,
-    &iedModel_GenericIO_LLN0_class,
+    &iedModel_MUnn_LLN0_class,
     };
