@@ -87,7 +87,7 @@ void SMV_Thread(SMVP* inst)
 {
     inst->running = true;
 
-    Quality q = 42;//QUALITY_VALIDITY_GOOD;
+    Quality q = QUALITY_VALIDITY_GOOD;
 
     int vol = (int) (6350.f * sqrt(2));
     int amp = 0;
@@ -109,7 +109,7 @@ void SMV_Thread(SMVP* inst)
     {
         /* update measurement values */
         int samplePoint = sampleCount % 80;
-        q++;
+
         double angleA = (2 * M_PI / 80) * samplePoint;
         double angleB = (2 * M_PI / 80) * samplePoint - ( 2 * M_PI / 3);
         double angleC = (2 * M_PI / 80) * samplePoint - ( 4 * M_PI / 3);

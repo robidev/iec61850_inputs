@@ -71,7 +71,13 @@ void attachLogicalNodes(IedServer server, IedModel_extensions* model, LinkedList
 
 void attachSMV(SVPublisher SMVPublisher, IedServer server, IedModel* model)
 {
-  LogicalNode* logicalNode;
+  SVControlBlock* svCBs = model->svCBs;
+  while(svCBs != NULL)
+  {
+    LogicalNode* logicalNode;
 
-  SMVP_init(SMVPublisher, server, model, logicalNode, "dataSet", "svcbName");
+    SMVP_init(SMVPublisher, server, model, svCBs->parent, svCBs->dataSetName, svCBs->name);
+
+    svCBs = svCBs->sibling;
+  }
 }
