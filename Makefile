@@ -7,6 +7,7 @@ PROJECT_ICD_FILE = simpleIO_inputs.cid
 PROJECT_SOURCES = input/inputs.c
 PROJECT_SOURCES += model/config_file_parser_extensions.c
 PROJECT_SOURCES += model/dynamic_model_extensions.c
+PROJECT_SOURCES += LNs/SMVPublisher.c
 PROJECT_SOURCES += LNs/LNParse.c
 PROJECT_SOURCES += LNs/CILO.c
 PROJECT_SOURCES += LNs/CSWI.c
@@ -25,6 +26,8 @@ PROJECT_SOURCES += static_input.c
 include $(LIBIEC_HOME)/make/target_system.mk
 include $(LIBIEC_HOME)/make/stack_includes.mk
 
+LDFLAGS += -lm
+
 INCLUDES += -I./inc
 
 all:	$(PROJECT_BINARY_NAME)
@@ -42,7 +45,7 @@ model:	$(PROJECT_ICD_FILE)
 	java -jar model_input_generator/genconfig_input.jar $(PROJECT_ICD_FILE) -ied IED3_SMV model_smv.cfg
 
 $(PROJECT_BINARY_NAME):	$(PROJECT_SOURCES) $(LIB_NAME)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $(PROJECT_BINARY_NAME) $(PROJECT_SOURCES) $(INCLUDES) $(LIB_NAME) $(LDLIBS)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $(PROJECT_BINARY_NAME) $(PROJECT_SOURCES) $(INCLUDES) $(LIB_NAME) $(LDFLAGS) $(LDLIBS)
 
 clean:
 	rm -f $(PROJECT_BINARY_NAME)

@@ -1,5 +1,5 @@
 #include "iec61850_server.h"
-#include "sv_publisher.h"
+#include "SMVPublisher.h"
 
 #include "iec61850_model_extensions.h"
 #include "inputs_api.h"

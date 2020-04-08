@@ -1,6 +1,7 @@
 #include "iec61850_model_extensions.h"
 #include "inputs_api.h"
 #include "LNParse.h"
+#include "SMVPublisher.h"
 #include "XSWI.h"
 #include "XCBR.h"
 #include "RADR.h"
@@ -68,4 +69,9 @@ void attachLogicalNodes(IedServer server, IedModel_extensions* model, LinkedList
   
 }
 
+void attachSMV(SVPublisher SMVPublisher, IedServer server, IedModel* model)
+{
+  LogicalNode* logicalNode;
 
+  SMVP_init(SMVPublisher, server, model, logicalNode, "dataSet", "svcbName");
+}
