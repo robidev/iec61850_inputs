@@ -9,8 +9,6 @@
 extern "C" {
 #endif
 
-void MMXU_callback(void* param);
-
 void MMXU_init(Input* input);
 
 #ifdef __cplusplus

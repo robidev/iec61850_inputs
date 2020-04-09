@@ -9,8 +9,6 @@
 extern "C" {
 #endif
 
-void RADR_callback(void* param);
-
 void RADR_init(Input* input);
 
 #ifdef __cplusplus

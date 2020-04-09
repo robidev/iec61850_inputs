@@ -11,6 +11,8 @@
 #include "CSWI.h"
 #include "CILO.h"
 #include "LLN0.h"
+#include "TCTR.h"
+#include "TVTR.h"
 
 void attachLogicalNodes(IedServer server, IedModel_extensions* model, LinkedList allInputValues)
 {
@@ -22,6 +24,7 @@ void attachLogicalNodes(IedServer server, IedModel_extensions* model, LinkedList
 
     if(strcmp(lnClass->lnClass,"LLN0") == 0)
     {
+      printf("Found mandatory Class LLN0\n");
       LLN0_init(server, lnClass->parent);
     }
     else if(strcmp(lnClass->lnClass,"LPHD") == 0)
@@ -59,6 +62,14 @@ void attachLogicalNodes(IedServer server, IedModel_extensions* model, LinkedList
     else if(strcmp(lnClass->lnClass,"CILO") == 0)
     {
       CILO_init(input);
+    }
+    else if(strcmp(lnClass->lnClass,"TCTR") == 0)
+    {
+      TCTR_init(input);
+    }
+    else if(strcmp(lnClass->lnClass,"TVTR") == 0)
+    {
+      TVTR_init(input);
     }
     else
     {

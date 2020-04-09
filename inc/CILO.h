@@ -9,8 +9,6 @@
 extern "C" {
 #endif
 
-void CILO_callback(void* param);
-
 void CILO_init(Input* input);
 
 #ifdef __cplusplus

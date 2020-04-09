@@ -1,5 +1,5 @@
-#ifndef CSWI_H_
-#define CSWI_H_
+#ifndef TCTR_H_
+#define TCTR_H_
 
 #include "iec61850_model_extensions.h"
 #include "inputs_api.h"
@@ -9,11 +9,11 @@
 extern "C" {
 #endif
 
-void CSWI_init(Input* input);
+void TCTR_init(Input* input);
 
 #ifdef __cplusplus
 }
 #endif
 
 
-#endif /* CSWI_H_ */
+#endif /* TCTR_H_ */

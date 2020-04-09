@@ -18,6 +18,8 @@ PROJECT_SOURCES += LNs/RADR.c
 PROJECT_SOURCES += LNs/XCBR.c
 PROJECT_SOURCES += LNs/XSWI.c
 PROJECT_SOURCES += LNs/LLN0.c
+PROJECT_SOURCES += LNs/TVTR.c
+PROJECT_SOURCES += LNs/TCTR.c
 
 PROJECT_SOURCES += server_example_inputs.c
 PROJECT_SOURCES += static_model.c
@@ -35,14 +37,14 @@ all:	$(PROJECT_BINARY_NAME)
 include $(LIBIEC_HOME)/make/common_targets.mk
 
 model:	$(PROJECT_ICD_FILE)
-	java -jar $(LIBIEC_HOME)/tools/model_generator/genconfig.jar $(PROJECT_ICD_FILE) -ied IED1_XCBR config.cfg
-	java -jar model_input_generator/genconfig_input.jar $(PROJECT_ICD_FILE) -ied IED1_XCBR model.cfg
+	java -jar $(LIBIEC_HOME)/tools/model_generator/genconfig.jar $(PROJECT_ICD_FILE) -ied IED1_XCBR ./cfg/IED1_XCBR.cfg
+	java -jar model_input_generator/genconfig_input.jar $(PROJECT_ICD_FILE) -ied IED1_XCBR ./cfg/IED1_XCBR.ext
 
-	java -jar $(LIBIEC_HOME)/tools/model_generator/genconfig.jar $(PROJECT_ICD_FILE) -ied IED2_PTOC config_ptoc.cfg
-	java -jar model_input_generator/genconfig_input.jar $(PROJECT_ICD_FILE) -ied IED2_PTOC model_ptoc.cfg
+	java -jar $(LIBIEC_HOME)/tools/model_generator/genconfig.jar $(PROJECT_ICD_FILE) -ied IED2_PTOC ./cfg/IED2_PTOC.cfg
+	java -jar model_input_generator/genconfig_input.jar $(PROJECT_ICD_FILE) -ied IED2_PTOC ./cfg/IED2_PTOC.ext
 
-	java -jar $(LIBIEC_HOME)/tools/model_generator/genconfig.jar $(PROJECT_ICD_FILE) -ied IED3_SMV config_smv.cfg
-	java -jar model_input_generator/genconfig_input.jar $(PROJECT_ICD_FILE) -ied IED3_SMV model_smv.cfg
+	java -jar $(LIBIEC_HOME)/tools/model_generator/genconfig.jar $(PROJECT_ICD_FILE) -ied IED3_SMV ./cfg/IED3_SMV.cfg
+	java -jar model_input_generator/genconfig_input.jar $(PROJECT_ICD_FILE) -ied IED3_SMV ./cfg/IED3_SMV
 	#java -jar $(LIBIEC_HOME)/tools/model_generator/genmodel.jar $(PROJECT_ICD_FILE) -ied IED3_SMV
 	#java -jar model_input_generator/genmodel_input.jar $(PROJECT_ICD_FILE) -ied IED3_SMV
 
