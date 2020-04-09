@@ -38,13 +38,25 @@ int main(int argc, char** argv) {
 	IedModel* iedModel_local = &iedModel;
 	IedModel_extensions* iedExtendedModel_local = &iedExtendedModel;
 
-	int port = 8102;
+	int port = 102;
+	char* ethernetIfcID = "lo";
 
-	if(argc > 4 && strcmp(argv[2],"-d") == 0 )
+	if (argc > 1) {
+		ethernetIfcID = argv[1];
+
+		printf("Using interface: %s\n", ethernetIfcID);
+	}
+
+	if(argc > 2 )
 	{
-		port = 9102;
+		port = atoi(argv[2]);
+	}
+
+	if(argc > 3 )
+	{
 		iedModel_local = ConfigFileParser_createModelFromConfigFileEx(argv[3]);
 		iedExtendedModel_local = ConfigFileParser_createModelFromConfigFileEx_inputs(argv[4],iedModel_local);
+
 		if(iedModel_local == NULL|| iedExtendedModel_local == NULL)
 		{
 			printf("Parsing dynamic config failed! Exit.\n");
@@ -57,13 +69,6 @@ int main(int argc, char** argv) {
 	GooseReceiver GSEreceiver = GooseReceiver_create();
     SVReceiver SMVreceiver = SVReceiver_create();
 
-	char* ethernetIfcID = "lo";
-
-	if (argc > 1) {
-		ethernetIfcID = argv[1];
-
-		printf("Using interface: %s\n", ethernetIfcID);
-	}
 	/* set GOOSE interface for all GOOSE publishers (GCBs) */
 	IedServer_setGooseInterfaceId(iedServer, ethernetIfcID);
 	//goose subscriber
