@@ -40,11 +40,11 @@ int main(int argc, char** argv) {
 
 	int port = 8102;
 
-	if(argc > 2 && strcmp(argv[2],"dyn") == 0 )
+	if(argc > 4 && strcmp(argv[2],"-d") == 0 )
 	{
 		port = 9102;
-		iedModel_local = ConfigFileParser_createModelFromConfigFileEx("config_smv.cfg");
-		iedExtendedModel_local = ConfigFileParser_createModelFromConfigFileEx_inputs("model_smv.cfg",iedModel_local);
+		iedModel_local = ConfigFileParser_createModelFromConfigFileEx(argv[3]);
+		iedExtendedModel_local = ConfigFileParser_createModelFromConfigFileEx_inputs(argv[4],iedModel_local);
 		if(iedModel_local == NULL|| iedExtendedModel_local == NULL)
 		{
 			printf("Parsing dynamic config failed! Exit.\n");

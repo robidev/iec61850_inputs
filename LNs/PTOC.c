@@ -10,7 +10,8 @@ typedef struct sPTOC
 {
   IedServer server;
   DataAttribute* Op_general;
-  void * Op_general_callback;
+  void* Op_general_callback;
+  Input* input;
 } PTOC;
 
 void
@@ -86,21 +87,29 @@ void PTOC_callback_GOOSE(InputEntry* extRef)
 void PTOC_callback_SMV(InputEntry* extRef)
 {
   PTOC* inst = extRef->callBackParam;
-
-  if(extRef->value != NULL)
+  extRef = inst->input->extRefs;//start from the first extref, and check all values
+  
+  while(extRef != NULL )
   {
-    MmsValue * stVal = MmsValue_getElement(extRef->value,0);
-    uint8_t tempBuf[20];
-    Conversions_msTimeToGeneralizedTime2(MmsValue_getUtcTimeInMs(MmsValue_getElement(extRef->value,2)), tempBuf);
-    printf("val :%lld, q: %08X, time: %s\n", (long long) MmsValue_toInt64(stVal), MmsValue_toUint32(MmsValue_getElement(extRef->value,1)), tempBuf);
-    //check if value is outside allowed band
-    if(MmsValue_toInt64(stVal) < 0){
-      MmsValue* tripValue = MmsValue_newBoolean(true);
-      IedServer_updateAttributeValue(inst->server,inst->Op_general,tripValue);
-      InputValueHandleExtensionCallbacks(inst->Op_general_callback); //update the associated callbacks with this Data Element
-      MmsValue_delete(tripValue);
-      //if so send to internal PTRC
+    if(strcmp(extRef->intAddr,"xcbr_stval") != 0 && extRef->value != NULL)
+    {
+      MmsValue * stVal = MmsValue_getElement(extRef->value,0);
+      uint8_t tempBuf[20];
+      Conversions_msTimeToGeneralizedTime2(MmsValue_getUtcTimeInMs(MmsValue_getElement(extRef->value,2)), tempBuf);
+      printf("val :%lld, q: %08X, time: %s\n", (long long) MmsValue_toInt64(stVal), MmsValue_toUint32(MmsValue_getElement(extRef->value,1)), tempBuf);
+
+      //check if value is outside allowed band
+      if(MmsValue_toInt64(stVal) > 100){
+        MmsValue* tripValue = MmsValue_newBoolean(true);
+
+        IedServer_updateAttributeValue(inst->server,inst->Op_general,tripValue);
+        InputValueHandleExtensionCallbacks(inst->Op_general_callback); //update the associated callbacks with this Data Element
+
+        MmsValue_delete(tripValue);
+        //if so send to internal PTRC
+      }
     }
+    extRef = extRef->sibling;
   }
 }
 
@@ -110,13 +119,14 @@ void PTOC_init(IedServer server, Input* input, LinkedList allInputValues)
   inst->server = server;
   inst->Op_general = (DataAttribute*) ModelNode_getChild((ModelNode*) input->parent, "Op.general");//the node to operate on
   inst->Op_general_callback = _findAttributeValueEx(inst->Op_general, allInputValues);
+  inst->input = input;
   
-  //find extref for the last SMV, using the intaddr
+  
   InputEntry* extRef = input->extRefs;
 
 	while(extRef != NULL)
 	{
-		if(strcmp(extRef->intAddr,"Vol4") == 0)
+		if(strcmp(extRef->intAddr,"Vol4") == 0)//find extref for the last SMV, using the intaddr, so that all values are updated
 		{
       extRef->callBack = (callBackFunction) PTOC_callback_SMV;
       extRef->callBackParam = inst;
