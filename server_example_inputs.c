@@ -43,8 +43,8 @@ int main(int argc, char** argv) {
 	if(argc > 2 && strcmp(argv[2],"dyn") == 0 )
 	{
 		port = 9102;
-		iedModel_local = ConfigFileParser_createModelFromConfigFileEx("config.cfg");
-		iedExtendedModel_local = ConfigFileParser_createModelFromConfigFileEx_inputs("model.cfg",iedModel_local);
+		iedModel_local = ConfigFileParser_createModelFromConfigFileEx("config_smv.cfg");
+		iedExtendedModel_local = ConfigFileParser_createModelFromConfigFileEx_inputs("model_smv.cfg",iedModel_local);
 		if(iedModel_local == NULL|| iedExtendedModel_local == NULL)
 		{
 			printf("Parsing dynamic config failed! Exit.\n");

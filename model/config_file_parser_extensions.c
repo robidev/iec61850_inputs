@@ -130,6 +130,7 @@ ConfigFileParser_createModelFromConfigFile_inputs(FileHandle fileHandle,IedModel
     DataSet* currentDataSet = NULL;
     Input* currentInput = NULL;
     GSEControlBlock* currentGoCB = NULL;
+    SVControlBlock* currentSvCB = NULL;
 
     char nameString[130];
     char nameString2[130];
@@ -245,6 +246,29 @@ ConfigFileParser_createModelFromConfigFile_inputs(FileHandle fileHandle,IedModel
                         terminateString(nameString, ')');
                         LogicalNodeClass_create(currentLN, model,nameString);
                     }
+                    else if (StringUtils_startsWith((char*) lineBuffer, "SV")) {
+                        uint32_t confRev = 0;
+                        uint8_t smpMod = 0;
+                        uint32_t smpRate = 0;
+                        uint8_t optFlds = 0;
+                        uint8_t isUnicast = 0;
+                        int matchedItems = sscanf((char*) lineBuffer, "SV(%s %s %s %i %c %i %c %c)", 
+                            nameString, 
+                            nameString2, 
+                            nameString3, 
+                            &confRev, 
+                            &smpMod, 
+                            &smpRate, 
+                            &optFlds, 
+                            &isUnicast );
+
+                        if (matchedItems < 8) goto exit_error;
+                        //                    name        ln         svID         dataSet      convRev  smpMod  smpRate  optFlds isUnicast
+                        currentSvCB = SVControlBlock_create(nameString, currentLN, nameString2, nameString3, confRev, smpMod, (uint16_t)smpRate, optFlds, isUnicast);
+                        if (currentLN != NULL)
+                            LogicalNode_addSVControlBlock(currentLN, currentSvCB);
+                        indendation = 4;            
+                    }
                     else {
                         if (DEBUG_IED_SERVER)
                             printf("IED_SERVER: Unknown identifier (%s)\n", lineBuffer);
@@ -261,6 +285,28 @@ ConfigFileParser_createModelFromConfigFile_inputs(FileHandle fileHandle,IedModel
                         terminateString(srcRef, ')');
 
                         InputEntry_create(currentInput, nameString,nameString2,nameString3, serviceType, srcRef);
+                    }
+                    else if (StringUtils_startsWith((char*) lineBuffer, "PS")) {
+                        uint32_t vlanPrio;
+                        uint32_t vlanId;
+                        uint32_t appId;
+
+                        int matchedItems = sscanf((char*) lineBuffer, "PS(%u %u %u %s)", &vlanPrio, &vlanId, &appId, nameString);
+
+                        if ((matchedItems != 4) || (currentSvCB == NULL)) goto exit_error;
+
+                        terminateString(nameString, ')');
+
+                        if (strlen(nameString) != 12) goto exit_error;
+
+                        if (StringUtils_createBufferFromHexString(nameString, (uint8_t*) nameString2) != 6)
+                            goto exit_error;
+
+
+                        PhyComAddress* dstAddress =
+                                PhyComAddress_create((uint8_t) vlanPrio, (uint16_t) vlanId, (uint16_t) appId,
+                                        (uint8_t*) nameString2);
+                        SVControlBlock_addPhyComAddress(currentSvCB, dstAddress);
                     }
                     else
                         goto exit_error;

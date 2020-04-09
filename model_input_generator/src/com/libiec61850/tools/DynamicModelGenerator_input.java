@@ -48,7 +48,7 @@ import com.libiec61850.scl.model.LogicalNode;
 
 public class DynamicModelGenerator_input {
 
-    //private ConnectedAP connectedAP;
+    private ConnectedAP connectedAP;
     private IED ied = null;
     
     public DynamicModelGenerator_input(InputStream stream, String icdFile, PrintStream output, String iedName, String accessPointName) 
@@ -74,7 +74,7 @@ public class DynamicModelGenerator_input {
         if (accessPoint == null)
         	throw new SclParserException("No valid access point found!");
         
-        //this.connectedAP = sclParser.getConnectedAP(ied, accessPoint.getName());
+        this.connectedAP = sclParser.getConnectedAP(ied, accessPoint.getName());
         
         List<LogicalDevice> logicalDevices = accessPoint.getServer().getLogicalDevices();
 
@@ -106,13 +106,62 @@ public class DynamicModelGenerator_input {
     }
 
     private void exportLogicalNode(PrintStream output, LogicalNode logicalNode, LogicalDevice logicalDevice) {
-         output.println("CL(" + logicalNode.getLnClass() + ")");
+         output.println("CL(" + logicalNode.getLnClass() + ");");
 
         for (Inputs inputs : logicalNode.getInputs())
             exportInputs(output, inputs, logicalNode);//should be only one
+
+        for (SampledValueControl svCB : logicalNode.getSampledValueControlBlocks()) {
+            String svString = "";
+            
+            String phyCom = "";
+            String phyComAddrName="";
+            PhyComAddress svAddress = connectedAP.lookupSMVAddress( logicalDevice.getInst(), svCB.getName());                            
+            if (svAddress != null) {
+                phyCom += svAddress.getVlanPriority() + " ";
+                phyCom += svAddress.getVlanId() + " ";
+                phyCom += svAddress.getAppId();
+                phyComAddrName = "";
+                for (int i = 0; i < 6; i++) {
+                    phyComAddrName += String.format("%02x", svAddress.getMacAddress()[i]);
+                }
+            }
+            //order: name        svID         dataSet      convRev  smpMod  smpRate  optFlds  isUnicast {prio,id,appid,mac}
+
+            svString += svCB.getName() + " ";
+            
+            if (svCB.getSmvID() == null)
+                svString += ", ";
+            else
+                svString += svCB.getSmvID() + " ";
+            
+            if (svCB.getDatSet() != null)
+                svString += svCB.getDatSet() + " ";
+            else
+                svString += ", ";
+            
+            svString += svCB.getConfRev() + " 0 ";
+
+            svString += svCB.getSmpRate() + " ";
+
+            svString += svCB.getSmvOpts().getIntValue() + " ";
+                        
+            if (svCB.isMulticast())
+                svString += "0";
+            else
+                svString += "1";
+            
+            //svString += svCB.getNofASDI();
+
+            output.println("SV(" + svString + "){"); 
+            if (svAddress != null)
+                output.println("PS(" + phyCom + " " + phyComAddrName + ")");
+            else
+                output.println("PS(0,0,0,000000000000);");  
+             output.println("}"); 
+        }
+
     }
-
-
 
     private void exportInputs(PrintStream output, Inputs inputs, LogicalNode logicalNode) {
         output.print("IN{\n");

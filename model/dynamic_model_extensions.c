@@ -43,6 +43,28 @@ IedModel_extensions_create()
     return self;
 }
 
+static void
+IedModel_addSVControlBlock(IedModel* self, SVControlBlock* vcb)
+{
+    if (self->svCBs == NULL)
+        self->svCBs = vcb;
+    else {
+        SVControlBlock* lastSVcb = self->svCBs;
+
+        while (lastSVcb->sibling != NULL)
+            lastSVcb = lastSVcb->sibling;
+
+        lastSVcb->sibling = vcb;
+    }
+}
+
+void
+LogicalNode_addSVControlBlock(LogicalNode* self, SVControlBlock* vcb)
+{
+    IedModel* model = (IedModel*) self->parent->parent;
+
+    IedModel_addSVControlBlock(model, vcb);
+}
 
 static void
 IedModel_addInput(IedModel_extensions* self, Input* input)

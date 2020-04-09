@@ -71,7 +71,8 @@ void* SMVP_init(SVPublisher SMVPublisher, IedServer server, IedModel* model,   L
         return NULL;
     }
     IedServer_setSVCBHandler(server, svcb, sVCBEventHandler, inst);  
-
+    inst->svcbEnabled = 1;
+    
     Thread thread = Thread_create((ThreadExecutionFunction)SMV_Thread, inst, true);
     Thread_start(thread);
 
