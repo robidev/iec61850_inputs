@@ -14,3 +14,24 @@ Process values are static simulations, and not connected to a real process-simul
 
 The same executable should be usable to describe all IED's, only the config-file should change, allowing
 a flexible setup that can be used in a docker container for a more complete simulation setup of a substation
+
+# Getting started:
+
+create a working folder, e.g. substation;  
+  
+`# mkdir ~/substation`  
+`# cd ~/substation`  
+  
+get the necesarry libraries;  
+`git clone git clone https://github.com/mz-automation/libiec61850.git`  
+`git clone https://github.com/robidev/iec61850_inputs.git`  
+`# cd iec61850_inputs`  
+  
+generate the config files;  
+`# make model`  
+  
+generate the compose file;  
+`# make compose`  
+  
+run the compose file;  
+`# sudo docker-compose -f substation.yml up`  
