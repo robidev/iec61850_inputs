@@ -48,6 +48,9 @@ model:	$(PROJECT_ICD_FILE)
 	#java -jar $(LIBIEC_HOME)/tools/model_generator/genmodel.jar $(PROJECT_ICD_FILE) -ied IED3_SMV
 	#java -jar model_input_generator/genmodel_input.jar $(PROJECT_ICD_FILE) -ied IED3_SMV
 
+compose:	$(PROJECT_ICD_FILE)
+	java -jar model_input_generator/gendocker.jar $(PROJECT_ICD_FILE) substation.yml
+
 $(PROJECT_BINARY_NAME):	$(PROJECT_SOURCES) $(LIB_NAME)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $(PROJECT_BINARY_NAME) $(PROJECT_SOURCES) $(INCLUDES) $(LIB_NAME) $(LDFLAGS) $(LDLIBS)
 
