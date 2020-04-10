@@ -23,7 +23,7 @@ create a working folder, e.g. substation;
 `# cd ~/substation`  
   
 get the necesarry libraries;  
-`git clone git clone https://github.com/mz-automation/libiec61850.git`  
+`git clone https://github.com/mz-automation/libiec61850.git`  
 `git clone https://github.com/robidev/iec61850_inputs.git`  
 `# cd iec61850_inputs`  
   
