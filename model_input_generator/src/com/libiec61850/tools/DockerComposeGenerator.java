@@ -76,7 +76,7 @@ public class DockerComposeGenerator {
         if(ieds.size() == 0)
           throw new SclParserException("No data model present in SCL file! Exit.");
 
-        output.println("version: \"3.7\"");
+        output.println("version: \"3.3\"");
          output.println("services:");
 
         for(IED ied : ieds) {    
