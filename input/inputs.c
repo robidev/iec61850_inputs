@@ -232,25 +232,26 @@ LinkedList subscribeToLocalDAInputs(IedModel_extensions* self, IedModel* model, 
 {
   LinkedList DAlist = LinkedList_create();
 
+  char iedNameString [130];
+  StringUtils_copyStringToBuffer(model->name, iedNameString);
+  char* separator = iedNameString + strlen(iedNameString);
+
+  StringUtils_copyStringToBuffer(model->firstChild->name, separator);
+
   Input* inputs = self->inputs;
   while(inputs != NULL)
   {
     InputEntry* extRef = inputs->extRefs; 
     while(extRef != NULL)//find all matching extref for this extRef
     {
-      if(strcmp_p(extRef->serviceType, "Poll") == 0)//if type is polling
+      if(true)//strcmp_p(extRef->serviceType, "Poll") == 0)//if type is polling
       { 
         char buf1 [130];
-        char buf2 [130];
         StringUtils_copyStringToBuffer(extRef->Ref, buf1);
-        char* separator = strchr(buf1, '/');
+        separator = strchr(buf1, '/');
         *separator = 0;
         
-        StringUtils_copyStringToBuffer(model->name, buf2);
-        separator = buf2 + strlen(buf2);
-        StringUtils_copyStringToBuffer(model->firstChild->name, separator);
-
-        if(strcmp_p(buf1, buf2) == 0)// IED is our own IED, link the mmsValue
+        if(strcmp_p(buf1, iedNameString) == 0)// IED is our own IED, link the mmsValue
         {
           DataAttribute* da = (DataAttribute*) IedModel_getModelNodeByObjectReference(model, extRef->Ref);
           MmsValue* value = IedServer_getAttributeValue(server, da);
