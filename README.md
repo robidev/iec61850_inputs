@@ -1,5 +1,5 @@
 # iec61850_inputs
-An implementation of an IED using the libiec61850 library
+An implementation of an IED using the libiec61850 library.
 
 This project aims to simulate some options according to the IEC61850 standard, using only the SCL file. 
 The main goal is feeding the SCL file into the system, and the system instantiating all IEDS, LD's, 
@@ -8,30 +8,37 @@ LN's and services accordingly.
 The current implementation contains 3 IED's, a SMV publisher(merging unit), a protection IED containting 
 a PTOC that will trigger on an overcurrent, and trigger the PTRC in the same LD. The PTOC is fed by 
 sampled values from the merging unit. The PTRC publishes a trip command by GOOSE.
-a XCBR IED subscribes to GOOSE messages from the PTRC, and publishes back its stVal.
+A XCBR IED subscribes to GOOSE messages from the PTRC, and publishes back its stVal.
 
-Process values are static simulations, and not connected to a real process-simulation.
+Process values are static simulations, and not connected to a real process-simulation. This software is not desigend to run realtime. Software uses Docker to run in containers.
 
 The same executable should be usable to describe all IED's, only the config-file should change, allowing
-a flexible setup that can be used in a docker container for a more complete simulation setup of a substation
+a flexible setup that can be used in a docker container for a more complete simulation setup of a substation.
+
+# License
+This software is licensed under the Apache 2.0 License. Please note that the libiec61850 is licensed differently (GPLv3). 
+
+# Questions and Feedback
+
+Feel free to ask questions and provide feedback using the Github issues. Github issues is also used for backlog items.
 
 # Getting started:
 
-create a working folder, e.g. substation;  
+Create a working folder, e.g. substation;  
   
 `# mkdir ~/substation`  
 `# cd ~/substation`  
   
-get the necesarry libraries;  
+Get the necesarry libraries;  
 `git clone https://github.com/mz-automation/libiec61850.git`  
 `git clone https://github.com/robidev/iec61850_inputs.git`  
 `# cd iec61850_inputs`  
   
-generate the config files;  
+Generate the config files;  
 `# make model`  
   
-generate the compose file;  
+Generate the compose file;  
 `# make compose`  
   
-run the compose file;  
+Run the Docker compose file;  
 `# sudo docker-compose -f substation.yml up`  
