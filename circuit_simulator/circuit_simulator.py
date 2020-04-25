@@ -12,6 +12,8 @@ import os
 import numpy
 import pprint
 import matplotlib.pyplot as plt
+import xmlschema
+
 
 from PySpice.Probe.Plot import plot
 import PySpice.Logging.Logging as Logging
@@ -108,6 +110,12 @@ xload           v_132_10 v_132_11 v_132_12 load rload=5500
 *
 .end
 """
+
+scd_schema = xmlschema.XMLSchema("../schema/SCL.xsd")
+scl = scd_schema.to_dict("../simpleIO_inputs.cid")
+pprint(scl)
+exit(0)
+
 
 ngspice_shared = MyNgSpiceShared(send_data=False)
 ngspice_shared.load_circuit(circuit)
