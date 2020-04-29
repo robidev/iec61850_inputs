@@ -70,9 +70,9 @@ vctrC C1 C2 dc 0
 *
 .subckt VTR A1 B1 C1
 *VTR does not do anything, but is needed for substation netlist consistency
-rvtrA A1 0 1000000
-rvtrB B1 0 1000000
-rvtrC C1 0 1000000
+ivtrA A1 0 dc 0
+ivtrB B1 0 dc 0
+ivtrC C1 0 dc 0
 .ends VTR
 *
 .subckt PTR A1 B1 C1 A2 B2 C2 inductor1=8 inductor2=0.5 coupling=1
@@ -104,28 +104,41 @@ xload           S12/E1/W1/BB1_a S12/E1/W1/BB1_b S12/E1/W1/BB1_c load rload=5500
 
 logger = Logging.setup_logging(logging_level=0)
 
-measurants = {}
+measurantsV = {}
+measurantsA = {}
 actuators = {}
 
 #lnode can be attached at each level of the substation
-def LNode(item, levelRef):
+def LNode(item, levelRef, SubEquipment):
+  lItem = None
   if 'LNode' in item:
-    for LNode in item['LNode']:
-      print("    LNode:" + levelRef + " > " + LNode['@iedName'] + " class:" + LNode["@lnClass"]) 
-      if LNode["@lnClass"] == "TCTR":
-        #register ref for TCTR-IED
-        measurants[levelRef] = LNode['@iedName']
-      if LNode["@lnClass"] == "TVTR":
-        #register ref for TCTR-IED
-        measurants[levelRef] = LNode['@iedName']
-      if LNode["@lnClass"] == "XCBR":
-        #register ref for XCBR-IED
-        actuators["v.x" + levelRef.lower() + "_cbr.vsig"] = LNode['@iedName']
-        print("v.x" + levelRef.lower() + "_cbr.vsig")
-      if LNode["@lnClass"] == "XSWI":
-        #register ref for XSWI-IED
-        actuators["v.x" + levelRef.lower() + "_dis.vsig"] = LNode['@iedName']
-        print("v.x" + levelRef.lower() + "_dis.vsig")
+    lItem = item
+  elif SubEquipment is not None and 'LNode' in SubEquipment:
+    lItem = SubEquipment
+  else:
+    return
+
+  for LNode in lItem['LNode']:
+    print("    LNode:" + levelRef + " > " + LNode['@iedName'] + " class:" + LNode["@lnClass"]) 
+    if LNode["@lnClass"] == "TCTR":
+      #register ref for TCTR-IED
+      phase = SubEquipment["@phase"].lower()
+      if phase == 'a' or phase == 'b' or phase == 'c':
+        measurantsA["v.x" + levelRef.lower() + "_ctr.vctr" + phase] = LNode['@iedName']
+        print("v.x" + levelRef.lower() + "_ctr.vctr" + phase)
+    if LNode["@lnClass"] == "TVTR" and "Terminal" in item:
+      #register ref for TCTR-IED
+      measurantsV[ item["Terminal"][0]["@connectivityNode"].lower() + "_" + SubEquipment["@phase"].lower() ] = LNode['@iedName']
+      print(item["Terminal"][0]["@connectivityNode"].lower() + "_" + SubEquipment["@phase"].lower())
+    if LNode["@lnClass"] == "XCBR":
+      #register ref for XCBR-IED
+      actuators["v.x" + levelRef.lower() + "_cbr.vsig"] = LNode['@iedName']
+      print("v.x" + levelRef.lower() + "_cbr.vsig")
+    if LNode["@lnClass"] == "XSWI":
+      #register ref for XSWI-IED
+      actuators["v.x" + levelRef.lower() + "_dis.vsig"] = LNode['@iedName']
+      print("v.x" + levelRef.lower() + "_dis.vsig")
+    print()
 
 
 def PowerTransformer(item, levelRef):
@@ -133,7 +146,7 @@ def PowerTransformer(item, levelRef):
   if 'PowerTransformer' in item:
       for Powertransformer in item['PowerTransformer']:
         print(" Powertransformer:" + levelRef + "_" + Powertransformer["@name"])
-        LNode(Powertransformer, levelRef + "_" + Powertransformer["@name"])
+        LNode(Powertransformer, levelRef + "_" + Powertransformer["@name"], None)
 
         spice_model += "x" + levelRef + "_" + Powertransformer["@name"] + " "
 
@@ -159,13 +172,13 @@ def ConductingEquipment(item, levelRef, Voltagelevel):
       type = ConductingEquipment["@type"]
 
       print("  ConductingEquipment:" + Cond_fullRef + " type:" + type)
-      LNode(ConductingEquipment, Cond_fullRef)
+      LNode(ConductingEquipment, Cond_fullRef, None)
 
       if "SubEquipment" in ConductingEquipment:
         for SubEquipment in ConductingEquipment["SubEquipment"]:
-          Sub_fullRef = Cond_fullRef + "_" + SubEquipment["@name"]
-          print("   SubEquipment:" + Sub_fullRef + " phase: " + SubEquipment["@phase"] )
-          LNode(SubEquipment, Sub_fullRef)
+          Sub_fullRef = Cond_fullRef + "_" + SubEquipment["@phase"]
+          print("   SubEquipment:" + Sub_fullRef + " name: " + SubEquipment["@name"] )
+          LNode(ConductingEquipment, Cond_fullRef, SubEquipment)
 
       if "Terminal" in ConductingEquipment:
         for Terminal in ConductingEquipment["Terminal"]:
@@ -224,7 +237,7 @@ if "Substation" in scl:
   for substation in scl["Substation"]:
     sub_name = substation["@name"]
     print("--- Substation:" + sub_name + " ---")
-    LNode(substation, sub_name)
+    LNode(substation, sub_name, None)
     spice += PowerTransformer(substation, sub_name)
 
     if 'VoltageLevel' in substation:
@@ -233,7 +246,7 @@ if "Substation" in scl:
         vlvl_fullRef = sub_name + "_" + vlvl_name
         print("Voltagelevel:" + vlvl_fullRef)
 
-        LNode(Voltagelevel, vlvl_fullRef)
+        LNode(Voltagelevel, vlvl_fullRef, None)
         spice += PowerTransformer(Voltagelevel, vlvl_fullRef)
 
         if 'Bay' in Voltagelevel:
@@ -242,9 +255,8 @@ if "Substation" in scl:
             Bay_fullRef = vlvl_fullRef + "_" + Bay_name
             print(" Bay:" + Bay_fullRef)
 
-            LNode(Bay, Bay_fullRef)
+            LNode(Bay, Bay_fullRef, None)
             spice += ConductingEquipment(Bay, Bay_fullRef, Voltagelevel)
-
 
             if 'ConnectivityNode' in Bay:
               for ConnectivityNode in Bay['ConnectivityNode']:
@@ -264,21 +276,36 @@ ngspice_shared = MyNgSpiceShared(send_data=False)
 ngspice_shared.load_circuit(circuit)
 
 ngspice_shared.step(2)
-arr1 = numpy.array([])
-arr2 = numpy.array([])
-arr3 = numpy.array([])
+
+arrA = {}
+arrV = {}
 
 
-for _ in range(2000):
+for _ in range(200):
   ngspice_shared.step(10)
   analysis = ngspice_shared.plot(plot_name='tran1', simulation=None).to_analysis()
   #TODO: send values back to the merging units
-  arr1 = numpy.append(arr1, float(analysis['S12/D1/Q1/L0_a'][0]))
-  arr2 = numpy.append(arr2, float(analysis['S12/E1/Q1/L2_b'][0]))
-  arr3 = numpy.append(arr3, float(analysis['S12/E1/W1/BB1_a'][0]))
+  for key in measurantsA:
+    #print(key)
+    if not key in arrA:
+      arrA[key] = numpy.array([])
+    #arrA[key] = numpy.append(arrA[key], float(analysis.branches[key][0]))
+
+  for key in measurantsV:
+    #print(key)
+    if not key in arrV:
+      arrV[key] = numpy.array([])
+    arrV[key] = numpy.append(arrV[key], float(analysis[key][0]))
+
+  #arr1 = numpy.append(arr1, float(analysis['S12/D1/Q1/L0_a'][0]))
+  #arr2 = numpy.append(arr2, float(analysis['S12/E1/Q1/L2_b'][0]))
+  #arr3 = numpy.append(arr3, float(analysis['S12/E1/W1/BB1_a'][0]))
+  #v.xs12_e1_q1_i1_ctr.vctra
+  #v.xs12_d1_q1_i1_ctr.vctra
+  #print(analysis.nodes)
   
 
-exit(0)
+#exit(0)
 print(ngspice_shared.plot_names)
 
 figure = plt.figure(1, (20, 10))
@@ -287,10 +314,13 @@ plt.title('')
 plt.xlabel('Time [s]')
 plt.ylabel('Voltage [V]')
 plt.grid()
-plt.plot(arr1)
-plt.plot(arr2)
-plt.plot(arr3)
-plt.legend(('V1', 'V2', 'V3'), loc=(.05,.1))
+
+for key in arrA:
+  plt.plot(arrA[key])
+for key in arrV:
+  plt.plot(arrV[key])
+
+plt.legend(('I1', 'I2', 'I3','V1'), loc=(.05,.1))
 
 plt.tight_layout()
 plt.show()
