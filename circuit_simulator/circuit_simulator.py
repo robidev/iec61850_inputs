@@ -20,94 +20,6 @@ import PySpice.Logging.Logging as Logging
 from PySpice.Spice.Netlist import Circuit
 from PySpice.Spice.NgSpice.Shared import NgSpiceShared
 
-logger = Logging.setup_logging(logging_level=0)
-
-#lnode can be attached at each level of the substation
-def LNode(item, levelRef):
-  if 'LNode' in item:
-    for LNode in item['LNode']:
-      print("    LNode:" + levelRef + " > " + LNode['@iedName'] + " class:" + LNode["@lnClass"])
-
-
-def PowerTransformer(item, levelRef):
-  spice_model = ""
-  if 'PowerTransformer' in item:
-      for Powertransformer in item['PowerTransformer']:
-        print(" Powertransformer:" + levelRef + "_" + Powertransformer["@name"])
-        LNode(Powertransformer, levelRef + "_" + Powertransformer["@name"])
-
-        spice_model += "x" + levelRef + "_" + Powertransformer["@name"] + " "
-
-        if 'TransformerWinding' in Powertransformer:
-          for TransformerWinding in Powertransformer['TransformerWinding']:
-            if "Terminal" in TransformerWinding:
-              for Terminal in TransformerWinding["Terminal"]:
-                t = Terminal["@connectivityNode"]
-                spice_model += t + "_a " 
-                spice_model += t + "_b " 
-                spice_model += t + "_c " 
-
-        spice_model += "PTR\n"
-
-  return spice_model
-
-
-def ConductingEquipment(item, levelRef, Voltagelevel):
-  spice_model = ""
-  if "ConductingEquipment" in item:
-    for ConductingEquipment in item["ConductingEquipment"]:
-      Cond_fullRef = levelRef + "_" + ConductingEquipment["@name"]
-      type = ConductingEquipment["@type"]
-
-      print("  ConductingEquipment:" + Cond_fullRef + " type:" + type)
-      LNode(ConductingEquipment, Cond_fullRef)
-
-      if "SubEquipment" in ConductingEquipment:
-        for SubEquipment in ConductingEquipment["SubEquipment"]:
-          Sub_fullRef = Cond_fullRef + "_" + SubEquipment["@name"]
-          print("   SubEquipment:" + Sub_fullRef + " phase: " + SubEquipment["@phase"] )
-          LNode(SubEquipment, Sub_fullRef)
-
-      if "Terminal" in ConductingEquipment:
-        for Terminal in ConductingEquipment["Terminal"]:
-          print("   Terminal:" + Terminal["@connectivityNode"])
-
-      #generate the spice model element
-      spice_model += "x" + Cond_fullRef + "_" + type + " "
-
-      if "Terminal" in ConductingEquipment:
-        for Terminal in ConductingEquipment["Terminal"]:
-          t = Terminal["@connectivityNode"]
-          spice_model += t + "_a " 
-          spice_model += t + "_b " 
-          spice_model += t + "_c " 
-
-      spice_model += type + " "
-      spice_model += checkoptions(type, Voltagelevel)
-      spice_model += "\n"
-  return spice_model
-
-def checkoptions(type, Voltagelevel):
-  option = ""
-  if type == "IFL":
-    if "Voltage" in Voltagelevel:
-      option = "vss=" + str(Voltagelevel["Voltage"]['$']) + Voltagelevel["Voltage"]['@multiplier']
-  return option
-
-class MyNgSpiceShared(NgSpiceShared):
-    def __init__(self, ngspice_id=0, send_data=False):
-        super(MyNgSpiceShared, self).__init__(ngspice_id, send_data)
-        #self._logger = logger
-
-    def get_vsrc_data(self, voltage, time, node, ngspice_id):
-        self._logger.debug('ngspice_id-{} get_vsrc_data @{} node {}'.format(ngspice_id, time, node))
-        #TODO: provide voltage based on switch/cbr position
-        if node == 'v.xs12_e1_q1_qa1_cbr.vsig':
-          voltage[0] = 1 #circuitbreaker is closed
-        if node == 'v.xs12_e1_q1_qb1_dis.vsig':
-          voltage[0] = -1 #disconnector is open
-
-        return 0
 
 
 circuit = """
@@ -115,7 +27,7 @@ circuit = """
 * substation components
 #.options interp  ; strongly reduces memory requirements
 .save none       ; ensure only last step is kept each iteration
-.tran 201u 400ms ; run for an hour max, with 100 samples per cycle (201u stepsize does not distort, 200 does...)
+.tran 19us 3600s uic; run for an hour max, with 100 samples per cycle (201u stepsize does not distort, 200 does...)
 * 
 .subckt IFL A1 B1 C1 vss=100000 freq=50
 vphaseA A 0 dc 0 ac 1 sin(0 {vss} {freq} 0 0 0)
@@ -190,6 +102,115 @@ k3 l3pri l3sec {coupling}
 xload           S12/E1/W1/BB1_a S12/E1/W1/BB1_b S12/E1/W1/BB1_c load rload=5500
 """
 
+logger = Logging.setup_logging(logging_level=0)
+
+measurants = {}
+actuators = {}
+
+#lnode can be attached at each level of the substation
+def LNode(item, levelRef):
+  if 'LNode' in item:
+    for LNode in item['LNode']:
+      print("    LNode:" + levelRef + " > " + LNode['@iedName'] + " class:" + LNode["@lnClass"]) 
+      if LNode["@lnClass"] == "TCTR":
+        #register ref for TCTR-IED
+        measurants[levelRef] = LNode['@iedName']
+      if LNode["@lnClass"] == "TVTR":
+        #register ref for TCTR-IED
+        measurants[levelRef] = LNode['@iedName']
+      if LNode["@lnClass"] == "XCBR":
+        #register ref for XCBR-IED
+        actuators["v.x" + levelRef.lower() + "_cbr.vsig"] = LNode['@iedName']
+        print("v.x" + levelRef.lower() + "_cbr.vsig")
+      if LNode["@lnClass"] == "XSWI":
+        #register ref for XSWI-IED
+        actuators["v.x" + levelRef.lower() + "_dis.vsig"] = LNode['@iedName']
+        print("v.x" + levelRef.lower() + "_dis.vsig")
+
+
+def PowerTransformer(item, levelRef):
+  spice_model = ""
+  if 'PowerTransformer' in item:
+      for Powertransformer in item['PowerTransformer']:
+        print(" Powertransformer:" + levelRef + "_" + Powertransformer["@name"])
+        LNode(Powertransformer, levelRef + "_" + Powertransformer["@name"])
+
+        spice_model += "x" + levelRef + "_" + Powertransformer["@name"] + " "
+
+        if 'TransformerWinding' in Powertransformer:
+          for TransformerWinding in Powertransformer['TransformerWinding']:
+            if "Terminal" in TransformerWinding:
+              for Terminal in TransformerWinding["Terminal"]:
+                t = Terminal["@connectivityNode"]
+                spice_model += t + "_a " 
+                spice_model += t + "_b " 
+                spice_model += t + "_c " 
+
+        spice_model += "PTR\n"
+
+  return spice_model
+
+
+def ConductingEquipment(item, levelRef, Voltagelevel):
+  spice_model = ""
+  if "ConductingEquipment" in item:
+    for ConductingEquipment in item["ConductingEquipment"]:
+      Cond_fullRef = levelRef + "_" + ConductingEquipment["@name"]
+      type = ConductingEquipment["@type"]
+
+      print("  ConductingEquipment:" + Cond_fullRef + " type:" + type)
+      LNode(ConductingEquipment, Cond_fullRef)
+
+      if "SubEquipment" in ConductingEquipment:
+        for SubEquipment in ConductingEquipment["SubEquipment"]:
+          Sub_fullRef = Cond_fullRef + "_" + SubEquipment["@name"]
+          print("   SubEquipment:" + Sub_fullRef + " phase: " + SubEquipment["@phase"] )
+          LNode(SubEquipment, Sub_fullRef)
+
+      if "Terminal" in ConductingEquipment:
+        for Terminal in ConductingEquipment["Terminal"]:
+          print("   Terminal:" + Terminal["@connectivityNode"])
+
+      #generate the spice model element
+      spice_model += "x" + Cond_fullRef + "_" + type + " "
+
+      if "Terminal" in ConductingEquipment:
+        for Terminal in ConductingEquipment["Terminal"]:
+          t = Terminal["@connectivityNode"]
+          spice_model += t + "_a " 
+          spice_model += t + "_b " 
+          spice_model += t + "_c " 
+
+      spice_model += type + " "
+      spice_model += checkoptions(type, Voltagelevel)
+      spice_model += "\n"
+  return spice_model
+
+def checkoptions(type, Voltagelevel):
+  option = ""
+  if type == "IFL":
+    if "Voltage" in Voltagelevel:
+      option = "vss=" + str(Voltagelevel["Voltage"]['$']) + Voltagelevel["Voltage"]['@multiplier']
+  return option
+
+class MyNgSpiceShared(NgSpiceShared):
+    def __init__(self, ngspice_id=0, send_data=False):
+        super(MyNgSpiceShared, self).__init__(ngspice_id, send_data)
+        #self._logger = logger
+
+    def get_vsrc_data(self, voltage, time, node, ngspice_id):
+        #self._logger.debug('ngspice_id-{} get_vsrc_data @{} node {}'.format(ngspice_id, time, node))
+        #TODO: provide voltage based on switch/cbr position
+        #print(node)
+        if node in actuators:
+          # get position data from actuators[node], by retrieving the status over tcp(or buffered)
+          if True:
+            voltage[0] = 10 #circuitbreaker is closed
+          else:
+            voltage[0] = -10 #circuitbreaker is open
+        return 0
+
+
 scd_schema = xmlschema.XMLSchema("../schema/SCL.xsd")
 scl = scd_schema.to_dict("../simpleIO_inputs.cid")
 #pprint.pprint(scl)
@@ -249,14 +270,16 @@ arr3 = numpy.array([])
 
 
 for _ in range(2000):
-  ngspice_shared.step(1)
+  ngspice_shared.step(10)
   analysis = ngspice_shared.plot(plot_name='tran1', simulation=None).to_analysis()
   #TODO: send values back to the merging units
   arr1 = numpy.append(arr1, float(analysis['S12/D1/Q1/L0_a'][0]))
-  arr2 = numpy.append(arr2, float(analysis['S12/E1/Q1/L3_a'][0]))
+  arr2 = numpy.append(arr2, float(analysis['S12/E1/Q1/L2_b'][0]))
   arr3 = numpy.append(arr3, float(analysis['S12/E1/W1/BB1_a'][0]))
+  
 
-#exit(0)
+exit(0)
+print(ngspice_shared.plot_names)
 
 figure = plt.figure(1, (20, 10))
 axe = plt.subplot(111)
