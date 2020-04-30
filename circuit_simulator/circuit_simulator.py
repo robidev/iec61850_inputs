@@ -108,6 +108,11 @@ measurantsV = {}
 measurantsA = {}
 actuators = {}
 
+scd_schema = xmlschema.XMLSchema("../schema/SCL.xsd")
+scl = scd_schema.to_dict("../simpleIO_inputs.cid")
+#pprint.pprint(scl)
+#exit(0)
+
 #lnode can be attached at each level of the substation
 def LNode(item, levelRef, SubEquipment):
   lItem = None
@@ -120,26 +125,40 @@ def LNode(item, levelRef, SubEquipment):
 
   for LNode in lItem['LNode']:
     print("    LNode:" + levelRef + " > " + LNode['@iedName'] + " class:" + LNode["@lnClass"]) 
+    IP = LNode['@iedName']
+    LNref = LNode['@ldInst'] + "/" + LNode['@prefix'] + LNode['@lnClass'] + LNode['@lnInst']
+    
     if LNode["@lnClass"] == "TCTR":
       #register ref for TCTR-IED
       phase = SubEquipment["@phase"].lower()
       if phase == 'a' or phase == 'b' or phase == 'c':
-        measurantsA["v.x" + levelRef.lower() + "_ctr.vctr" + phase] = LNode['@iedName']
+        measurantsA["v.x" + levelRef.lower() + "_ctr.vctr" + phase] = { 'Name' : LNode['@iedName'], 'IP' : IP, 'LNref' : LNref } 
         print("v.x" + levelRef.lower() + "_ctr.vctr" + phase)
     if LNode["@lnClass"] == "TVTR" and "Terminal" in item:
       #register ref for TCTR-IED
-      measurantsV[ item["Terminal"][0]["@connectivityNode"].lower() + "_" + SubEquipment["@phase"].lower() ] = LNode['@iedName']
+      measurantsV[ item["Terminal"][0]["@connectivityNode"].lower() + "_" + SubEquipment["@phase"].lower() ] = { 'Name' : LNode['@iedName'], 'IP' : IP, 'LNref' : LNref } 
       print(item["Terminal"][0]["@connectivityNode"].lower() + "_" + SubEquipment["@phase"].lower())
     if LNode["@lnClass"] == "XCBR":
       #register ref for XCBR-IED
-      actuators["v.x" + levelRef.lower() + "_cbr.vsig"] = LNode['@iedName']
+      actuators["v.x" + levelRef.lower() + "_cbr.vsig"] = { 'Name' : LNode['@iedName'], 'IP' : IP, 'LNref' : LNref } 
       print("v.x" + levelRef.lower() + "_cbr.vsig")
     if LNode["@lnClass"] == "XSWI":
       #register ref for XSWI-IED
-      actuators["v.x" + levelRef.lower() + "_dis.vsig"] = LNode['@iedName']
+      actuators["v.x" + levelRef.lower() + "_dis.vsig"] = { 'Name' : LNode['@iedName'], 'IP' : IP, 'LNref' : LNref } 
       print("v.x" + levelRef.lower() + "_dis.vsig")
-    print()
 
+
+def getIEDIp(ied):
+  global scl
+  if 'Communication' in scl and 'SubNetwork' in scl['Communication']:
+    for SubNetwork in scl["Communication"]['SubNetwork']:
+      if 'ConnectedAP' in SubNetwork:
+        for ConnectedAP in SubNetwork['ConnectedAP']:
+          if ied == ConnectedAP['@iedName']:
+            for P in ConnectedAP['Address']['P']:
+              if P['@type'] == 'IP':
+                return P['$']
+  return "NONE"
 
 def PowerTransformer(item, levelRef):
   spice_model = ""
@@ -206,6 +225,20 @@ def checkoptions(type, Voltagelevel):
       option = "vss=" + str(Voltagelevel["Voltage"]['$']) + Voltagelevel["Voltage"]['@multiplier']
   return option
 
+def updateValue(ied, value):
+  # send value
+  #initiate tcp, if not existing yet
+  #send value to ied
+  # "s LNref val"
+  return
+
+def getValue(ied):
+  # request value
+  #initiate tcp, if not existing yet
+  #retrieve value from ied
+  # "g LNref val"
+  return 1
+
 class MyNgSpiceShared(NgSpiceShared):
     def __init__(self, ngspice_id=0, send_data=False):
         super(MyNgSpiceShared, self).__init__(ngspice_id, send_data)
@@ -217,17 +250,13 @@ class MyNgSpiceShared(NgSpiceShared):
         #print(node)
         if node in actuators:
           # get position data from actuators[node], by retrieving the status over tcp(or buffered)
-          if True:
+          if getValue(actuators[node]) > 0:
             voltage[0] = 10 #circuitbreaker is closed
           else:
             voltage[0] = -10 #circuitbreaker is open
         return 0
 
 
-scd_schema = xmlschema.XMLSchema("../schema/SCL.xsd")
-scl = scd_schema.to_dict("../simpleIO_inputs.cid")
-#pprint.pprint(scl)
-#exit(0)
 #generalequipment is ignored, as they are not part of the spice simulation
 #function elements are ignored,as they are not part of the primary process
 spice = ""
@@ -270,7 +299,7 @@ print("--- model ---")
 print(spice)
 print("---")
 
-
+#exit(0)
 
 ngspice_shared = MyNgSpiceShared(send_data=False)
 ngspice_shared.load_circuit(circuit)
@@ -289,13 +318,15 @@ for _ in range(200):
     #print(key)
     if not key in arrA:
       arrA[key] = numpy.array([])
-    #arrA[key] = numpy.append(arrA[key], float(analysis.branches[key][0]))
+    arrA[key] = numpy.append(arrA[key], float(analysis.branches[key][0]))
+    updateValue(measurantsA[key], float(analysis[key][0]))
 
   for key in measurantsV:
     #print(key)
     if not key in arrV:
       arrV[key] = numpy.array([])
     arrV[key] = numpy.append(arrV[key], float(analysis[key][0]))
+    updateValue(measurantsV[key], float(analysis[key][0]))
 
   #arr1 = numpy.append(arr1, float(analysis['S12/D1/Q1/L0_a'][0]))
   #arr2 = numpy.append(arr2, float(analysis['S12/E1/Q1/L2_b'][0]))

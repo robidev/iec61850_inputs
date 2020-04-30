@@ -40,7 +40,7 @@ C:\Data\sdps\SCL3.0\SCL.xsd" xmlns:ext="http://www.private.org">
 			<Voltage multiplier="k" unit="V">132</Voltage>
 			<Bay name="Q1">
 				<ConductingEquipment name="QA1" type="CBR">
-					<LNode lnInst="1" lnClass="XCBR" ldInst="C1" iedName="E1Q1SB1"/>
+					<LNode lnInst="1" lnClass="XCBR" ldInst="C1" iedName="IED1_XCBR"/>
 					<Terminal connectivityNode="S12/E1/Q1/L1" substationName="S12" voltageLevelName="E1" bayName="Q1" cNodeName="L1"/>
 					<Terminal connectivityNode="S12/E1/Q1/L2" substationName="S12" voltageLevelName="E1" bayName="Q1" cNodeName="L2"/>
 				</ConductingEquipment>
@@ -52,13 +52,13 @@ C:\Data\sdps\SCL3.0\SCL.xsd" xmlns:ext="http://www.private.org">
 				<ConductingEquipment name="U1" type="VTR">
 					<Terminal connectivityNode="S12/E1/Q1/L2" substationName="S12" voltageLevelName="E1" bayName="Q1" cNodeName="L2"/>
 					<SubEquipment name="A" phase="A">
-						<LNode lnClass="TVTR" iedName="E1Q1SB1" ldInst="C1" lnInst="1" desc="VT phase L1"/>
+						<LNode lnClass="TVTR" iedName="IED3_SMV" ldInst="C1" lnInst="1" desc="VT phase L1"/>
           </SubEquipment>
           <SubEquipment name="B" phase="B">
-						<LNode lnClass="TVTR" iedName="E1Q1SB1" ldInst="C1" lnInst="2" desc="VT phase L2"/>
+						<LNode lnClass="TVTR" iedName="IED3_SMV" ldInst="C1" lnInst="2" desc="VT phase L2"/>
           </SubEquipment>
           <SubEquipment name="C" phase="C">
-						<LNode lnClass="TVTR" iedName="E1Q1SB1" ldInst="C1" lnInst="3" desc="VT phase L3"/>
+						<LNode lnClass="TVTR" iedName="IED3_SMV" ldInst="C1" lnInst="3" desc="VT phase L3"/>
 					</SubEquipment>
 				</ConductingEquipment>
 				<ConductingEquipment name="I1" type="CTR">
