@@ -13,7 +13,7 @@ import numpy
 import pprint
 import matplotlib.pyplot as plt
 import xmlschema
-
+import socket
 
 from PySpice.Probe.Plot import plot
 import PySpice.Logging.Logging as Logging
@@ -102,6 +102,8 @@ k3 l3pri l3sec {coupling}
 xload           S12/E1/W1/BB1_a S12/E1/W1/BB1_b S12/E1/W1/BB1_c load rload=5500
 """
 
+PORT = 65000
+
 logger = Logging.setup_logging(logging_level=0)
 
 measurantsV = {}
@@ -113,7 +115,8 @@ scl = scd_schema.to_dict("../simpleIO_inputs.cid")
 #pprint.pprint(scl)
 #exit(0)
 
-#lnode can be attached at each level of the substation
+# process LNode in substation section, attach relevant LD/LN data, and initiate a tcp connection to the ied
+# lnode can be attached at each level of the substation
 def LNode(item, levelRef, SubEquipment):
   lItem = None
   if 'LNode' in item:
@@ -125,29 +128,68 @@ def LNode(item, levelRef, SubEquipment):
 
   for LNode in lItem['LNode']:
     print("    LNode:" + levelRef + " > " + LNode['@iedName'] + " class:" + LNode["@lnClass"]) 
-    IP = LNode['@iedName']
+    IP = getIEDIp(LNode['@iedName'])
     LNref = LNode['@ldInst'] + "/" + LNode['@prefix'] + LNode['@lnClass'] + LNode['@lnInst']
     
     if LNode["@lnClass"] == "TCTR":
       #register ref for TCTR-IED
       phase = SubEquipment["@phase"].lower()
       if phase == 'a' or phase == 'b' or phase == 'c':
-        measurantsA["v.x" + levelRef.lower() + "_ctr.vctr" + phase] = { 'Name' : LNode['@iedName'], 'IP' : IP, 'LNref' : LNref } 
+        measurantsA["v.x" + levelRef.lower() + "_ctr.vctr" + phase] = { 
+          'Name' : LNode['@iedName'], 
+          'IP' : IP, 
+          'LNref' : LNref,
+          'Connection' : init_conn(IP) } 
+
         print("v.x" + levelRef.lower() + "_ctr.vctr" + phase)
     if LNode["@lnClass"] == "TVTR" and "Terminal" in item:
       #register ref for TCTR-IED
-      measurantsV[ item["Terminal"][0]["@connectivityNode"].lower() + "_" + SubEquipment["@phase"].lower() ] = { 'Name' : LNode['@iedName'], 'IP' : IP, 'LNref' : LNref } 
+      measurantsV[ item["Terminal"][0]["@connectivityNode"].lower() + "_" + SubEquipment["@phase"].lower() ] = { 
+        'Name' : LNode['@iedName'], 
+        'IP' : IP, 
+        'LNref' : LNref,
+        'Connection' : init_conn(IP) } 
+
       print(item["Terminal"][0]["@connectivityNode"].lower() + "_" + SubEquipment["@phase"].lower())
     if LNode["@lnClass"] == "XCBR":
       #register ref for XCBR-IED
-      actuators["v.x" + levelRef.lower() + "_cbr.vsig"] = { 'Name' : LNode['@iedName'], 'IP' : IP, 'LNref' : LNref } 
+      actuators["v.x" + levelRef.lower() + "_cbr.vsig"] = { 
+        'Name' : LNode['@iedName'], 
+        'IP' : IP, 
+        'LNref' : LNref,
+        'Connection' : init_conn(IP) } 
+
       print("v.x" + levelRef.lower() + "_cbr.vsig")
     if LNode["@lnClass"] == "XSWI":
       #register ref for XSWI-IED
-      actuators["v.x" + levelRef.lower() + "_dis.vsig"] = { 'Name' : LNode['@iedName'], 'IP' : IP, 'LNref' : LNref } 
+      actuators["v.x" + levelRef.lower() + "_dis.vsig"] = { 
+        'Name' : LNode['@iedName'], 
+        'IP' : IP, 
+        'LNref' : LNref,
+        'Connection' : init_conn(IP) } 
       print("v.x" + levelRef.lower() + "_dis.vsig")
 
 
+def init_conn(IP):
+  conn = None
+  try:
+    conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    conn.settimeout(5.0)
+    conn.connect(("127.0.0.1", PORT)) # conn.connect((IP, PORT))
+    conn.sendall(b'init\n')
+    data = conn.recv(1024)
+    if data == b'OK\n':
+      print("OK")
+      return conn
+  except:
+    print("ERROR: could not connect")
+  
+  conn.close()
+  print("not OK")
+  return None
+
+
+# retrieve ip from SCL based on IED name
 def getIEDIp(ied):
   global scl
   if 'Communication' in scl and 'SubNetwork' in scl['Communication']:
@@ -160,6 +202,8 @@ def getIEDIp(ied):
                 return P['$']
   return "NONE"
 
+
+# process powertransformer substation item and generate spice model entry
 def PowerTransformer(item, levelRef):
   spice_model = ""
   if 'PowerTransformer' in item:
@@ -183,6 +227,7 @@ def PowerTransformer(item, levelRef):
   return spice_model
 
 
+# parse conductingequipment, and generate spice model entries
 def ConductingEquipment(item, levelRef, Voltagelevel):
   spice_model = ""
   if "ConductingEquipment" in item:
@@ -218,6 +263,7 @@ def ConductingEquipment(item, levelRef, Voltagelevel):
       spice_model += "\n"
   return spice_model
 
+# add spice model options
 def checkoptions(type, Voltagelevel):
   option = ""
   if type == "IFL":
@@ -225,19 +271,51 @@ def checkoptions(type, Voltagelevel):
       option = "vss=" + str(Voltagelevel["Voltage"]['$']) + Voltagelevel["Voltage"]['@multiplier']
   return option
 
+
 def updateValue(ied, value):
   # send value
-  #initiate tcp, if not existing yet
+  #initiate tcp, if not existing yet, or do this at init, and just get it here
   #send value to ied
   # "s LNref val"
-  return
+  if ied['Connection'] == None:
+    return -1
+  try:
+    ied['Connection'].sendall(b'set ' + ied['LNref'].encode('utf-8') + b' ' + str(value).encode('utf-8') )
+    data = ied['Connection'].recv(1024)
+    if data == b'OK\n':
+      return 0
+  except:
+    print("ERROR: exception while updating value, closing connection")
+    try:
+      ied['Connection'].close()
+    except:
+      print("ERROR: could not close connection after error")
+    ied['Connection'] = None
+  return -1
+
 
 def getValue(ied):
   # request value
-  #initiate tcp, if not existing yet
+  #initiate tcp, if not existing yet, or do this at init, and just get it here
   #retrieve value from ied
-  # "g LNref val"
+  # val = "g LNref"
+  if ied['Connection'] == None:
+    return 1
+
+  try:
+    ied['Connection'].sendall(b'get ' + ied['LNref'].encode('utf-8') )
+    data = ied['Connection'].recv(1024)
+    if data[-1:] == b'\n':
+      return float(data[0:-1].decode("utf-8"))
+  except:
+    print("ERROR: exception while requesting value, closing connection")
+    try:
+      ied['Connection'].close()
+    except:
+      print("ERROR: could not close connection after error")
+    ied['Connection'] = None
   return 1
+
 
 class MyNgSpiceShared(NgSpiceShared):
     def __init__(self, ngspice_id=0, send_data=False):
@@ -336,7 +414,8 @@ for _ in range(200):
   #print(analysis.nodes)
   
 
-#exit(0)
+exit(0)
+
 print(ngspice_shared.plot_names)
 
 figure = plt.figure(1, (20, 10))
