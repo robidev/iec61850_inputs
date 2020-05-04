@@ -3,17 +3,27 @@
 #include "inputs_api.h"
 #include "hal_thread.h"
 #include "XSWI.h"
+#include <sys/socket.h> 
 
 //process simulator
 void XSWI_simulate_switch(Input* input);
+typedef void (*simulationFunction) (int sd, char * buffer, void* param);
 
 typedef struct sXSWI
 {
+  simulationFunction call_simulation; //as long as we place the function on top, it can be recast into a generic struct(TODO: make this nicer)
   IedServer server;
   DataAttribute* Pos_stVal;
   bool conducting;
 } XSWI;
 
+void XSWI_updateValue(int sd, char * buffer, void* param)
+{
+  printf("XSWI buf= %s\n",buffer);
+  if( send(sd, "10.0\n", 5, 0) != 5 ) { 
+    perror("send"); 
+  } 
+}
 
 //open the circuit breaker(i.e. make it isolating)
 void XSWI_open(XSWI * inst)
@@ -39,12 +49,13 @@ void XSWI_callback(InputEntry* extRef )
 }
 
 //initialise XSWI instance for process simulation, and publish/subscription of GOOSE
-void XSWI_init(IedServer server, Input* input)
+void *XSWI_init(IedServer server, Input* input)
 {
   XSWI* inst = (XSWI *) malloc(sizeof(XSWI));//create new instance with MALLOC
   inst->server = server;
   inst->Pos_stVal = (DataAttribute*) ModelNode_getChild((ModelNode*) input->parent, "Pos.stVal");
   inst->conducting = true;
+  inst->call_simulation = XSWI_updateValue;
 
 
   if(input != NULL)
@@ -62,6 +73,8 @@ void XSWI_init(IedServer server, Input* input)
   //start simulation threat
   Thread thread = Thread_create((ThreadExecutionFunction)XSWI_simulate_switch, input, true);
   Thread_start(thread);
+  
+  return inst;
 }
 
 void XSWI_change_switch(XSWI * inst, Dbpos value)

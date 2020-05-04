@@ -96,7 +96,7 @@ struct sSubscriberEntry {
 struct sLogicalNodeClass {
   LogicalNode* parent;
   char* lnClass;
-  void* initFunction;
+  void* instance;
   LogicalNodeClass* sibling;
 };
 

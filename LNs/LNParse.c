@@ -19,7 +19,7 @@ void attachLogicalNodes(IedServer server, IedModel_extensions* model, LinkedList
   //iterate over struct that attaches model-instances to LogicalNode Classes
   LogicalNodeClass* lnClass = model->logicalNodes;
   while(lnClass != NULL)
-  {
+  { // call init, to attach input-nodes of this instance to callback-items. store instance in lnClass
     Input* input = getInput( model, lnClass->parent); 
 
     if(strcmp(lnClass->lnClass,"LLN0") == 0)
@@ -33,11 +33,11 @@ void attachLogicalNodes(IedServer server, IedModel_extensions* model, LinkedList
     }
     else if(strcmp(lnClass->lnClass,"XSWI") == 0)
     {
-      XSWI_init(server, input); // call init, to attach input-nodes of this instance to callback-items
+      lnClass->instance = XSWI_init(server, input); 
     }
     else if(strcmp(lnClass->lnClass,"XCBR") == 0)
     {
-      XCBR_init(server, input);
+      lnClass->instance = XCBR_init(server, input);
     }
     else if(strcmp(lnClass->lnClass,"RADR") == 0)
     {
@@ -65,11 +65,11 @@ void attachLogicalNodes(IedServer server, IedModel_extensions* model, LinkedList
     }
     else if(strcmp(lnClass->lnClass,"TCTR") == 0)
     {
-      TCTR_init(input);
+      lnClass->instance = TCTR_init(input);
     }
     else if(strcmp(lnClass->lnClass,"TVTR") == 0)
     {
-      TVTR_init(input);
+      lnClass->instance = TVTR_init(input);
     }
     else
     {
@@ -91,4 +91,24 @@ void attachSMV(IedServer server, IedModel* model, char* ethernetIfcID)
 
     svCBs = svCBs->sibling;
   }
+}
+
+LogicalNodeClass* getLNClass(IedModel* model, IedModel_extensions* model_ex, const char * objectReference)
+{
+  LogicalNode* ln = (LogicalNode*)IedModel_getModelNodeByObjectReference(model, objectReference);
+  if(ln == NULL){
+    printf("ERROR: could not find logical node object ref: %s", objectReference);
+    return NULL;
+  }
+  
+  LogicalNodeClass* lnClass = model_ex->logicalNodes;
+  while(lnClass != NULL)
+  {
+    if(lnClass->parent == ln)
+    {
+      return lnClass;
+    }
+    lnClass = lnClass->sibling;
+  }
+  return NULL;
 }

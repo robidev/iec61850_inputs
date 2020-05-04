@@ -14,6 +14,8 @@ typedef struct sSMVP {
     SVPublisher svPublisher;
     bool running;
 
+    void * simulationHandler;
+    
 } SMVP;
 
 void SMV_Thread(SMVP* inst);

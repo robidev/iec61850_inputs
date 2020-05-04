@@ -2,17 +2,29 @@
 #include "iec61850_server.h"
 #include "inputs_api.h"
 #include "hal_thread.h"
+#include <sys/socket.h> 
 #include "XCBR.h"
+
+
 //process simulator
 void XCBR_simulate_switch(Input* input);
+typedef void (*simulationFunction) (int sd, char * buffer, void* param);
 
 typedef struct sXCBR
 {
+  simulationFunction call_simulation; //as long as we place the function on top, it can be recast into a generic struct(TODO: make this nicer)
   IedServer server;
   DataAttribute* Pos_stVal;
   bool conducting;
 } XCBR;
 
+void XCBR_updateValue(int sd, char * buffer, void* param)
+{
+  printf("XCBR buf= %s\n",buffer);
+  if( send(sd, "10.0\n", 5, 0) != 5 ) { 
+    perror("send"); 
+  } 
+}
 
 //open the circuit breaker(i.e. make it isolating)
 void XCBR_open(XCBR * inst)
@@ -38,12 +50,13 @@ void XCBR_callback(InputEntry* extRef )
 }
 
 //initialise XCBR instance for process simulation, and publish/subscription of GOOSE
-void XCBR_init(IedServer server, Input* input)
+void *XCBR_init(IedServer server, Input* input)
 {
   XCBR* inst = (XCBR *) malloc(sizeof(XCBR));//create new instance with MALLOC
   inst->server = server;
   inst->Pos_stVal = (DataAttribute*) ModelNode_getChild((ModelNode*) input->parent, "Pos.stVal");
   inst->conducting = true;
+  inst->call_simulation = XCBR_updateValue;
 
 
   if(input != NULL)
@@ -61,6 +74,8 @@ void XCBR_init(IedServer server, Input* input)
   //start simulation threat
   Thread thread = Thread_create((ThreadExecutionFunction)XCBR_simulate_switch, input, true);
   Thread_start(thread);
+
+  return inst;
 }
 
 void XCBR_change_switch(XCBR * inst, Dbpos value)

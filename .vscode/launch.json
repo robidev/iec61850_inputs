@@ -9,7 +9,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/server_example_inputs",
-            "args": ["lo","-d","config_ptoc.cfg","model_ptoc.cfg"],
+            "args": ["lo","8102","cfg/IED3_SMV.cfg","cfg/IED3_SMV.ext"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],

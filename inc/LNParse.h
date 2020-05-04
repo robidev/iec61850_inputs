@@ -12,6 +12,8 @@ void attachLogicalNodes(IedServer server, IedModel_extensions* model, LinkedList
 
 void attachSMV(IedServer server, IedModel* model, char* ethernetIfcID);
 
+LogicalNodeClass* getLNClass(IedModel* model, IedModel_extensions* model_ex, const char * objectReference);
+
 #ifdef __cplusplus
 }
 #endif

@@ -129,7 +129,7 @@ def LNode(item, levelRef, SubEquipment):
   for LNode in lItem['LNode']:
     print("    LNode:" + levelRef + " > " + LNode['@iedName'] + " class:" + LNode["@lnClass"]) 
     IP = getIEDIp(LNode['@iedName'])
-    LNref = LNode['@ldInst'] + "/" + LNode['@prefix'] + LNode['@lnClass'] + LNode['@lnInst']
+    LNref = LNode['@iedName'] + LNode['@ldInst'] + "/" + LNode['@prefix'] + LNode['@lnClass'] + LNode['@lnInst']
     
     if LNode["@lnClass"] == "TCTR":
       #register ref for TCTR-IED
@@ -139,7 +139,7 @@ def LNode(item, levelRef, SubEquipment):
           'Name' : LNode['@iedName'], 
           'IP' : IP, 
           'LNref' : LNref,
-          'Connection' : init_conn(IP) } 
+          'Connection' : init_conn(IP, LNref) } 
 
         print("v.x" + levelRef.lower() + "_ctr.vctr" + phase)
     if LNode["@lnClass"] == "TVTR" and "Terminal" in item:
@@ -148,7 +148,7 @@ def LNode(item, levelRef, SubEquipment):
         'Name' : LNode['@iedName'], 
         'IP' : IP, 
         'LNref' : LNref,
-        'Connection' : init_conn(IP) } 
+        'Connection' : init_conn(IP, LNref) } 
 
       print(item["Terminal"][0]["@connectivityNode"].lower() + "_" + SubEquipment["@phase"].lower())
     if LNode["@lnClass"] == "XCBR":
@@ -157,7 +157,7 @@ def LNode(item, levelRef, SubEquipment):
         'Name' : LNode['@iedName'], 
         'IP' : IP, 
         'LNref' : LNref,
-        'Connection' : init_conn(IP) } 
+        'Connection' : init_conn(IP, LNref) } 
 
       print("v.x" + levelRef.lower() + "_cbr.vsig")
     if LNode["@lnClass"] == "XSWI":
@@ -166,17 +166,17 @@ def LNode(item, levelRef, SubEquipment):
         'Name' : LNode['@iedName'], 
         'IP' : IP, 
         'LNref' : LNref,
-        'Connection' : init_conn(IP) } 
+        'Connection' : init_conn(IP, LNref) } 
       print("v.x" + levelRef.lower() + "_dis.vsig")
 
 
-def init_conn(IP):
+def init_conn(IP, LNref):
   conn = None
   try:
     conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     conn.settimeout(5.0)
     conn.connect(("127.0.0.1", PORT)) # conn.connect((IP, PORT))
-    conn.sendall(b'init\n')
+    conn.sendall(b'i ' + LNref.encode('utf-8') + b'\n')
     data = conn.recv(1024)
     if data == b'OK\n':
       print("OK")
@@ -280,7 +280,7 @@ def updateValue(ied, value):
   if ied['Connection'] == None:
     return -1
   try:
-    ied['Connection'].sendall(b'set ' + ied['LNref'].encode('utf-8') + b' ' + str(value).encode('utf-8') )
+    ied['Connection'].sendall(b's ' + ied['LNref'].encode('utf-8') + b' ' + str(value).encode('utf-8') )
     data = ied['Connection'].recv(1024)
     if data == b'OK\n':
       return 0
@@ -303,7 +303,7 @@ def getValue(ied):
     return 1
 
   try:
-    ied['Connection'].sendall(b'get ' + ied['LNref'].encode('utf-8') )
+    ied['Connection'].sendall(b'g ' + ied['LNref'].encode('utf-8') )
     data = ied['Connection'].recv(1024)
     if data[-1:] == b'\n':
       return float(data[0:-1].decode("utf-8"))

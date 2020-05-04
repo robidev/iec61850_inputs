@@ -9,7 +9,7 @@
 extern "C" {
 #endif
 
-void TVTR_init(Input* input);
+void *TVTR_init(Input* input);
 
 #ifdef __cplusplus
 }

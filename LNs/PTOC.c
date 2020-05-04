@@ -1,7 +1,7 @@
 #include "iec61850_model_extensions.h"
 #include "inputs_api.h"
 #include "hal_thread.h"
-#include "../static_model.h"
+//#include "../static_model.h"
 #include "PTOC.h"
 
 #include <time.h>

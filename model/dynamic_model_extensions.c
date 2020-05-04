@@ -116,7 +116,7 @@ LogicalNodeClass_create(LogicalNode* parent, IedModel_extensions* model, char * 
     if(lnClass != NULL)
       self->lnClass = StringUtils_copyString(lnClass);
 
-    self->initFunction = NULL;
+    self->instance = NULL;
     self->sibling = NULL;
 
     IedModel_addLogicalNodeClass(model, self);

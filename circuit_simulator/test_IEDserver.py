@@ -23,12 +23,12 @@ class MyTCPHandler(socketserver.BaseRequestHandler):
               break
           #print("{} wrote:".format(self.client_address[0]))
           #print(self.data[0:4])
-          if self.data == b'init':
+          if self.data[0:2] == b'i ':
               print("init command")
               self.request.sendall(b"OK\n")
-          elif self.data[0:4] == b'set ':
+          elif self.data[0:2] == b's ':
               #print("set command:" + str(self.data[4:]))
-              cmd = self.data[4:].decode("utf-8")
+              cmd = self.data[2:].decode("utf-8")
               key,val = cmd.split(' ', 1)
               if not key in arrA:
                   arrA[key] = numpy.array([])
@@ -51,7 +51,7 @@ class MyTCPHandler(socketserver.BaseRequestHandler):
               #    plt.tight_layout()
               #    plt.show()
               #    exit(0)
-          elif self.data[0:4] == b'get ':
+          elif self.data[0:2] == b'g ':
               #print("get command:" + str(self.data[4:]))
               self.request.sendall(b"10.0\n")
           else:
