@@ -65,7 +65,7 @@ void attachLogicalNodes(IedServer server, IedModel_extensions* model, LinkedList
     }
     else if(strcmp(lnClass->lnClass,"TCTR") == 0)
     {
-      lnClass->instance = TCTR_init(input);
+      lnClass->instance = TCTR_init(server, input, allInputValues);
     }
     else if(strcmp(lnClass->lnClass,"TVTR") == 0)
     {

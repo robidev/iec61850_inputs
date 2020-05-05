@@ -20,10 +20,21 @@ typedef struct sXCBR
 
 void XCBR_updateValue(int sd, char * buffer, void* param)
 {
-  printf("XCBR buf= %s\n",buffer);
-  if( send(sd, "10.0\n", 5, 0) != 5 ) { 
-    perror("send"); 
-  } 
+  //printf("XCBR buf= %s\n",buffer);
+
+  XCBR* inst = (XCBR*) param;
+  if(inst->conducting)
+  {
+    if( send(sd, "10.0\n", 5, 0) != 5 ) { 
+      perror("send"); 
+    } 
+  }
+  else
+  {
+    if( send(sd, "-10.0\n", 6, 0) != 6 ) { 
+      perror("send"); 
+    }   
+  }
 }
 
 //open the circuit breaker(i.e. make it isolating)

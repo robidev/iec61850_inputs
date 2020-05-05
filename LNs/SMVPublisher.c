@@ -40,6 +40,7 @@ void* SMVP_init(SVPublisher SMVPublisher, IedServer server, IedModel* model,   L
         printf("ERROR: could not create sampled value publisher");
         return NULL;
     }
+    //TODO check if dataSet-arg is at the right pos.
     inst->asdu = SVPublisher_addASDU(inst->svPublisher, dataSet, NULL, 1);
 
     SVPublisher_ASDU_addINT32(inst->asdu);
@@ -127,7 +128,9 @@ void SMV_Thread(SMVP* inst)
         currentC = (amp * sin(angleC - phaseAngle)) * 1000;
         currentN = currentA + currentB + currentC;
 
-        // TODO check datamodel for the values, instead of generating them here. (or copy them from here to those LN's)
+        // TODO check datamodel for the values, instead of generating them here. 
+        // the ln's can be found in the dataset(iedmodel) 
+        // maybe get data via getdataset service
 
         if (inst->svcbEnabled) {
             
