@@ -21,7 +21,7 @@ void TCTR_updateValue(int sd, char * buffer, void* param)
   printf("TCTR buf= %s\n",buffer);
   TCTR* inst = (TCTR *)param;
   // TODO update datamodel value
-  MmsValue* simValue = MmsValue_newIntegerFromInt32(0);
+  MmsValue* simValue = MmsValue_newIntegerFromInt32(2);
   IedServer_updateAttributeValue(inst->server,inst->da,simValue);
   InputValueHandleExtensionCallbacks(inst->da_callback); //update the associated callbacks with this Data Element
   MmsValue_delete(simValue);

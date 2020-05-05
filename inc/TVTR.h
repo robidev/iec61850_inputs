@@ -9,7 +9,7 @@
 extern "C" {
 #endif
 
-void *TVTR_init(Input* input);
+void *TVTR_init(IedServer server, Input* input, LinkedList allInputValues );
 
 #ifdef __cplusplus
 }
