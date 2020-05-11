@@ -9,7 +9,7 @@
 extern "C" {
 #endif
 
-void* SMVP_init(SVPublisher SMVPublisher, IedServer server, IedModel* model, LogicalNode* logicalNode, char* dataSet, char* svcbName);
+void* SMVP_init(SVPublisher SMVPublisher, SVControlBlock* svcb, IedServer server);
 
 #ifdef __cplusplus
 }

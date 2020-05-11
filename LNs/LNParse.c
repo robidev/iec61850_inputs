@@ -31,25 +31,36 @@ void attachLogicalNodes(IedServer server, IedModel_extensions* model, LinkedList
     {
       printf("Found mandatory Class LPHD\n");
     }
+    //simulated
     else if(strcmp(lnClass->lnClass,"XSWI") == 0)
     {
-      lnClass->instance = XSWI_init(server, input); 
+      lnClass->instance = XSWI_init(server, lnClass->parent, input); 
     }
     else if(strcmp(lnClass->lnClass,"XCBR") == 0)
     {
-      lnClass->instance = XCBR_init(server, input);
+      lnClass->instance = XCBR_init(server, lnClass->parent, input);
     }
-    else if(strcmp(lnClass->lnClass,"RADR") == 0)
+    else if(strcmp(lnClass->lnClass,"TCTR") == 0)
     {
-      RADR_init(input);
+      lnClass->instance = TCTR_init(server, lnClass->parent, input, allInputValues);
     }
+    else if(strcmp(lnClass->lnClass,"TVTR") == 0)
+    {
+      lnClass->instance = TVTR_init(server, lnClass->parent, input, allInputValues);
+    }
+    //basic functional
     else if(strcmp(lnClass->lnClass,"PTRC") == 0)
     {
-      PTRC_init(server, input, allInputValues);
+      PTRC_init(server, lnClass->parent, input, allInputValues);
     }
     else if(strcmp(lnClass->lnClass,"PTOC") == 0)
     {
-      PTOC_init(server, input, allInputValues);
+      PTOC_init(server, lnClass->parent, input, allInputValues);
+    }
+    //stubs
+    else if(strcmp(lnClass->lnClass,"RADR") == 0)
+    {
+      RADR_init(input);
     }
     else if(strcmp(lnClass->lnClass,"MMXU") == 0)
     {
@@ -62,14 +73,6 @@ void attachLogicalNodes(IedServer server, IedModel_extensions* model, LinkedList
     else if(strcmp(lnClass->lnClass,"CILO") == 0)
     {
       CILO_init(input);
-    }
-    else if(strcmp(lnClass->lnClass,"TCTR") == 0)
-    {
-      lnClass->instance = TCTR_init(server, input, allInputValues);
-    }
-    else if(strcmp(lnClass->lnClass,"TVTR") == 0)
-    {
-      lnClass->instance = TVTR_init(server, input, allInputValues);
     }
     else
     {
@@ -87,7 +90,7 @@ void attachSMV(IedServer server, IedModel* model, char* ethernetIfcID)
   {
     	//smv publisher
 	  SVPublisher SMVPublisher = SVPublisher_create((CommParameters *)svCBs->dstAddress, ethernetIfcID);
-    SMVP_init(SMVPublisher, server, model, svCBs->parent, svCBs->dataSetName, svCBs->name);
+    SMVP_init(SMVPublisher, svCBs, server);
 
     svCBs = svCBs->sibling;
   }

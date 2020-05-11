@@ -1,8 +1,10 @@
 #include "iec61850_server.h"
 #include "SMVPublisher.h"
 
+#include "iec61850_model.h"
 #include "iec61850_model_extensions.h"
 #include "inputs_api.h"
+#include "simulation_config.h"
 
 #include "hal_thread.h"
 #include <math.h>
@@ -15,7 +17,7 @@ typedef struct sSMVP {
     bool running;
 
     void * simulationHandler;
-    
+    LinkedList dataSetValues;
 } SMVP;
 
 void SMV_Thread(SMVP* inst);
@@ -29,7 +31,7 @@ void sVCBEventHandler (SVControlBlock* svcb, int event, void* parameter)
         inst->svcbEnabled = 0;
 }
 
-void* SMVP_init(SVPublisher SMVPublisher, IedServer server, IedModel* model,   LogicalNode* logicalNode, char* dataSet, char* svcbName)
+void* SMVP_init(SVPublisher SMVPublisher, SVControlBlock* svcb, IedServer server)
 {
     SMVP* inst = (SMVP *) malloc(sizeof(SMVP));
     inst->running = false;
@@ -40,8 +42,12 @@ void* SMVP_init(SVPublisher SMVPublisher, IedServer server, IedModel* model,   L
         printf("ERROR: could not create sampled value publisher");
         return NULL;
     }
+    
+
+    //SVControlBlock* svcb = IedModel_getSVControlBlock(model, logicalNode, svcbName);//todo merge with calling func.
+
     //TODO check if dataSet-arg is at the right pos.
-    inst->asdu = SVPublisher_addASDU(inst->svPublisher, dataSet, NULL, 1);
+    inst->asdu = SVPublisher_addASDU(inst->svPublisher, svcb->dataSetName, NULL, 1);
 
     SVPublisher_ASDU_addINT32(inst->asdu);
     SVPublisher_ASDU_addQuality(inst->asdu);
@@ -66,16 +72,34 @@ void* SMVP_init(SVPublisher SMVPublisher, IedServer server, IedModel* model,   L
 
     SVPublisher_setupComplete(inst->svPublisher);
 
-    SVControlBlock* svcb = IedModel_getSVControlBlock(model, logicalNode, svcbName);
-
-    if (svcb == NULL) {
-        printf("ERROR: Lookup svcb failed!\n");
-        SVPublisher_destroy(inst->svPublisher);
-        return NULL;
-    }
     IedServer_setSVCBHandler(server, svcb, sVCBEventHandler, inst);  
     inst->svcbEnabled = 1;
+
+    inst->dataSetValues = NULL;
     
+    if(IEC61850_server_simulation_type() == SIMULATION_TYPE_REMOTE)
+    {
+        //get domain
+        char objectReference[130];
+        ModelNode_getObjectReference((ModelNode*) svcb->parent, objectReference);
+        char* separator = strchr(objectReference, '/');
+        *separator = 0;
+
+        //form dataset name
+        char* lnName = svcb->parent->name;
+        char* dataSetReference = StringUtils_createString(5, objectReference, "/", lnName, "$", svcb->dataSetName);
+
+        /* prepare data set values */
+        inst->dataSetValues = LinkedList_create();
+        IedModel* model = IedServer_getDataModel(server);
+        DataSet* dataSet = IedModel_lookupDataSet(model, dataSetReference);
+        DataSetEntry* dataSetEntry = dataSet->fcdas;
+        while (dataSetEntry != NULL) {
+            LinkedList_add(inst->dataSetValues, dataSetEntry->value);
+            dataSetEntry = dataSetEntry->sibling;
+        }
+    }
+
     Thread thread = Thread_create((ThreadExecutionFunction)SMV_Thread, inst, true);
     Thread_start(thread);
 
@@ -90,13 +114,6 @@ void SMVP_destroy(SMVP* inst)
 void SMV_Thread(SMVP* inst)
 {
     inst->running = true;
-
-    Quality q = QUALITY_VALIDITY_GOOD;
-
-    int vol = (int) (6350.f * sqrt(2));
-    int amp = 0;
-    float phaseAngle = 0.f;
-
     int voltageA;
     int voltageB;
     int voltageC;
@@ -106,71 +123,136 @@ void SMV_Thread(SMVP* inst)
     int currentC;
     int currentN;
 
-    int sampleCount = 0;
-
-    uint64_t nextCycleStart = Hal_getTimeInMs() + 1000;
-    while (inst->running) 
+    if(IEC61850_server_simulation_type() == SIMULATION_TYPE_LOCAL)
     {
-        /* update measurement values */
-        int samplePoint = sampleCount % 80;
+        Quality q = QUALITY_VALIDITY_GOOD;
 
-        double angleA = (2 * M_PI / 80) * samplePoint;
-        double angleB = (2 * M_PI / 80) * samplePoint - ( 2 * M_PI / 3);
-        double angleC = (2 * M_PI / 80) * samplePoint - ( 4 * M_PI / 3);
+        int vol = (int) (6350.f * sqrt(2));
+        int amp = 0;
+        float phaseAngle = 0.f;
 
-        voltageA = (vol * sin(angleA)) * 100;
-        voltageB = (vol * sin(angleB)) * 100;
-        voltageC = (vol * sin(angleC)) * 100;
-        voltageN = voltageA + voltageB + voltageC;
+        int sampleCount = 0;
 
-        currentA = (amp * sin(angleA - phaseAngle)) * 1000;
-        currentB = (amp * sin(angleB - phaseAngle)) * 1000;
-        currentC = (amp * sin(angleC - phaseAngle)) * 1000;
-        currentN = currentA + currentB + currentC;
+        uint64_t nextCycleStart = Hal_getTimeInMs() + 1000;
+        while (inst->running) 
+        {
+                        /* update measurement values */
+            int samplePoint = sampleCount % 80;
 
-        // TODO check datamodel for the values, instead of generating them here. 
-        // the ln's can be found in the dataset(iedmodel) 
-        // maybe get data via getdataset service
+            double angleA = (2 * M_PI / 80) * samplePoint;
+            double angleB = (2 * M_PI / 80) * samplePoint - ( 2 * M_PI / 3);
+            double angleC = (2 * M_PI / 80) * samplePoint - ( 4 * M_PI / 3);
 
-        if (inst->svcbEnabled) {
-            
-            SVPublisher_ASDU_setINT32(inst->asdu, 0, currentA);
-            SVPublisher_ASDU_setQuality(inst->asdu, 4, q);
-            SVPublisher_ASDU_setINT32(inst->asdu, 8, currentB);
-            SVPublisher_ASDU_setQuality(inst->asdu, 12, q);
-            SVPublisher_ASDU_setINT32(inst->asdu, 16, currentC);
-            SVPublisher_ASDU_setQuality(inst->asdu, 20, q);
-            SVPublisher_ASDU_setINT32(inst->asdu, 24, currentN);
-            SVPublisher_ASDU_setQuality(inst->asdu, 28, q);
+            voltageA = (vol * sin(angleA)) * 100;
+            voltageB = (vol * sin(angleB)) * 100;
+            voltageC = (vol * sin(angleC)) * 100;
+            voltageN = voltageA + voltageB + voltageC;
 
-            SVPublisher_ASDU_setINT32(inst->asdu, 32, voltageA);
-            SVPublisher_ASDU_setQuality(inst->asdu, 36, q);
-            SVPublisher_ASDU_setINT32(inst->asdu, 40, voltageB);
-            SVPublisher_ASDU_setQuality(inst->asdu, 44, q);
-            SVPublisher_ASDU_setINT32(inst->asdu, 48, voltageC);
-            SVPublisher_ASDU_setQuality(inst->asdu, 52, q);
-            SVPublisher_ASDU_setINT32(inst->asdu, 56, voltageN);
-            SVPublisher_ASDU_setQuality(inst->asdu, 60, q);
+            currentA = (amp * sin(angleA - phaseAngle)) * 1000;
+            currentB = (amp * sin(angleB - phaseAngle)) * 1000;
+            currentC = (amp * sin(angleC - phaseAngle)) * 1000;
+            currentN = currentA + currentB + currentC;
 
-            SVPublisher_ASDU_setRefrTm(inst->asdu, Hal_getTimeInMs());
+            if (inst->svcbEnabled) {
+                
+                SVPublisher_ASDU_setINT32(inst->asdu, 0, currentA);
+                SVPublisher_ASDU_setQuality(inst->asdu, 4, q);
+                SVPublisher_ASDU_setINT32(inst->asdu, 8, currentB);
+                SVPublisher_ASDU_setQuality(inst->asdu, 12, q);
+                SVPublisher_ASDU_setINT32(inst->asdu, 16, currentC);
+                SVPublisher_ASDU_setQuality(inst->asdu, 20, q);
+                SVPublisher_ASDU_setINT32(inst->asdu, 24, currentN);
+                SVPublisher_ASDU_setQuality(inst->asdu, 28, q);
 
-            SVPublisher_ASDU_setSmpCnt(inst->asdu, (uint16_t) sampleCount);
+                SVPublisher_ASDU_setINT32(inst->asdu, 32, voltageA);
+                SVPublisher_ASDU_setQuality(inst->asdu, 36, q);
+                SVPublisher_ASDU_setINT32(inst->asdu, 40, voltageB);
+                SVPublisher_ASDU_setQuality(inst->asdu, 44, q);
+                SVPublisher_ASDU_setINT32(inst->asdu, 48, voltageC);
+                SVPublisher_ASDU_setQuality(inst->asdu, 52, q);
+                SVPublisher_ASDU_setINT32(inst->asdu, 56, voltageN);
+                SVPublisher_ASDU_setQuality(inst->asdu, 60, q);
 
-            SVPublisher_publish(inst->svPublisher);
-        }
+                SVPublisher_ASDU_setRefrTm(inst->asdu, Hal_getTimeInMs());
 
-        sampleCount = ((sampleCount + 1) % 4000);
+                SVPublisher_ASDU_setSmpCnt(inst->asdu, (uint16_t) sampleCount);
 
-        if ((sampleCount % 400) == 0) {
-            uint64_t timeval = Hal_getTimeInMs();
-
-            while (timeval < nextCycleStart + 100) {
-                Thread_sleep(1);
-
-                timeval = Hal_getTimeInMs();
+                SVPublisher_publish(inst->svPublisher);
             }
 
-            nextCycleStart = nextCycleStart + 100;
+            sampleCount = ((sampleCount + 1) % 4000);
+
+            if ((sampleCount % 400) == 0) {
+                uint64_t timeval = Hal_getTimeInMs();
+
+                while (timeval < nextCycleStart + 100) {
+                    Thread_sleep(1);
+
+                    timeval = Hal_getTimeInMs();
+                }
+
+                nextCycleStart = nextCycleStart + 100;
+            }
+        }
+    }
+    else // if(IEC61850_server_simulation_type() == SIMULATION_TYPE_NONE || IEC61850_server_simulation_type() == SIMULATION_TYPE_REMOTE)
+    {
+        int sampleCount = 0;
+        //Quality q = QUALITY_VALIDITY_GOOD;
+        uint64_t nextCycleStart = Hal_getTimeInMs() + 1000;
+
+        int step = 0;
+
+        while (inst->running) 
+        {
+            int samplePoint = sampleCount % 80;
+            if (inst->svcbEnabled) {
+                
+                LinkedList ds = inst->dataSetValues;
+                int index = 0;
+                while(ds != NULL)//for each LN with an inputs/extref defined;
+                {
+                    if(ds->data != NULL)
+                    {
+                        MmsValue* datasetValue = ds->data;
+                        char buf[255];
+                        MmsValue_printToBuffer(datasetValue,buf,255);
+                        printf("data: %s\n",buf);
+
+                        SVPublisher_ASDU_setINT32(inst->asdu, index, MmsValue_toInt32( MmsValue_getElement( MmsValue_getElement(datasetValue,0), 0) ) );
+                        SVPublisher_ASDU_setQuality(inst->asdu, index + 4, MmsValue_toUint32( MmsValue_getElement(datasetValue,1) ));
+                        index += 8;
+                    }
+                    ds = LinkedList_getNext(ds);
+                }
+
+                SVPublisher_ASDU_setRefrTm(inst->asdu, Hal_getTimeInMs());
+
+                SVPublisher_ASDU_setSmpCnt(inst->asdu, (uint16_t) sampleCount);
+
+                SVPublisher_publish(inst->svPublisher);
+            }
+
+            sampleCount = ((sampleCount + 1) % 4000);
+
+            if(IEC61850_server_simulation_type() == SIMULATION_TYPE_REMOTE)
+            {
+                IEC61850_server_simulation_sync(step++);
+            }
+            else
+            {
+                if ((sampleCount % 400) == 0) {
+                    uint64_t timeval = Hal_getTimeInMs();
+
+                    while (timeval < nextCycleStart + 100) {
+                        Thread_sleep(1);
+
+                        timeval = Hal_getTimeInMs();
+                    }
+
+                    nextCycleStart = nextCycleStart + 100;
+                }
+            }
         }
     }
 }

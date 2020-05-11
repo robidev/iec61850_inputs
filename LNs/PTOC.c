@@ -113,29 +113,31 @@ void PTOC_callback_SMV(InputEntry* extRef)
   }
 }
 
-void PTOC_init(IedServer server, Input* input, LinkedList allInputValues)
+void PTOC_init(IedServer server, LogicalNode* ln, Input* input, LinkedList allInputValues)
 {
   PTOC* inst = (PTOC *) malloc(sizeof(PTOC));//create new instance with MALLOC
   inst->server = server;
-  inst->Op_general = (DataAttribute*) ModelNode_getChild((ModelNode*) input->parent, "Op.general");//the node to operate on
+  inst->Op_general = (DataAttribute*) ModelNode_getChild((ModelNode*) ln, "Op.general");//the node to operate on
   inst->Op_general_callback = _findAttributeValueEx(inst->Op_general, allInputValues);
   inst->input = input;
   
-  
-  InputEntry* extRef = input->extRefs;
+  if(input != NULL)
+  {
+    InputEntry* extRef = input->extRefs;
 
-	while(extRef != NULL)
-	{
-		if(strcmp(extRef->intAddr,"Vol4") == 0)//find extref for the last SMV, using the intaddr, so that all values are updated
-		{
-      extRef->callBack = (callBackFunction) PTOC_callback_SMV;
-      extRef->callBackParam = inst;
-		}
-    if(strcmp(extRef->intAddr,"xcbr_stval") == 0)
-		{
-      extRef->callBack = (callBackFunction) PTOC_callback_GOOSE;
-      extRef->callBackParam = inst;
-		}
-		extRef = extRef->sibling;
-	}
+    while(extRef != NULL)
+    {
+      if(strcmp(extRef->intAddr,"Vol4") == 0)//find extref for the last SMV, using the intaddr, so that all values are updated
+      {
+        extRef->callBack = (callBackFunction) PTOC_callback_SMV;
+        extRef->callBackParam = inst;
+      }
+      if(strcmp(extRef->intAddr,"xcbr_stval") == 0)
+      {
+        extRef->callBack = (callBackFunction) PTOC_callback_GOOSE;
+        extRef->callBackParam = inst;
+      }
+      extRef = extRef->sibling;
+    }
+  }
 }

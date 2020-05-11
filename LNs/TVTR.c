@@ -18,10 +18,15 @@ typedef struct sTVTR
 
 void TVTR_updateValue(int sd, char * buffer, void* param)
 {
-  printf("TVTR buf= %s\n",buffer);
   TVTR* inst = (TVTR *)param;
   // TODO update datamodel value
-  IedServer_updateInt32AttributeValue(inst->server,inst->da,1);
+  char ref[130];
+  int i = 0;
+  
+  int matchedItems = sscanf( buffer, "s %s %d", ref, &i );
+  //printf("TCTR buf= %s, val=%i\n",buffer, i);
+
+  IedServer_updateInt32AttributeValue(inst->server,inst->da,i);
   InputValueHandleExtensionCallbacks(inst->da_callback); //update the associated callbacks with this Data Element
 
   if( send(sd, "OK\n", 3, 0) != 3 ) { 
@@ -29,11 +34,11 @@ void TVTR_updateValue(int sd, char * buffer, void* param)
 	} 
 }
 
-void *TVTR_init(IedServer server, Input* input, LinkedList allInputValues )
+void *TVTR_init(IedServer server, LogicalNode* ln, Input* input, LinkedList allInputValues )
 {
   TVTR* inst = (TVTR *) malloc(sizeof(TVTR));//create new instance with MALLOC
   inst->server = server;
-  inst->da = (DataAttribute*) ModelNode_getChild((ModelNode*) input->parent, "Vol.instMag.i");//the node to operate on
+  inst->da = (DataAttribute*) ModelNode_getChild((ModelNode*) ln, "Vol.instMag.i");//the node to operate on
   inst->da_callback = _findAttributeValueEx(inst->da, allInputValues);
 
   //register callback for input

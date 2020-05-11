@@ -18,24 +18,27 @@ typedef struct sTCTR
 
 void TCTR_updateValue(int sd, char * buffer, void* param)
 {
-  printf("TCTR buf= %s\n",buffer);
   TCTR* inst = (TCTR *)param;
   // TODO update datamodel value
-  MmsValue* simValue = MmsValue_newIntegerFromInt32(2);
-  IedServer_updateAttributeValue(inst->server,inst->da,simValue);
+  char ref[130];
+  int i = 0;
+
+  int matchedItems = sscanf( buffer, "s %s %d", ref, &i );
+
+  //printf("TCTR buf= %s, val=%i\n",buffer, i);
+  IedServer_updateInt32AttributeValue(inst->server,inst->da,i);
   InputValueHandleExtensionCallbacks(inst->da_callback); //update the associated callbacks with this Data Element
-  MmsValue_delete(simValue);
 
   if( send(sd, "OK\n", 3, 0) != 3 ) { 
 		perror("send"); 
 	} 
 }
 
-void *TCTR_init(IedServer server, Input* input, LinkedList allInputValues )
+void *TCTR_init(IedServer server, LogicalNode* ln, Input* input, LinkedList allInputValues )
 {
   TCTR* inst = (TCTR *) malloc(sizeof(TCTR));//create new instance with MALLOC
   inst->server = server;
-  inst->da = (DataAttribute*) ModelNode_getChild((ModelNode*) input->parent, "Amp.instMag.i");//the node to operate on
+  inst->da = (DataAttribute*) ModelNode_getChild((ModelNode*) ln, "Amp.instMag.i");//the node to operate on
   inst->da_callback = _findAttributeValueEx(inst->da, allInputValues);
 
   //register callback for input

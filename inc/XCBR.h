@@ -9,7 +9,7 @@
 extern "C" {
 #endif
 
-void *XCBR_init(IedServer server, Input* input);
+void *XCBR_init(IedServer server, LogicalNode* ln, Input* input);
 
 #ifdef __cplusplus
 }

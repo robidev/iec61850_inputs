@@ -9,7 +9,7 @@
 extern "C" {
 #endif
 
-void *TCTR_init(IedServer server, Input* input, LinkedList allInputValues );
+void *TCTR_init(IedServer server, LogicalNode* ln, Input* input, LinkedList allInputValues );
 
 #ifdef __cplusplus
 }

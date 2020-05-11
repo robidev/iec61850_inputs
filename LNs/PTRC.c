@@ -37,33 +37,36 @@ void PTRC_xcbr_callback(InputEntry* extRef)
   }
 }
 
-void PTRC_init(IedServer server, Input* input, LinkedList allInputValues)
+void PTRC_init(IedServer server, LogicalNode* ln, Input* input, LinkedList allInputValues)
 {
   PTRC* inst = (PTRC *) malloc(sizeof(PTRC));//create new instance with MALLOC
   inst->server = server;
-  inst->Tr_general = (DataAttribute*) ModelNode_getChild((ModelNode*) input->parent, "Tr.general");//the node to operate on
+  inst->Tr_general = (DataAttribute*) ModelNode_getChild((ModelNode*) ln, "Tr.general");//the node to operate on
   inst->Tr_general_callback = _findAttributeValueEx(inst->Tr_general, allInputValues);
  
   //find extref for the last SMV, using the intaddr
-  InputEntry* extRef = input->extRefs;
+  if(input != NULL)
+  {
+    InputEntry* extRef = input->extRefs;
 
-	while(extRef != NULL)
-	{
-    if(strcmp(extRef->intAddr,"PTOC_Op") == 0)
-		{
-      extRef->callBack = (callBackFunction) PTRC_input_callback;
-      extRef->callBackParam = inst;
-		}
-    if(strcmp(extRef->intAddr,"RREC_Op") == 0)
-		{
-      extRef->callBack = (callBackFunction) PTRC_input_callback;
-      extRef->callBackParam = inst;
-		}
-    if(strcmp(extRef->intAddr,"xcbr_stval") == 0)
-		{
-      extRef->callBack = (callBackFunction) PTRC_xcbr_callback;
-      extRef->callBackParam = inst;
-		}
-		extRef = extRef->sibling;
-	}
+    while(extRef != NULL)
+    {
+      if(strcmp(extRef->intAddr,"PTOC_Op") == 0)
+      {
+        extRef->callBack = (callBackFunction) PTRC_input_callback;
+        extRef->callBackParam = inst;
+      }
+      if(strcmp(extRef->intAddr,"RREC_Op") == 0)
+      {
+        extRef->callBack = (callBackFunction) PTRC_input_callback;
+        extRef->callBackParam = inst;
+      }
+      if(strcmp(extRef->intAddr,"xcbr_stval") == 0)
+      {
+        extRef->callBack = (callBackFunction) PTRC_xcbr_callback;
+        extRef->callBackParam = inst;
+      }
+      extRef = extRef->sibling;
+    }
+  }
 }

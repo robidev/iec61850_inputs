@@ -280,7 +280,7 @@ def updateValue(ied, value):
   if ied['Connection'] == None:
     return -1
   try:
-    ied['Connection'].sendall(b's ' + ied['LNref'].encode('utf-8') + b' ' + str(value).encode('utf-8') )
+    ied['Connection'].sendall(b's ' + ied['LNref'].encode('utf-8') + b' ' + str(int(value*100)).encode('utf-8') )
     data = ied['Connection'].recv(1024)
     if data == b'OK\n':
       return 0
@@ -316,6 +316,26 @@ def getValue(ied):
     ied['Connection'] = None
   return 1
 
+def nextStep(ied_conn):
+  # send value
+  #initiate tcp, if not existing yet, or do this at init, and just get it here
+  #send value to ied
+  # "s LNref val"
+  if ied_conn == None:
+    return -1
+  try:
+    ied_conn.sendall(b'n step')
+    data = ied_conn.recv(1024)
+    if data == b'OK\n':
+      return 0
+  except:
+    print("ERROR: exception while updating step, closing connection")
+    try:
+      ied_conn.close()
+    except:
+      print("ERROR: could not close connection after error")
+    ied_conn = None
+  return -1
 
 class MyNgSpiceShared(NgSpiceShared):
     def __init__(self, ngspice_id=0, send_data=False):
@@ -387,7 +407,23 @@ ngspice_shared.step(2)
 arrA = {}
 arrV = {}
 
+# generate list for unique connections
+nextStep_dict = {}
 
+for key in measurantsA:
+  if measurantsA[key]['Connection'] != None:
+    ip = measurantsA[key]['IP']
+    if ip not in nextStep_dict:
+      nextStep_dict[ip] = measurantsA[key]['Connection']
+
+for key in measurantsV:
+  if measurantsV[key]['Connection'] != None:
+    ip = measurantsV[key]['IP']
+    if ip not in nextStep_dict:
+      nextStep_dict[ip] = measurantsV[key]['Connection']
+
+
+# run the simulation
 for _ in range(200):
   ngspice_shared.step(10)
   analysis = ngspice_shared.plot(plot_name='tran1', simulation=None).to_analysis()
@@ -406,6 +442,12 @@ for _ in range(200):
     arrV[key] = numpy.append(arrV[key], float(analysis[key][0]))
     updateValue(measurantsV[key], float(analysis[key][0]))
 
+  # sync primary-process simulation with simulated ied's
+  for key in nextStep_dict:
+    #print("next step for ip: " + key)
+    nextStep(nextStep_dict[key])
+    #break # during tests
+  
   #arr1 = numpy.append(arr1, float(analysis['S12/D1/Q1/L0_a'][0]))
   #arr2 = numpy.append(arr2, float(analysis['S12/E1/Q1/L2_b'][0]))
   #arr3 = numpy.append(arr3, float(analysis['S12/E1/W1/BB1_a'][0]))

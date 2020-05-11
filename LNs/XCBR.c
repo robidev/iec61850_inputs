@@ -2,6 +2,7 @@
 #include "iec61850_server.h"
 #include "inputs_api.h"
 #include "hal_thread.h"
+#include "simulation_config.h"
 #include <sys/socket.h> 
 #include "XCBR.h"
 
@@ -61,11 +62,11 @@ void XCBR_callback(InputEntry* extRef )
 }
 
 //initialise XCBR instance for process simulation, and publish/subscription of GOOSE
-void *XCBR_init(IedServer server, Input* input)
+void *XCBR_init(IedServer server, LogicalNode* ln, Input* input)
 {
   XCBR* inst = (XCBR *) malloc(sizeof(XCBR));//create new instance with MALLOC
   inst->server = server;
-  inst->Pos_stVal = (DataAttribute*) ModelNode_getChild((ModelNode*) input->parent, "Pos.stVal");
+  inst->Pos_stVal = (DataAttribute*) ModelNode_getChild((ModelNode*) ln, "Pos.stVal");
   inst->conducting = true;
   inst->call_simulation = XCBR_updateValue;
 
@@ -97,28 +98,65 @@ void XCBR_change_switch(XCBR * inst, Dbpos value)
 //threath for process-simulation: open/close switch
 void XCBR_simulate_switch(Input* input)
 {
+  int state = 3;//default state is closed
+  int step = 0;
+
   XCBR* inst = input->extRefs->callBackParam;//take the initial callback, as they all contain the same object instance
 
   inst->conducting = true;//initial state
   XCBR_change_switch(inst,DBPOS_ON);//initial state
   while(1)
   {
-    while(inst->conducting == true){ Thread_sleep(10); }
-    printf("XCBR: opening, BANG!\n");
-    XCBR_change_switch(inst,DBPOS_INTERMEDIATE_STATE);
+    switch(state)
+    {
+      case 0:// opening
+      {
+        printf("XCBR: opening, BANG!\n");
+        XCBR_change_switch(inst,DBPOS_INTERMEDIATE_STATE);
 
-    Thread_sleep(20);
+        Thread_sleep(20);
+        XCBR_change_switch(inst,DBPOS_OFF);
+        printf("XCBR: opened\n");
+        state = 1;
+        break;
+      }
 
-    printf("XCBR: opened\n");
-    XCBR_change_switch(inst,DBPOS_OFF);
+      case 1: // opened
+      {
+        if(inst->conducting == true)//switch is closed
+          state = 2;
+        break;
+      }
+      
 
-    while(inst->conducting == false){ Thread_sleep(1000); }
-    printf("XCBR: closing\n");
-    XCBR_change_switch(inst,DBPOS_INTERMEDIATE_STATE);
+      case 2: // closing
+      {
+        printf("XCBR: closing\n");
+        XCBR_change_switch(inst,DBPOS_INTERMEDIATE_STATE);
 
-    Thread_sleep(2000);
+        Thread_sleep(2000);
+        XCBR_change_switch(inst,DBPOS_ON);
+        printf("XCBR: closed\n");
+        state = 3;
+        break;
+      }
 
-    printf("XCBR: closed\n");
-    XCBR_change_switch(inst,DBPOS_ON);
+      case 3: // closed
+      {
+        if(inst->conducting == false)
+          state = 0;
+        break;
+      }
+      
+      if(IEC61850_server_simulation_type() == SIMULATION_TYPE_REMOTE)
+      {
+          IEC61850_server_simulation_sync(step++);
+      }
+      else
+      {
+        Thread_sleep(1);
+      }
+      
+    }    
   }
 }

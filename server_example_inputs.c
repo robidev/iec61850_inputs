@@ -14,6 +14,8 @@
 
 #include "iec61850_server.h"
 #include "hal_thread.h" /* for Thread_sleep() */
+#include "simulation_config.h"
+
 #include <signal.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -30,14 +32,10 @@
 
 #include "hal_socket.h"
 
-//#include "static_model.h"
-
-/* import IEC 61850 device model created from SCL-File */
-//extern IedModel iedModel;
-//extern IedModel_extensions iedExtendedModel;
 
 static int running = 0;
 static IedServer iedServer = NULL;
+Semaphore simulationMutex;
 
 void sigint_handler(int signalId)
 {
@@ -53,13 +51,39 @@ typedef struct sLNStruct
 	simulationFunction call_simulation;
 } LNStruct;
 
+static int global_step = 0;
+static int global_simulation_type = SIMULATION_TYPE_REMOTE;
 
-void global_step()
+void IEC61850_server_simulation_next_step()
 {
-	static int global_step = 0;
 	global_step++;
+	printf("step: %i\n",global_step);
 }
 
+void IEC61850_server_simulation_sync(int local)
+{
+    while(local == global_step)
+		Thread_sleep(1);
+}
+
+int IEC61850_server_simulation_async(int local)
+{
+    if(local == global_step)
+	{
+		Thread_sleep(1);
+		return 1;
+	}
+	else
+	{
+		return 0;
+	}
+	
+}
+
+int IEC61850_server_simulation_type()
+{ 
+	return global_simulation_type; 
+}
 
 int simulation_thread(IedModel* model, IedModel_extensions* model_ex) 
 { 
@@ -83,6 +107,7 @@ int simulation_thread(IedModel* model, IedModel_extensions* model_ex)
 		
 	//set of socket descriptors 
 	fd_set readfds; 
+
 	
 	for (i = 0; i < max_clients; i++) { //initialise all client_socket[] to 0
 		client_socket[i] = 0; 
@@ -204,12 +229,12 @@ int simulation_thread(IedModel* model, IedModel_extensions* model_ex)
 								LNi[i] = inst;
 
 								if( send(sd, "OK\n", 3, 0) != 3 ) { 
-									perror("send"); 
+									perror("send init OK"); 
 								} 
 							}
 							else {
 								if( send(sd, "NOK\n", 4, 0) != 4 ) { 
-									perror("send"); 
+									perror("send init NOK"); 
 								} 
 							}
 
@@ -228,9 +253,9 @@ int simulation_thread(IedModel* model, IedModel_extensions* model_ex)
 						}
 						case 'n'://case next=perform next simulation step
 						{
-							global_step();
+							IEC61850_server_simulation_next_step();
 							if( send(sd, "OK\n", 3, 0) != 3 ) { 
-								perror("send"); 
+								perror("send next step"); 
 							} 
 							break;
 						}
@@ -248,6 +273,8 @@ int main(int argc, char** argv) {
 
 	IedModel* iedModel_local = NULL;//&iedModel;
 	IedModel_extensions* iedExtendedModel_local = NULL;//&iedExtendedModel;
+
+	simulationMutex = Semaphore_create(0);
 
 	int port = 102;
 	char* ethernetIfcID = "lo";
@@ -273,6 +300,15 @@ int main(int argc, char** argv) {
 			printf("Parsing dynamic config failed! Exit.\n");
 			exit(-1);
 		}
+	}
+	if(argc > 5 )
+	{
+		if(argv[5][0] == 'N')
+			global_simulation_type = SIMULATION_TYPE_NONE;
+		if(argv[5][0] == 'L')
+			global_simulation_type = SIMULATION_TYPE_LOCAL;
+		if(argv[5][0] == 'R')
+			global_simulation_type = SIMULATION_TYPE_REMOTE;
 	}
 	else
 	{
