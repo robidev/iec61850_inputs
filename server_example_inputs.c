@@ -32,18 +32,14 @@
 
 #include "hal_socket.h"
 
+#define PORT 65000
+#define SOCKETS 65
 
 static int running = 0;
 static IedServer iedServer = NULL;
-Semaphore simulationMutex;
+static int global_step = 0;
+static int global_simulation_type = SIMULATION_TYPE_NONE;
 
-void sigint_handler(int signalId)
-{
-	running = 0;
-}
-
-#define PORT 65000
-#define SOCKETS 65
 
 typedef void (*simulationFunction) (int sd, char * buffer, void* param);
 typedef struct sLNStruct 
@@ -51,8 +47,11 @@ typedef struct sLNStruct
 	simulationFunction call_simulation;
 } LNStruct;
 
-static int global_step = 0;
-static int global_simulation_type = SIMULATION_TYPE_REMOTE;
+
+void sigint_handler(int signalId)
+{
+	running = 0;
+}
 
 void IEC61850_server_simulation_next_step()
 {
@@ -273,8 +272,6 @@ int main(int argc, char** argv) {
 
 	IedModel* iedModel_local = NULL;//&iedModel;
 	IedModel_extensions* iedExtendedModel_local = NULL;//&iedExtendedModel;
-
-	simulationMutex = Semaphore_create(0);
 
 	int port = 102;
 	char* ethernetIfcID = "lo";

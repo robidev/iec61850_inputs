@@ -175,7 +175,8 @@ def init_conn(IP, LNref):
   try:
     conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     conn.settimeout(5.0)
-    conn.connect(("127.0.0.1", PORT)) # conn.connect((IP, PORT))
+    #conn.connect(("127.0.0.1", PORT)) 
+    conn.connect((IP, PORT))
     conn.sendall(b'i ' + LNref.encode('utf-8') + b'\n')
     data = conn.recv(1024)
     if data == b'OK\n':
