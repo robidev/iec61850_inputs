@@ -38,7 +38,7 @@
 static int running = 0;
 static IedServer iedServer = NULL;
 static int global_step = 0;
-static int global_simulation_type = SIMULATION_TYPE_NONE;
+static int global_simulation_type = SIMULATION_TYPE_LOCAL;
 
 
 typedef void (*simulationFunction) (int sd, char * buffer, void* param);
