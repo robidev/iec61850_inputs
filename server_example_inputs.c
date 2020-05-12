@@ -84,7 +84,7 @@ int IEC61850_server_simulation_type()
 	return global_simulation_type; 
 }
 
-int simulation_thread(IedModel* model, IedModel_extensions* model_ex) 
+int simulation_thread(IedModel* model, IedModel_extensions* model_ex, uint16_t port) 
 { 
 	int opt = 1; 
 	int master_socket;
@@ -128,7 +128,7 @@ int simulation_thread(IedModel* model, IedModel_extensions* model_ex)
 	//type of socket created 
 	address.sin_family = AF_INET; 
 	address.sin_addr.s_addr = INADDR_ANY; 
-	address.sin_port = htons( PORT ); 
+	address.sin_port = htons( port ); 
 		
 	//bind the socket to localhost port 8888 
 	if (bind(master_socket, (struct sockaddr *)&address, sizeof(address))<0) { 
@@ -274,6 +274,7 @@ int main(int argc, char** argv) {
 	IedModel_extensions* iedExtendedModel_local = NULL;//&iedExtendedModel;
 
 	int port = 102;
+	uint16_t sim_port = PORT;
 	char* ethernetIfcID = "lo";
 
 	if (argc > 1) {
@@ -306,6 +307,10 @@ int main(int argc, char** argv) {
 			global_simulation_type = SIMULATION_TYPE_LOCAL;
 		if(argv[5][0] == 'R')
 			global_simulation_type = SIMULATION_TYPE_REMOTE;
+	}
+	if(argc > 6 )
+	{
+		sim_port = atoi(argv[6]);
 	}
 	else
 	{
@@ -370,7 +375,7 @@ int main(int argc, char** argv) {
 	IedServer_enableGoosePublishing(iedServer);
 
 
-	simulation_thread(iedModel_local, iedExtendedModel_local);
+	simulation_thread(iedModel_local, iedExtendedModel_local, sim_port);
 	//while (running) {
 	//	Thread_sleep(1000);
 	//}

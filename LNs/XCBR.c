@@ -54,6 +54,7 @@ void XCBR_close(XCBR * inst)
 void XCBR_callback(InputEntry* extRef )
 {
   //only one type of extref is expected: ctlVal
+  printf("XCBR: input signal received\n");
   bool state = MmsValue_getBoolean(extRef->value);
   if(state == true)
     XCBR_open(extRef->callBackParam);

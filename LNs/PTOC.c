@@ -96,10 +96,11 @@ void PTOC_callback_SMV(InputEntry* extRef)
       MmsValue * stVal = MmsValue_getElement(extRef->value,0);
       uint8_t tempBuf[20];
       Conversions_msTimeToGeneralizedTime2(MmsValue_getUtcTimeInMs(MmsValue_getElement(extRef->value,2)), tempBuf);
-      printf("val :%lld, q: %08X, time: %s\n", (long long) MmsValue_toInt64(stVal), MmsValue_toUint32(MmsValue_getElement(extRef->value,1)), tempBuf);
+      //printf("val :%lld, q: %08X, time: %s\n", (long long) MmsValue_toInt64(stVal), MmsValue_toUint32(MmsValue_getElement(extRef->value,1)), tempBuf);
 
       //check if value is outside allowed band
-      if(MmsValue_toInt64(stVal) > 100){
+      if(MmsValue_toInt64(stVal) > 800000){
+        printf("PTOC: treshold reached\n");
         MmsValue* tripValue = MmsValue_newBoolean(true);
 
         IedServer_updateAttributeValue(inst->server,inst->Op_general,tripValue);
@@ -108,6 +109,15 @@ void PTOC_callback_SMV(InputEntry* extRef)
         MmsValue_delete(tripValue);
         //if so send to internal PTRC
       }
+      else
+      {
+        //printf("PTOC: treshold NOT reached\n");
+        MmsValue* tripValue = MmsValue_newBoolean(false);
+        IedServer_updateAttributeValue(inst->server,inst->Op_general,tripValue);
+        MmsValue_delete(tripValue);
+        //if so send to internal PTRC
+      }
+      
     }
     extRef = extRef->sibling;
   }

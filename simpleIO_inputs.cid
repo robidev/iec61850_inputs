@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <SCL version="2007" revision="A" xmlns="http://www.iec.ch/61850/2003/SCL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.iec.ch/61850/2003/SCL
-C:\Data\sdps\SCL3.0\SCL.xsd" xmlns:ext="http://www.private.org">
+schema/SCL.xsd" xmlns:ext="http://www.private.org">
   <Header id="proto" nameStructure="IEDName"/>
 	<Substation name="S12" desc="Baden">
 		<VoltageLevel name="D1">
