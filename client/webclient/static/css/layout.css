@@ -1,0 +1,259 @@
+* {
+  box-sizing: border-box;
+}
+
+::-webkit-scrollbar-track
+{
+	border: 1px solid #1d272f;
+	background-color: #1d272f;
+}
+
+::-webkit-scrollbar
+{
+	width: 10px;
+	background-color: #1d272f;
+}
+
+::-webkit-scrollbar-thumb
+{
+	background-color: #AAA;	
+}
+
+::-webkit-scrollbar-corner {
+  background: #1d272f;
+}
+
+::-webkit-resizer {
+  background: #1d272f;
+}
+
+pre {
+	padding: 0;
+	margin: 0;
+	font-size: 12px;
+	line-height: 12px;
+}
+
+h2.teal {
+  color: #26343e;
+  background-color: #00b9a0;
+}
+h2.magenta {
+  color: #26343e;
+  background-color: rgba(255, 0, 255, 0.692);
+}
+
+h2 {
+  margin: 0px;
+  padding-left: 10px;
+  line-height: 36px;
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+body {
+  margin: 0;
+  font: 12px/1.5 Arial, Helvetica, sans-serif;
+  background: #1d272f;
+  color: #FFFFFF;
+  text-align: left;
+  scrollbar-color: #AAA #1d272f;
+}
+
+.wrap {
+  width: auto;
+
+  display: grid;
+  grid-template-columns: 250px 600px auto;
+  grid-template-rows: auto 250px;
+  height: 100vh;
+}
+
+/* Create three unequal columns that floats next to each other */
+.column {
+  /*float: left;*/
+  display: grid;
+
+  border: 1px solid #00b9a0;
+  margin-top: 20px;
+  margin-bottom: 20px;
+  margin-left: 10px;
+  margin-right: 10px;
+}
+
+/* Left column */
+.column.leftside {
+  border: 1px solid rgba(255, 0, 255, 0.692);
+  display: inline;
+  grid-column: 1;
+}
+
+/* Middle column */
+.column.middle {
+  display: inline;
+  grid-column: 2;
+}
+
+/* right column */
+.column.rightside {
+  display: inline;
+  grid-column: 3;
+  resize: both;
+  overflow: auto;
+}
+
+.content {
+  padding: 10px;
+}
+
+/* Style the footer */
+.footer {
+  text-align: left;
+  border: 1px solid rgba(255, 0, 255, 0.692);
+  margin-bottom: 20px;
+  margin-left: 10px;
+  margin-right: 10px;
+  padding: 10px;
+  padding-bottom: 16px;
+
+	grid-row:   2;
+	grid-column-start: 1;
+	grid-column-end:   4;
+
+	display: grid;
+  grid-template-rows: auto 52px;
+
+  resize: both;
+  overflow: auto;
+}
+
+/* Style the tab */
+.tab {
+  overflow: hidden;
+  grid-row: 2;
+}
+
+
+/* Style the buttons that are used to open the tab content */
+.tab button {
+  background-color: inherit;
+  float: left;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  padding: 7px 8px;
+  transition: 0.3s;
+}
+
+ul.tabs {
+  padding: 0px 0;
+  font-size: 0;
+  margin: 0;
+  list-style-type: none;
+  text-align: left;
+
+  /*used for scroll bar*/
+  overflow-x: scroll;
+  white-space: nowrap;
+}
+
+ul.tabs li {
+  display: inline-flex;
+  margin: 0;
+  margin-right: 3px;
+}
+
+ul.tabs li a {
+  font: 12px Arial, Helvetica, sans-serif;
+  color: #FFFFFF;
+  text-decoration: none;
+  position: relative;
+  padding: 7px 8px;
+  outline: none;
+}
+
+ul.tabs li.selected a, ul.tabs li.selected a:hover {
+  position: relative;
+  top: 0px;
+  font-weight: underline;
+  padding-right: -5px;
+  color: #000;/*#FFFFFF;*/
+  background: #aaa;
+}
+
+/* Style the tab content */
+div.tabcontents {
+  padding: 6px 12px;
+  height: 100%;
+  background: #000;
+  grid-row: 1;
+  overflow-y: auto;
+
+}
+
+.closeable {
+  background-image: url('../img/close.png');
+  height: 16px;
+  width: 16px;
+  display: inline-block;
+  position: relative;
+  right: -4px;
+  top: 4px;
+}
+
+.tabcontents .unselected {
+  display: none;
+}
+
+.network {
+  height: 500px;
+}
+
+.control {
+  background-color: #000;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  padding: 7px 8px;
+  transition: 0.3s;
+  color: #FFFFFF;
+  width: 100%;
+  margin-bottom: 10px;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.control:hover {
+  background-color: rgba(255, 0, 255, 0.692);
+}
+
+.control:active {
+  transition: 0s;
+  background-color: #F1F;
+}
+
+div#real_bg {
+    position: fixed;
+    top: 0px;
+    left: 0px;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    display: block;
+    list-style: none;
+    border: 0;
+    margin: 0;
+    padding: 0;
+}
+
+div.myalert_inner {
+    position: relative;
+    left: 300px;
+    top: 200px;
+    width: 600px;
+    background: #26343e;
+    list-style: none;
+    font-size: 100%;
+}
+
