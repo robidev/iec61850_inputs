@@ -34,3 +34,14 @@ flask REST:
 process-simulation/fault-simulation
  - source/load values
  - fault location,type
+
+NOTES:
+libiec61850 needs to be compiled with python bindings, by enabling the option with cmake-gui, or command line; cmake -DBUILD_PYTHON_BINDINGS=ON .
+by default, library will be installed in the active python-path
+and the shared object in /usr/local/lib this path needs to be found by the lib. this can be done in 2 ways (https://stackoverflow.com/questions/17889799/libraries-in-usr-local-lib-not-found)
+
+export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+
+or 
+
+edit /etc/ld.so.conf file, by putting the line: /usr/local/lib, sudo ldconfig
