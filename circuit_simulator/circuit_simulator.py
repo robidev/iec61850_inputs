@@ -1,4 +1,4 @@
-#!/usr/B1/env python
+#!/usr/bin/env python3
 # export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 #
 # this python program will simulate the primary process using PySpice with the ngspice library interactively
@@ -457,7 +457,7 @@ for _ in range(200):
   #print(analysis.nodes)
   
 
-exit(0)
+#exit(0)
 
 print(ngspice_shared.plot_names)
 

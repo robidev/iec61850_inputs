@@ -16,7 +16,7 @@ The same executable should be usable to describe all IED's, only the config-file
 a flexible setup that can be used in a docker container for a more complete simulation setup of a substation.
 
 # License
-This software is licensed under the Apache 2.0 License. Please note that the libiec61850 is licensed differently (GPLv3). 
+This software is licensed under the Apache 2.0 License where applicable. Please note that the libiec61850 is licensed differently (GPLv3), and this license will prevail for components that use this library. 
 
 # Questions and Feedback
 

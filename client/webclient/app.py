@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from flask import Flask, render_template, session, request, redirect, url_for, jsonify
 from flask_socketio import SocketIO, emit
-from werkzeug import secure_filename
+from werkzeug.utils import secure_filename
 
 import socket
 import json

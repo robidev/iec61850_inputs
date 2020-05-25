@@ -11,3 +11,15 @@ read values of nodes
 
 web61850 client
 list of ied's
+
+
+install:
+pip3 install PySpice
+
+sudo apt install gcc, bison, flex, libtool, autoconf, automake, libreadline-dev
+download ngspice-30
+
+#in compile_linux.sh > Replace --with-x by --with-ngshared in line ../configure ... .
+chmod 700 compile_linux.sh
+sudo ./compile_linux.sh
+sudo ldconfig
