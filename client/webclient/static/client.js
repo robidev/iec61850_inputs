@@ -1,16 +1,26 @@
-var nodes, edges, network, socket, svgRoot;
+var nodes, edges, network, socket, svgRoot, registeredElements;
 
 $(document).ready(function() {
-
+  console.log("ready called");
   svgRoot = null;
+  namespace = '';
+  socket = io.connect('http://' + document.domain + ':' + location.port + namespace);
 
+  //register data for svg
   var mmi = document.getElementById("mmi_svg");
-
   //it's important to add an load event listener to the object, as it will load the svg doc asynchronously
-  mmi.addEventListener("load",function(){
-      var svgDoc = mmi.contentDocument; //get the inner DOM of alpha.svg
-      svgRoot  = svgDoc.documentElement;
-  },false);
+  //but sometimes the svg loads before this event listener is created
+  if(mmi.getSVGDocument() == null){//normal situation where svg is loaded later
+    mmi.addEventListener("load",function(){ 
+      svg_load(mmi); 
+    },false);
+    console.log("eventlistener reg done");
+  }
+  else {//race condition, where svg is allready loaded
+    svg_load(mmi);
+    console.log("svg_load done");
+  }
+  
 
 	//add tabs
 	$("#hostlogtab").dynatabs({
@@ -20,11 +30,7 @@ $(document).ready(function() {
   var tabje = $("#localhost_tab")[0];
   tabje.children[0].classList.remove("closeable");
 
-  namespace = '';
-  socket = io.connect('http://' + document.domain + ':' + location.port + namespace);
-
   /* register events from server */
-
   //add info to the ied/datamodel tab
   socket.on('info_event', function (data) {
     //event gets called from server when info data is updated, so update the info tab
@@ -40,17 +46,17 @@ $(document).ready(function() {
     //event gets called from server when svg data is updated, so update the svg
     var value = data['value'];
     var element = data['element'];
-    var type = data['type'];
+    var type = registeredElements[element];
 
     if(svgRoot != null){//if the svg is loaded
       //var aa = $("#svg_147",svgRoot);
       //aa[0].textContent = "hoi";
-      if(type == 'text'){
+      if(type == 'LOAD'){
         $("#" + $.escapeSelector(element),svgRoot)[0].textContent = value;
       }
-      if(type == 'switch'){
+      if(type == 'XCBR'){
         var el = $("#" + $.escapeSelector(element),svgRoot)[0];
-        if(value=='open'){
+        if(value=='True'){
           $("#open",el)[0].beginElement();
         }
         else{
@@ -102,7 +108,7 @@ $(document).ready(function() {
   socket.on('page_reload', function (data) {
     location.reload();
   });
-
+  console.log("ready done");
 });
 
 /********************************************************/
@@ -186,36 +192,43 @@ function selectTabByHref(tab, ahref)
   return ret;
 }
 
+
+/* svg calls */
+function svg_load(mmi){
+  console.log("svg load called");
+  var svgDoc = mmi.contentDocument; //get the inner DOM of mmi.svg
+  svgRoot  = svgDoc.documentElement;
+  registeredElements = {};
+
+  //register for all values in loaded svg
+  $("g",svgRoot).find("*").each(function(idx, el){
+    console.log("id:" + el.id );
+    if(el.id.startsWith("iec61850://") == true){
+      var cl = el.classList.toString();
+      socket.emit('register_datapoint', {id : el.id, class : cl});
+      if(cl == "XCBR"){
+        el.onclick = writePosition;
+        registeredElements[el.id] = cl
+      }
+      if(cl == "LOAD"){
+        el.onclick = writeValue;
+        registeredElements[el.id] = cl
+      }
+    }
+  })
+  socket.emit('register_datapoint_finished', '');
+  // connect functions for reading/writing values and generating faults, that can socket.emit
+}
 function writeValue(event){
   alert('write a value');
   socket.emit('write_value', { id : this.id, value : '10' });
 }
 
 function writePosition(event){
-  socket.emit('write_position', { id : this.id });
+  socket.emit('write_position', { id : this.id, value : true });
 }
 
 function draw() {
-  // create a network
-  var container = document.getElementById('network');
-  // load the svg data
-  // register the elements via emit call of socketio
-  $("g",svgRoot).find("*").each(function(idx, el){
-      console.log("id:" + el.id );
-      if(el.id.startsWith("ied://") == true){
-        var cl = el.classList.toString();
-        socket.emit('register_datapoint', {id : el.id, class : cl});
-        if(cl == "XCBR"){
-          el.onclick = writePosition;
-        }
-        if(cl == "LOAD"){
-          el.onclick = writeValue;
-        }
-      }
-  })
-  socket.emit('register_datapoint_finished', '');
-  // connect functions for reading/writing values and generating faults, that can socket.emit
+  console.log("draw");
 }
-
-//register a socket.on for value-updates, that updates the svg element
 
