@@ -4,12 +4,16 @@ import os,sys
 import ctypes
 import time
 import iec61850
+import logging
 
 from urllib.parse import urlparse
+
+logger = logging.getLogger(__name__)
 
 class iec61850client():
 
 	def __init__(self, readvaluecallback = None):
+		
 		self.polling = {}
 		self.connections = {}
 		self.readvaluecallback = readvaluecallback
@@ -73,6 +77,8 @@ class iec61850client():
 		if isinstance(ret, int):#ret becomes int if connection is lost
 			return model
 		[dataAttributes, error] = ret
+		if error != 0:
+			logger.error("ERROR: could not get logical device list, error:%i" % error)
 
 		if dataAttributes != None:
 			dataAttribute = iec61850.LinkedList_getNext(dataAttributes)
@@ -81,7 +87,7 @@ class iec61850client():
 				daName = iec61850.toCharP(dataAttribute.data)
 				daRef = doRef+"."+daName[:-4]
 				fcName = daName[-3:-1]
-				#print(daRef)
+
 				model[daRef] = {}
 				model[daRef]['reftype'] = "DA"
 				model[daRef]['FC'] = fcName
@@ -105,7 +111,7 @@ class iec61850client():
 
 				dataAttribute = iec61850.LinkedList_getNext(dataAttribute)
 
-		iec61850.LinkedList_destroy(dataAttributes)
+			iec61850.LinkedList_destroy(dataAttributes)
 		return model
 
 
@@ -118,103 +124,118 @@ class iec61850client():
 			return model
 		[deviceList, error] = ret
 
-		device = iec61850.LinkedList_getNext(deviceList)
-		while device:
-			LD_name=iec61850.toCharP(device.data)
-			#print("LD: %s" % LD_name)
-			model[LD_name] = {}
-			model[LD_name]['reftype'] = "LD"
-			model[LD_name]['type'] = "structure"
-			model[LD_name]['FC'] = "**"
-			model[LD_name]['value'] = "{}"
+		if error != 0:
+			logger.error("ERROR: could not get logical device list, error:%i" % error)
 
-			ret = iec61850.IedConnection_getLogicalDeviceDirectory(con, LD_name)
-			if isinstance(ret, int):#ret becomes int if connection is lost
-				return model
-			[logicalNodes, error] = ret
+		if deviceList != None:
+			device = iec61850.LinkedList_getNext(deviceList)
+			while device:
+				LD_name=iec61850.toCharP(device.data)
+				#logger.error("LD: %s" % LD_name)
+				model[LD_name] = {}
+				model[LD_name]['reftype'] = "LD"
+				model[LD_name]['type'] = "structure"
+				model[LD_name]['FC'] = "**"
+				model[LD_name]['value'] = "{}"
 
-			logicalNode = iec61850.LinkedList_getNext(logicalNodes)
-			while logicalNode:
-				LN_name=iec61850.toCharP(logicalNode.data)
-				#print(" LN: %s" % LN_name)
-				model[LD_name+"/"+LN_name] = {}
-				model[LD_name+"/"+LN_name]['reftype'] = "LN"
-				model[LD_name+"/"+LN_name]['type'] = "structure"
-				model[LD_name+"/"+LN_name]['FC'] = "**"
-				model[LD_name+"/"+LN_name]['value'] = "{}"
-
-				#[LNobjects, error] = iec61850.IedConnection_getLogicalNodeVariables(con, LD_name+"/"+LN_name)
-				ret = iec61850.IedConnection_getLogicalNodeDirectory(con, LD_name+"/"+LN_name,iec61850.ACSI_CLASS_DATA_OBJECT)
+				ret = iec61850.IedConnection_getLogicalDeviceDirectory(con, LD_name)
 				if isinstance(ret, int):#ret becomes int if connection is lost
+					iec61850.LinkedList_destroy(deviceList)
 					return model
-				[LNobjects, error] = ret
+					
+				[logicalNodes, error] = ret
 
-				LNobject = iec61850.LinkedList_getNext(LNobjects)
-				while LNobject:
-					Do = iec61850.toCharP(LNobject.data)
-					#print("  DO: %s" % Do)
-					model[LD_name+"/"+LN_name+"."+Do] = {}
-					model[LD_name+"/"+LN_name+"."+Do]['reftype'] = "DO"
-					model[LD_name+"/"+LN_name+"."+Do]['type'] = "structure"
-					model[LD_name+"/"+LN_name+"."+Do]['FC'] = "**"
-					model[LD_name+"/"+LN_name+"."+Do]['value'] = "{}"
+				logicalNode = iec61850.LinkedList_getNext(logicalNodes)
+				while logicalNode:
+					LN_name=iec61850.toCharP(logicalNode.data)
+					#logger.error(" LN: %s" % LN_name)
+					model[LD_name+"/"+LN_name] = {}
+					model[LD_name+"/"+LN_name]['reftype'] = "LN"
+					model[LD_name+"/"+LN_name]['type'] = "structure"
+					model[LD_name+"/"+LN_name]['FC'] = "**"
+					model[LD_name+"/"+LN_name]['value'] = "{}"
 
-					doRef = LD_name+"/"+LN_name+"."+Do
-
-					submodel = iec61850client.printDataDirectory(con, doRef)
-					model.update(submodel)
-
-					LNobject = iec61850.LinkedList_getNext(LNobject)
-				iec61850.LinkedList_destroy(LNobjects)
-
-				ret = iec61850.IedConnection_getLogicalNodeDirectory(con, LD_name+"/"+LN_name, iec61850.ACSI_CLASS_DATA_SET)
-				if isinstance(ret, int):#ret becomes int if connection is lost
-					return model
-				[LNds, error] = ret
-
-				LNds = iec61850.LinkedList_getNext(LNds)
-				while LNds:
-					isDel = None
-					DSname = iec61850.toCharP(LNds.data)
-					model[LD_name+"/"+LN_name+"$"+DSname] = {}
-					model[LD_name+"/"+LN_name+"$"+DSname]['reftype'] = "DS"
-					model[LD_name+"/"+LN_name+"$"+DSname]['type'] = "structure"
-					model[LD_name+"/"+LN_name+"$"+DSname]['FC'] = "**"
-					model[LD_name+"/"+LN_name+"$"+DSname]['value'] = "{}"
-
-					#cannot pass the right type to isDeletable(last arg).. keeps complaining about 'bool *', and isDel = ctypes.pointer(ctypes.c_bool(False)) does not work
-					ret = iec61850.IedConnection_getDataSetDirectory(con, LD_name+"/"+LN_name+"."+DSname, isDel )  
+					#[LNobjects, error] = iec61850.IedConnection_getLogicalNodeVariables(con, LD_name+"/"+LN_name)
+					ret = iec61850.IedConnection_getLogicalNodeDirectory(con, LD_name+"/"+LN_name,iec61850.ACSI_CLASS_DATA_OBJECT)
 					if isinstance(ret, int):#ret becomes int if connection is lost
+						iec61850.LinkedList_destroy(logicalNodes)
+						iec61850.LinkedList_destroy(deviceList)
 						return model
-					[dataSetMembers, err] = ret
-					#all DS are assumed not deletable 
-					#if isDel == None:
-					#	print("  DS: %s, not Deletable" % DSname)
-					#else:
-					#	print("  DS: %s, is Deletable" % DSname)
+					[LNobjects, error] = ret
 
-					dataSetMemberRef = iec61850.LinkedList_getNext(dataSetMembers)
+					LNobject = iec61850.LinkedList_getNext(LNobjects)
+					while LNobject:
+						Do = iec61850.toCharP(LNobject.data)
+						#logger.error("  DO: %s" % Do)
+						model[LD_name+"/"+LN_name+"."+Do] = {}
+						model[LD_name+"/"+LN_name+"."+Do]['reftype'] = "DO"
+						model[LD_name+"/"+LN_name+"."+Do]['type'] = "structure"
+						model[LD_name+"/"+LN_name+"."+Do]['FC'] = "**"
+						model[LD_name+"/"+LN_name+"."+Do]['value'] = "{}"
 
-					i = 0
-					while dataSetMemberRef:
-						dsRef = iec61850.toCharP(dataSetMemberRef.data)
-						DX = dsRef[:-4]
-						FC = dsRef[-3:-1]
-						#print("      %s" % DX)
-						model[LD_name+"/"+LN_name+"$"+DSname+"^"+DX] = {}
-						model[LD_name+"/"+LN_name+"$"+DSname+"^"+DX]['reftype'] = "DX"
-						model[LD_name+"/"+LN_name+"$"+DSname+"^"+DX]['FC'] = FC
-						model[LD_name+"/"+LN_name+"$"+DSname+"^"+DX]['type'] = "reference"
-						model[LD_name+"/"+LN_name+"$"+DSname+"^"+DX]['value'] = str(i)
-						dataSetMemberRef = iec61850.LinkedList_getNext(dataSetMemberRef)
-						i += 1
-					iec61850.LinkedList_destroy(dataSetMembers)
-					LNds = iec61850.LinkedList_getNext(LNds)
+						doRef = LD_name+"/"+LN_name+"."+Do
 
-				logicalNode = iec61850.LinkedList_getNext(logicalNode)
-			iec61850.LinkedList_destroy(logicalNodes)
-			device = iec61850.LinkedList_getNext(device)
-		iec61850.LinkedList_destroy(deviceList)
+						submodel = iec61850client.printDataDirectory(con, doRef)
+						model.update(submodel)
+
+						LNobject = iec61850.LinkedList_getNext(LNobject)
+					iec61850.LinkedList_destroy(LNobjects)
+
+					ret = iec61850.IedConnection_getLogicalNodeDirectory(con, LD_name+"/"+LN_name, iec61850.ACSI_CLASS_DATA_SET)
+					if isinstance(ret, int):#ret becomes int if connection is lost
+						iec61850.LinkedList_destroy(logicalNodes)
+						iec61850.LinkedList_destroy(deviceList)
+						return model
+					[LNdss, error] = ret
+
+					LNds = iec61850.LinkedList_getNext(LNdss)
+					while LNds:
+						isDel = None
+						DSname = iec61850.toCharP(LNds.data)
+						model[LD_name+"/"+LN_name+"$"+DSname] = {}
+						model[LD_name+"/"+LN_name+"$"+DSname]['reftype'] = "DS"
+						model[LD_name+"/"+LN_name+"$"+DSname]['type'] = "structure"
+						model[LD_name+"/"+LN_name+"$"+DSname]['FC'] = "**"
+						model[LD_name+"/"+LN_name+"$"+DSname]['value'] = "{}"
+
+						#cannot pass the right type to isDeletable(last arg).. keeps complaining about 'bool *', and isDel = ctypes.pointer(ctypes.c_bool(False)) does not work
+						ret = iec61850.IedConnection_getDataSetDirectory(con, LD_name+"/"+LN_name+"."+DSname, isDel )  
+						if isinstance(ret, int):#ret becomes int if connection is lost
+							iec61850.LinkedList_destroy(LNdss)
+							iec61850.LinkedList_destroy(logicalNodes)
+							iec61850.LinkedList_destroy(deviceList)
+							return model
+						[dataSetMembers, error] = ret
+						#all DS are assumed not deletable 
+						#if isDel == None:
+						#	logger.error("  DS: %s, not Deletable" % DSname)
+						#else:
+						#	logger.error("  DS: %s, is Deletable" % DSname)
+						dataSetMemberRef = iec61850.LinkedList_getNext(dataSetMembers)
+
+						i = 0
+						while dataSetMemberRef:
+							dsRef = iec61850.toCharP(dataSetMemberRef.data)
+							DX = dsRef[:-4]
+							FC = dsRef[-3:-1]
+							#logger.error("      %s" % DX)
+							model[LD_name+"/"+LN_name+"$"+DSname+"^"+DX] = {}
+							model[LD_name+"/"+LN_name+"$"+DSname+"^"+DX]['reftype'] = "DX"
+							model[LD_name+"/"+LN_name+"$"+DSname+"^"+DX]['FC'] = FC
+							model[LD_name+"/"+LN_name+"$"+DSname+"^"+DX]['type'] = "reference"
+							model[LD_name+"/"+LN_name+"$"+DSname+"^"+DX]['value'] = str(i)
+							dataSetMemberRef = iec61850.LinkedList_getNext(dataSetMemberRef)
+							i += 1
+						iec61850.LinkedList_destroy(dataSetMembers)
+						LNds = iec61850.LinkedList_getNext(LNds)
+
+					iec61850.LinkedList_destroy(LNdss)
+					logicalNode = iec61850.LinkedList_getNext(logicalNode)
+
+				iec61850.LinkedList_destroy(logicalNodes)
+				device = iec61850.LinkedList_getNext(device)
+
+			iec61850.LinkedList_destroy(deviceList)
 		return model
 
 
@@ -227,7 +248,7 @@ class iec61850client():
 			return iec61850.MmsValue_newBoolean(value)
 		if type == "integer":
 			return iec61850.MmsValue_newInteger(int(value))
-		print("ERROR: Mms value type not supported")
+		logger.error("ERROR: Mms value type not supported")
 		return None
 
 
@@ -280,7 +301,7 @@ class iec61850client():
 		if tupl in self.connections and self.connections[tupl]["con"] != None:
 			if not self.connections[tupl]["model"]:
 				con = self.connections[tupl]["con"]
-				model = discovery(con)
+				model = iec61850client.discovery(con)
 				if model: #if model is not empty
 					# store the model
 					self.connections[tupl]["model"] = model
@@ -320,7 +341,7 @@ class iec61850client():
 		tupl = uri_ref.hostname + ":" + str(port)
 
 		if uri_ref.scheme != "iec61850":
-			print("ERROR: incorrect scheme, only iec61860 is supported, not %s" % uri_ref.scheme)
+			logger.error("ERROR: incorrect scheme, only iec61860 is supported, not %s" % uri_ref.scheme)
 			return -1
 
 		#check if connection is active, or reconnect
@@ -328,32 +349,32 @@ class iec61850client():
 		if err == 0:
 			con = self.connections[tupl]['con']
 			if not con:
-				print("ERROR: no valid connection")
+				logger.error("ERROR: no valid connection")
 				return -1			
 
 			model = self.connections[tupl]['model']
 			if not model:
-				print("ERROR: no valid model")
+				logger.error("ERROR: no valid model")
 				return -1
 
 			if uri_ref.path[1:] in model:
 				model, error = iec61850client.writeValue(con, model, uri_ref.path[1:], value)
 				if error == 0:
 					self.connections[tupl]['model'] = model
-					#print("Value '%s' written to %s" % (model[uri_ref.path[1:]]['value'], ref) )
+					logger.debug("Value '%s' written to %s" % (model[uri_ref.path[1:]]['value'], ref) )
 
 					if self.readvaluecallback != None:
 						self.readvaluecallback(ref, model[uri_ref.path[1:]])
 
 					return 0
 				else:
-					print("ERROR: could not write '%s' to %s with error: %i" % (model[uri_ref.path[1:]], ref, error))
+					logger.error("ERROR: could not write '%s' to %s with error: %i" % (model[uri_ref.path[1:]], ref, error))
 					if error == 3: #we lost the connection
 						self.connections[tupl]['con'] = None
 			else:
-				print("ERROR: could not find %s in model" % uri_ref.path[1:])
+				logger.error("ERROR: could not find %s in model" % uri_ref.path[1:])
 		else:
-			print("ERROR: no connection to IED: %s:%s" % (uri_ref.hostname, port) )
+			logger.error("ERROR: no connection to IED: %s:%s" % (uri_ref.hostname, port) )
 		return -1
 
 
@@ -370,7 +391,7 @@ class iec61850client():
 		tupl = uri_ref.hostname + ":" + str(port)
 
 		if uri_ref.scheme != "iec61850":
-			print("ERROR: incorrect scheme, only iec61860 is supported, not %s" % uri_ref.scheme)
+			logger.error("ERROR: incorrect scheme, only iec61860 is supported, not %s" % uri_ref.scheme)
 			return -1
 
 		#check if connection is active, or reconnect
@@ -383,9 +404,9 @@ class iec61850client():
 				self.polling[ref] = 1
 				return 0
 			else:
-				print("ERROR: could not find %s in model" % uri_ref.path[1:])
+				logger.error("ERROR: could not find %s in model" % uri_ref.path[1:])
 		else:
-			print("ERROR: no connection to IED: %s:%s" % (uri_ref.hostname, port) )
+			logger.error("ERROR: no connection to IED: %s:%s" % (uri_ref.hostname, port) )
 		return -1
 
 
@@ -401,7 +422,7 @@ class iec61850client():
 			tupl = uri_ref.hostname + ":" + str(port)
 
 			if uri_ref.scheme != "iec61850":
-				print("ERROR: incorrect scheme, only iec61860 is supported, not %s" % uri_ref.scheme)
+				logger.error("ERROR: incorrect scheme, only iec61860 is supported, not %s" % uri_ref.scheme)
 				continue
 
 			#check if connection is active, or reconnect
@@ -413,18 +434,44 @@ class iec61850client():
 					model, err = iec61850client.updateValueInModel(con, model, uri_ref.path[1:])
 					if err == 0:
 						self.connections[tupl]['model'] = model
-						#print("value:%s read from key: %s" % (model[uri_ref.path[1:]]['value'], key))
+						logger.debug("value:%s read from key: %s" % (model[uri_ref.path[1:]]['value'], key))
 						#call function with ref+value
 						if self.readvaluecallback != None:
 							self.readvaluecallback(key, model[uri_ref.path[1:]])
 
 					else:
-						print("ERROR: model not updated for %s with error: %i" % (key, err))
+						logger.error("ERROR: model not updated for %s with error: %i" % (key, err))
 						if err == 3: #we lost the connection
 							self.connections[tupl]['con'] = None
 
 
+	# retrieve datamodel from server
+	def getDatamodel(self, ref=None, hostname="localhost", port=102):
+		# if uri provided, it will have presedence over hostname and port
+		if ref != None:
+			uri_ref = urlparse(ref)
+			hostname = uri_ref.hostname
+			port = uri_ref.port
+
+		# if port is explicitly defined as "" or None, assume 102
+		if port == "" or port == None:
+			port = 102
+
+		err = self.getIED(hostname, port)
+		if err == 0:
+			tupl =  hostname + ":" + str(port)
+			return self.connections[tupl]['model']
+		else:
+			logger.error("ERROR: no connection to IED: %s:%s" % (hostname, port) )
+			return {}
+
+
 if __name__=="__main__":
+	logging.basicConfig(format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+		level=logging.DEBUG)
+	# note the `logger` from above is now properly configured
+	logger.debug("started")
+
 	hostname = "localhost"
 	tcpPort = 102
 	if len(sys.argv)>1:
@@ -437,12 +484,12 @@ if __name__=="__main__":
 	if (error == iec61850.IED_ERROR_OK):
 		model = iec61850client.discovery(con)
 		for key in model:
-			print("[" + model[key]['FC'] + "] " + model[key]['type'] + "\t" + key + "\t" + model[key]['value'])
+			logger.info("[" + model[key]['FC'] + "] " + model[key]['type'] + "\t" + key + "\t" + model[key]['value'])
 		iec61850.IedConnection_close(con)
 		#for key in model:
-		#	print("[" + model[key]['FC'] + "] " + model[key]['type'] + "\t" + key + "\t" + model[key]['value'])
+		#	logger.error("[" + model[key]['FC'] + "] " + model[key]['type'] + "\t" + key + "\t" + model[key]['value'])
 	else:
-		print("Failed to connect to %s:%i\n"%(hostname, tcpPort))
+		logger.error("Failed to connect to %s:%i\n"%(hostname, tcpPort))
 	iec61850.IedConnection_destroy(con)
 
 	cl = iec61850client()

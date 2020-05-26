@@ -1,4 +1,4 @@
-var nodes, edges, network, socket, svgRoot, registeredElements;
+var nodes, edges, network, socket, svgRoot, svgElementData;
 
 $(document).ready(function() {
   console.log("ready called");
@@ -44,23 +44,29 @@ $(document).ready(function() {
   //add info to the ied/datamodel tab
   socket.on('svg_value_update_event', function (data) {
     //event gets called from server when svg data is updated, so update the svg
-    var value = data['value'];
     var element = data['element'];
-    var type = registeredElements[element];
+    var value = data['data']['value'];
+    var type = data['data']['type'];
 
     if(svgRoot != null){//if the svg is loaded
       //var aa = $("#svg_147",svgRoot);
       //aa[0].textContent = "hoi";
-      if(type == 'LOAD'){
+      if(type == 'integer'){
         $("#" + $.escapeSelector(element),svgRoot)[0].textContent = value;
       }
-      if(type == 'XCBR'){
+      if(type == 'boolean'){
         var el = $("#" + $.escapeSelector(element),svgRoot)[0];
         if(value=='True'){
-          $("#open",el)[0].beginElement();
+          if(svgElementData[el.id]['position'] != true) {
+            $("#open",el)[0].beginElement();
+            svgElementData[el.id]['position'] = true;
+          }
         }
         else{
-          $("#close",el)[0].beginElement();
+          if(svgElementData[el.id]['position'] != false){
+            $("#close",el)[0].beginElement();
+            svgElementData[el.id]['position'] = false;
+          }
         }
       }
     }
@@ -198,21 +204,21 @@ function svg_load(mmi){
   console.log("svg load called");
   var svgDoc = mmi.contentDocument; //get the inner DOM of mmi.svg
   svgRoot  = svgDoc.documentElement;
-  registeredElements = {};
+  svgElementData = {};
 
   //register for all values in loaded svg
   $("g",svgRoot).find("*").each(function(idx, el){
-    console.log("id:" + el.id );
+    //console.log("id:" + el.id );
     if(el.id.startsWith("iec61850://") == true){
       var cl = el.classList.toString();
       socket.emit('register_datapoint', {id : el.id, class : cl});
+      svgElementData[el.id] = {};
       if(cl == "XCBR"){
         el.onclick = writePosition;
-        registeredElements[el.id] = cl
+        svgElementData[el.id]['position'] = false;
       }
       if(cl == "LOAD"){
         el.onclick = writeValue;
-        registeredElements[el.id] = cl
       }
     }
   })
@@ -225,7 +231,14 @@ function writeValue(event){
 }
 
 function writePosition(event){
-  socket.emit('write_position', { id : this.id, value : true });
+  if(this.id in svgElementData && 'position' in svgElementData[this.id]){
+    if(svgElementData[this.id]['position'] == true){
+      socket.emit('write_position', { id : this.id, value : false });
+    }
+    else{
+      socket.emit('write_position', { id : this.id, value : true });
+    }
+  } 
 }
 
 function draw() {

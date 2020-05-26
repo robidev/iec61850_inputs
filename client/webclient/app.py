@@ -10,12 +10,15 @@ import time
 import logging
 import yaml
 import os
+import logging
 
 import libiec61850client
 
+#logger = logging.getLogger('werkzeug')
+
 def readvaluecallback(key,data):
-  print("cb: %s - %s" % (key,data))
-  socketio.emit("svg_value_update_event",{ 'element' : key, 'value' : data['value'] })
+  logger.info("cb: %s - %s" % (key,data))
+  socketio.emit("svg_value_update_event",{ 'element' : key, 'data' : data })
 
 client = libiec61850client.iec61850client(readvaluecallback)
 
@@ -32,9 +35,6 @@ hosts_info['host3'] = {}
 #webserver
 app = Flask(__name__, template_folder='templates', static_folder='static')
 socketio = SocketIO(app, async_mode=async_mode)
-#logging
-log = logging.getLogger('werkzeug')
-log.setLevel(logging.ERROR)
 
 
 #http calls
@@ -52,34 +52,34 @@ def get_page_data(data):
 
 @socketio.on('start_simulation', namespace='')
 def start_level(data):
-  print("starting level")
+  logger.debug("starting level")
 
 
 @socketio.on('stop_simulation', namespace='')
 def stop_level(data):
-  print("stopping level")
+  logger.debug("stopping level")
 
 
 @socketio.on('register_datapoint', namespace='')
 def register_datapoint(data):
   global client
-  print("register datapoint:" + str(data) )
+  logger.debug("register datapoint:" + str(data) )
   client.registerReadValue(str(data['id']))
 
 @socketio.on('register_datapoint_finished', namespace='')
 def register_datapoint_finished(data):
-  print("register datapoint finished" )
+  logger.debug("register datapoint finished" )
 
 
 @socketio.on('write_value', namespace='')
 def write_value(data):
   global client
-  print("write value:" + str(data['value']) + ", element:" + str(data['id']) )
+  logger.debug("write value:" + str(data['value']) + ", element:" + str(data['id']) )
   client.registerWriteValue(str(data['id']),str(data['value']))
 
 @socketio.on('write_position', namespace='')
 def write_position(data):
-  print("write position:" + str(data['id'])  )
+  logger.debug("write position:" + str(data['id'])  )
   client.registerWriteValue(str(data['id']),data['value'])
 
   
@@ -122,8 +122,6 @@ def worker():
   global client
   socketio.sleep(tick)
 
-  last_time = time.time()
-
   logline = "logline data"
   if logline != "":
     logline_utf = logline #.decode('utf-8')
@@ -133,7 +131,7 @@ def worker():
 
   i = 0
   toggle = False
-  print("treat started")
+  logger.info("treat started")
   while True:
     socketio.sleep(tick)
     #reset the client
@@ -162,7 +160,7 @@ def worker():
       toggle = True
 
     #socketio.emit("svg_value_update_event",{ 'element' : 'ied://10.0.0.2:102/IED1_XCBRGenericIO/LOAD.Pos.stVal', 'value' : 'test2', 'type' : 'text' })
-    #i += 1
+    i += 1
     #parse info events    
     #process_info_event("localhost2")
     #process_info_event("host3")
@@ -170,6 +168,11 @@ def worker():
 
 
 if __name__ == '__main__':
+  logger = logging.getLogger('webserver')
+  logging.basicConfig(format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+    level=logging.INFO)
+	# note the `logger` from above is now properly configured
+  logger.debug("started")
   socketio.run(app)
 
 """
