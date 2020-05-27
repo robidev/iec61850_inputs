@@ -14,13 +14,6 @@ import logging
 
 import libiec61850client
 
-#logger = logging.getLogger('werkzeug')
-
-def readvaluecallback(key,data):
-  logger.info("cb: %s - %s" % (key,data))
-  socketio.emit("svg_value_update_event",{ 'element' : key, 'data' : data })
-
-client = libiec61850client.iec61850client(readvaluecallback)
 
 thread = None
 tick = 0.001
@@ -29,12 +22,19 @@ hosts_info = {}
 reset_log = False
 async_mode = None
 
-hosts_info['localhost2'] = {}
-hosts_info['host3'] = {}
-
 #webserver
 app = Flask(__name__, template_folder='templates', static_folder='static')
 socketio = SocketIO(app, async_mode=async_mode)
+
+#logging handler, for sending logs to the client
+class socketHandler(logging.StreamHandler):
+  def __init__(self, socket):
+    logging.StreamHandler.__init__(self)
+    self.socket = socket
+
+  def emit(self, record):
+    msg = self.format(record)
+    self.socket.emit('log_event', {'host':'localhost','data':msg,'clear':0})
 
 
 #http calls
@@ -50,25 +50,12 @@ def index():
 def get_page_data(data):
   emit('page_reload', {'data': ""})
 
-@socketio.on('start_simulation', namespace='')
-def start_level(data):
-  logger.debug("starting level")
-
-
-@socketio.on('stop_simulation', namespace='')
-def stop_level(data):
-  logger.debug("stopping level")
-
 
 @socketio.on('register_datapoint', namespace='')
 def register_datapoint(data):
   global client
   logger.debug("register datapoint:" + str(data) )
   client.registerReadValue(str(data['id']))
-
-@socketio.on('register_datapoint_finished', namespace='')
-def register_datapoint_finished(data):
-  logger.debug("register datapoint finished" )
 
 
 @socketio.on('write_value', namespace='')
@@ -90,8 +77,7 @@ def set_focus(data):
   focus = data
   #print("focus:" + str(focus))
   if focus in hosts_info:
-    if '0' in hosts_info[focus]:
-      socketio.emit('info_event', {'type': '0', 'data': hosts_info[focus]['0']})
+    socketio.emit('info_event', hosts_info[focus]['data'] )
   emit('select_tab_event', {'host_name': focus})
 
 @socketio.on('connect', namespace='')
@@ -100,18 +86,44 @@ def test_connect():
   if thread is None:
     thread = socketio.start_background_task(target=worker)
 
+@socketio.on('register_datapoint_finished', namespace='')
+def register_datapoint_finished(data):
+  return #there is a bug here, so disable for now
+  global client
+  ieds = client.getRegisteredIEDs()
+  for key in ieds:
+    tupl = key.split(':')
+    hostname = tupl[0]
+
+    emit('log_event', {'host':hostname,'data':'adding IED info','clear':1})
+
+    port = None
+    if len(tupl) > 1 and tupl[1] != "":
+      port = int(tupl[1])
+    model = client.getDatamodel(hostname=hostname, port=port)
+
+    loaded_json = {}
+    loaded_json['host'] = hostname
+    loaded_json['data'] = str(model)
+    process_info_event(loaded_json)
+
+
+
 #worker subroutines
 def process_info_event(loaded_json): #add info to the ied datamodel tab
   global focus
   global hosts_info
-  ihost = loaded_json
-  itype = 0#loaded_json['data']['type']
-  idata = "models:"+ loaded_json #loaded_json['data']['data']
+  ihost = loaded_json['host']
+  idata = loaded_json['data']
+  # store data
+  if not ihost in hosts_info:
+    hosts_info[ihost] = {}
 
   hosts_info[ihost]['last'] = time.time()
-  hosts_info[ihost][itype] = idata
+  hosts_info[ihost]['data'] = idata
+  # send data also to webclient
   if ihost==focus:
-    socketio.emit('info_event', {'type': itype, 'data': idata})
+    socketio.emit('info_event', idata)
 
 
 #background thread
@@ -122,49 +134,34 @@ def worker():
   global client
   socketio.sleep(tick)
 
-  logline = "logline data"
-  if logline != "":
-    logline_utf = logline #.decode('utf-8')
-    socketio.emit('log_event', {'host':'localhost','data':logline_utf,'clear':1})
-    socketio.emit('log_event', {'host':'localhost2','data':logline_utf,'clear':1})
-    socketio.emit('log_event', {'host':'host3','data':logline_utf,'clear':1})
+  sh = socketHandler(socketio)
+  sh.setLevel(logging.DEBUG)
+  fm = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
+  sh.setFormatter(fm)
+  logger.addHandler(sh)
 
-  i = 0
-  toggle = False
-  logger.info("treat started")
+  logger.info("worker treat started")
+
   while True:
     socketio.sleep(tick)
     #reset the client
     if reset_log == True:
       socketio.sleep(0.5)
       focus = ''
-      hosts_info = {}
-      hosts_info['localhost2'] = {}
-      hosts_info['host3'] = {}
       reset_log = False
       socketio.sleep(0.5)
 
-    socketio.sleep(1.5)
-
+    socketio.sleep(1)
     client.poll()
+    logger.info("values polled")
 
-    socketio.emit('log_event', {'host':'localhost','data':str(i),'clear':0})
-    #socketio.emit('log_event', {'host':'localhost2','data':"two"+str(i),'clear':0})
-    #socketio.emit('log_event', {'host':'host3','data':"three"+str(i),'clear':0})
 
-    if toggle == True:
-      #socketio.emit("svg_value_update_event",{ 'element' : 'ied://10.0.0.2:102/IED1_XCBRGenericIO/XCBR1.Pos.stVal', 'value' : 'open', 'type' : 'switch' })
-      toggle = False
-    else:
-      #socketio.emit("svg_value_update_event",{ 'element' : 'ied://10.0.0.2:102/IED1_XCBRGenericIO/XCBR1.Pos.stVal', 'value' : 'close', 'type' : 'switch' })
-      toggle = True
 
-    #socketio.emit("svg_value_update_event",{ 'element' : 'ied://10.0.0.2:102/IED1_XCBRGenericIO/LOAD.Pos.stVal', 'value' : 'test2', 'type' : 'text' })
-    i += 1
-    #parse info events    
-    #process_info_event("localhost2")
-    #process_info_event("host3")
-
+# callback from libiec61850client
+# called by client.poll
+def readvaluecallback(key,data):
+  logger.debug("cb: %s - %s" % (key,data))
+  socketio.emit("svg_value_update_event",{ 'element' : key, 'data' : data })
 
 
 if __name__ == '__main__':
@@ -173,6 +170,7 @@ if __name__ == '__main__':
     level=logging.INFO)
 	# note the `logger` from above is now properly configured
   logger.debug("started")
+  client = libiec61850client.iec61850client(readvaluecallback, logger)
   socketio.run(app)
 
 """

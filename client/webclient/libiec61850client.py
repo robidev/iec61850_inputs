@@ -12,8 +12,11 @@ logger = logging.getLogger(__name__)
 
 class iec61850client():
 
-	def __init__(self, readvaluecallback = None):
-		
+	def __init__(self, readvaluecallback = None, loggerRef = None):
+		global logger
+		if loggerRef != None:
+			logger = loggerRef
+
 		self.polling = {}
 		self.connections = {}
 		self.readvaluecallback = readvaluecallback
@@ -289,6 +292,7 @@ class iec61850client():
 			[RetValue, error] = ret
 			if error == 0:
 				model[ref]['value'], model[ref]['type'] = iec61850client.printValue(RetValue)
+				iec61850.MmsValue_delete(RetValue)
 		return model, error
 
 
@@ -307,7 +311,13 @@ class iec61850client():
 					self.connections[tupl]["model"] = model
 					return 0
 				else:
+					#we could not perform a discovery, so remove connection
+					iec61850.IedConnection_destroy(con)
+					self.connections[tupl]["con"] = None
 					return -1
+			else:
+				#we have a connection and a model
+				return 0
 		
 		if not tupl in self.connections:
 			self.connections[tupl] = {}
@@ -328,6 +338,7 @@ class iec61850client():
 			else:
 				return -1
 		else:
+			iec61850.IedConnection_destroy(con)
 			return -1
 
 
@@ -370,6 +381,7 @@ class iec61850client():
 				else:
 					logger.error("ERROR: could not write '%s' to %s with error: %i" % (model[uri_ref.path[1:]], ref, error))
 					if error == 3: #we lost the connection
+						iec61850.IedConnection_destroy(con)
 						self.connections[tupl]['con'] = None
 			else:
 				logger.error("ERROR: could not find %s in model" % uri_ref.path[1:])
@@ -383,6 +395,11 @@ class iec61850client():
 		# check if present in dataset/report, and subscribe is impossible for now due to lacking reportcallback implementation in SWIG
 		# i.e. there is no valid way to pass a function-pointer for the callback in IedConnection_installReportHandler
 		# so periodic poll
+
+		#if we allready have it in the list
+		if ref in self.polling:
+			return 0
+
 		uri_ref = urlparse(ref)
 		port = uri_ref.port
 		if port == "" or port == None:
@@ -442,7 +459,10 @@ class iec61850client():
 					else:
 						logger.error("ERROR: model not updated for %s with error: %i" % (key, err))
 						if err == 3: #we lost the connection
+							iec61850.IedConnection_destroy(con)
 							self.connections[tupl]['con'] = None
+			else:
+				logger.error("ERROR: model not updated for %s with error: %i" % (key, err))
 
 
 	# retrieve datamodel from server
@@ -464,6 +484,10 @@ class iec61850client():
 		else:
 			logger.error("ERROR: no connection to IED: %s:%s" % (hostname, port) )
 			return {}
+	
+
+	def getRegisteredIEDs(self):
+		return self.connections
 
 
 if __name__=="__main__":

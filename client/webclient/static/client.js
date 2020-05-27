@@ -1,7 +1,6 @@
 var nodes, edges, network, socket, svgRoot, svgElementData;
 
 $(document).ready(function() {
-  console.log("ready called");
   svgRoot = null;
   namespace = '';
   socket = io.connect('http://' + document.domain + ':' + location.port + namespace);
@@ -14,11 +13,9 @@ $(document).ready(function() {
     mmi.addEventListener("load",function(){ 
       svg_load(mmi); 
     },false);
-    console.log("eventlistener reg done");
   }
   else {//race condition, where svg is allready loaded
     svg_load(mmi);
-    console.log("svg_load done");
   }
   
 
@@ -35,10 +32,7 @@ $(document).ready(function() {
   socket.on('info_event', function (data) {
     //event gets called from server when info data is updated, so update the info tab
     //write data
-    var tp = data['type'];
-    if(tp == '0'){
-        $('#datamodel')[0].innerHTML = data['data'];
-    }
+    $('#datamodel')[0].innerHTML = data;
   });
 
   //add info to the ied/datamodel tab
@@ -114,7 +108,6 @@ $(document).ready(function() {
   socket.on('page_reload', function (data) {
     location.reload();
   });
-  console.log("ready done");
 });
 
 /********************************************************/
@@ -126,14 +119,6 @@ $(document).ready(function() {
 function get_page_data() {
   socket.emit('get_page_data', {data: ''});
   //call server to tell we want all data, so we can fill the ui (normally done once on full page load/refresh)
-}
-
-function start_simulation() {
-  socket.emit('start_simulation', '');
-}
-
-function stop_simulation() {
-  socket.emit('stop_simulation', '');
 }
 
 
@@ -201,7 +186,6 @@ function selectTabByHref(tab, ahref)
 
 /* svg calls */
 function svg_load(mmi){
-  console.log("svg load called");
   var svgDoc = mmi.contentDocument; //get the inner DOM of mmi.svg
   svgRoot  = svgDoc.documentElement;
   svgElementData = {};
