@@ -12,7 +12,7 @@ schema/SCL.xsd" xmlns:ext="http://www.private.org">
 					<Terminal connectivityNode="S12/E1/Q1/L3" substationName="S12" voltageLevelName="E1" bayName="Q1" cNodeName="L3"/>
 				</TransformerWinding>
 			</PowerTransformer>
-			<Voltage multiplier="k" unit="V">2</Voltage>
+			<Voltage multiplier="k" unit="V">220</Voltage>
 			<Bay name="Q1">
         <ConductingEquipment name="external" type="IFL">
           <Terminal connectivityNode="S12/D1/Q1/L0" substationName="S12" voltageLevelName="D1" bayName="Q1" cNodeName="L0"/>
