@@ -78,6 +78,8 @@ def set_focus(data):
   #print("focus:" + str(focus))
   if focus in hosts_info:
     socketio.emit('info_event', hosts_info[focus]['data'] )
+  else:
+    socketio.emit('info_event', "" )
   emit('select_tab_event', {'host_name': focus})
 
 @socketio.on('connect', namespace='')
@@ -88,14 +90,14 @@ def test_connect():
 
 @socketio.on('register_datapoint_finished', namespace='')
 def register_datapoint_finished(data):
-  return #there is a bug here, so disable for now
+  #return #there is a bug here, so disable for now
   global client
   ieds = client.getRegisteredIEDs()
   for key in ieds:
     tupl = key.split(':')
     hostname = tupl[0]
 
-    emit('log_event', {'host':hostname,'data':'adding IED info','clear':1})
+    emit('log_event', {'host':hostname,'data':'[+] adding IED info','clear':1})
 
     port = None
     if len(tupl) > 1 and tupl[1] != "":
@@ -104,7 +106,7 @@ def register_datapoint_finished(data):
 
     loaded_json = {}
     loaded_json['host'] = hostname
-    loaded_json['data'] = str(model)
+    loaded_json['data'] = model
     process_info_event(loaded_json)
 
 
@@ -114,7 +116,7 @@ def process_info_event(loaded_json): #add info to the ied datamodel tab
   global focus
   global hosts_info
   ihost = loaded_json['host']
-  idata = loaded_json['data']
+  idata = printItems(loaded_json['data'])
   # store data
   if not ihost in hosts_info:
     hosts_info[ihost] = {}
@@ -124,6 +126,18 @@ def process_info_event(loaded_json): #add info to the ied datamodel tab
   # send data also to webclient
   if ihost==focus:
     socketio.emit('info_event', idata)
+
+
+def printItems(dictObj):
+  el = '<table style="width:100%; border: 1px solid white; border-collapse: collapse;"><tr>'
+  el += '<th>Reference</th><th>Value</th></tr>\n'
+  for k in dictObj:
+    if dictObj[k]['FC'] == '**':
+      el += ('<tr><td style="border: 1px solid white; border-collapse: collapse;">['+ dictObj[k]['FC'] + '] ' + k + '</td><td style="border: 1px solid white; border-collapse: collapse;"> </td></tr>')
+    else:
+      el += ('<tr><td style="border: 1px solid white; border-collapse: collapse;">['+ dictObj[k]['FC'] + '] ' + k + '</td><td style="border: 1px solid white; border-collapse: collapse;">'+ dictObj[k]['value']+ '</td></tr>')
+  el += ('</table>\n')
+  return el
 
 
 #background thread
@@ -154,7 +168,6 @@ def worker():
     socketio.sleep(1)
     client.poll()
     logger.info("values polled")
-
 
 
 # callback from libiec61850client

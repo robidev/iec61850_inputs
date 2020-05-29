@@ -81,7 +81,7 @@ class iec61850client():
 			return model
 		[dataAttributes, error] = ret
 		if error != 0:
-			logger.error("ERROR: could not get logical device list, error:%i" % error)
+			logger.error("could not get logical device list, error:%i" % error)
 
 		if dataAttributes != None:
 			dataAttribute = iec61850.LinkedList_getNext(dataAttributes)
@@ -128,7 +128,7 @@ class iec61850client():
 		[deviceList, error] = ret
 
 		if error != 0:
-			logger.error("ERROR: could not get logical device list, error:%i" % error)
+			logger.error("could not get logical device list, error:%i" % error)
 
 		if deviceList != None:
 			device = iec61850.LinkedList_getNext(deviceList)
@@ -251,7 +251,7 @@ class iec61850client():
 			return iec61850.MmsValue_newBoolean(value)
 		if type == "integer":
 			return iec61850.MmsValue_newInteger(int(value))
-		logger.error("ERROR: Mms value type not supported")
+		logger.error("Mms value type not supported")
 		return None
 
 
@@ -352,7 +352,7 @@ class iec61850client():
 		tupl = uri_ref.hostname + ":" + str(port)
 
 		if uri_ref.scheme != "iec61850":
-			logger.error("ERROR: incorrect scheme, only iec61860 is supported, not %s" % uri_ref.scheme)
+			logger.error("incorrect scheme, only iec61860 is supported, not %s" % uri_ref.scheme)
 			return -1
 
 		#check if connection is active, or reconnect
@@ -360,12 +360,12 @@ class iec61850client():
 		if err == 0:
 			con = self.connections[tupl]['con']
 			if not con:
-				logger.error("ERROR: no valid connection")
+				logger.error("no valid connection")
 				return -1			
 
 			model = self.connections[tupl]['model']
 			if not model:
-				logger.error("ERROR: no valid model")
+				logger.error("no valid model")
 				return -1
 
 			if uri_ref.path[1:] in model:
@@ -379,15 +379,64 @@ class iec61850client():
 
 					return 0
 				else:
-					logger.error("ERROR: could not write '%s' to %s with error: %i" % (model[uri_ref.path[1:]], ref, error))
+					logger.error("could not write '%s' to %s with error: %i" % (model[uri_ref.path[1:]], ref, error))
 					if error == 3: #we lost the connection
 						iec61850.IedConnection_destroy(con)
 						self.connections[tupl]['con'] = None
 			else:
-				logger.error("ERROR: could not find %s in model" % uri_ref.path[1:])
+				logger.error("could not find %s in model" % uri_ref.path[1:])
 		else:
-			logger.error("ERROR: no connection to IED: %s:%s" % (uri_ref.hostname, port) )
+			logger.error("no connection to IED: %s:%s" % (uri_ref.hostname, port) )
 		return -1
+
+
+	# read a value from an active connection
+	def ReadValue(self, ref):
+		uri_ref = urlparse(ref)
+		port = uri_ref.port
+		if port == "" or port == None:
+			port = 102
+
+		tupl = uri_ref.hostname + ":" + str(port)
+
+		if uri_ref.scheme != "iec61850":
+			logger.error("incorrect scheme, only iec61860 is supported, not %s" % uri_ref.scheme)
+			return {}, -1
+
+		#check if connection is active, or reconnect
+		err = self.getIED(uri_ref.hostname, port)
+		if err == 0:
+			con = self.connections[tupl]['con']
+			if not con:
+				logger.error("no valid connection")
+				return {}, -1			
+
+			model = self.connections[tupl]['model']
+			if not model:
+				logger.error("no valid model")
+				return {}, -1
+
+			if uri_ref.path[1:] in model:
+				model, error = iec61850client.updateValueInModel(con, model, uri_ref.path[1:])
+				if error == 0:
+					self.connections[tupl]['model'] = model
+					logger.debug("Value '%s' read from %s" % (str(model[uri_ref.path[1:]]), ref) )
+
+					if self.readvaluecallback != None:
+						self.readvaluecallback(ref, model[uri_ref.path[1:]])
+
+					return model[uri_ref.path[1:]], 0
+				else:
+					logger.error("could not read '%s' with error: %i" % (ref, error))
+					if error == 3: #we lost the connection
+						iec61850.IedConnection_destroy(con)
+						self.connections[tupl]['con'] = None
+			else:
+				logger.error("could not find %s in model" % uri_ref.path[1:])
+		else:
+			logger.error("no connection to IED: %s:%s" % (uri_ref.hostname, port) )
+		return {}, -1
+
 
 
 	# register value for reading
@@ -398,6 +447,7 @@ class iec61850client():
 
 		#if we allready have it in the list
 		if ref in self.polling:
+			logger.debug("reference: %s allready registered" % ref)
 			return 0
 
 		uri_ref = urlparse(ref)
@@ -408,7 +458,7 @@ class iec61850client():
 		tupl = uri_ref.hostname + ":" + str(port)
 
 		if uri_ref.scheme != "iec61850":
-			logger.error("ERROR: incorrect scheme, only iec61860 is supported, not %s" % uri_ref.scheme)
+			logger.error("incorrect scheme, only iec61860 is supported, not %s" % uri_ref.scheme)
 			return -1
 
 		#check if connection is active, or reconnect
@@ -421,9 +471,9 @@ class iec61850client():
 				self.polling[ref] = 1
 				return 0
 			else:
-				logger.error("ERROR: could not find %s in model" % uri_ref.path[1:])
+				logger.error("could not find %s in model" % uri_ref.path[1:])
 		else:
-			logger.error("ERROR: no connection to IED: %s:%s" % (uri_ref.hostname, port) )
+			logger.error("no connection to IED: %s:%s, ref:%s not registered" % (uri_ref.hostname, port, ref) )
 		return -1
 
 
@@ -439,7 +489,7 @@ class iec61850client():
 			tupl = uri_ref.hostname + ":" + str(port)
 
 			if uri_ref.scheme != "iec61850":
-				logger.error("ERROR: incorrect scheme, only iec61860 is supported, not %s" % uri_ref.scheme)
+				logger.error("incorrect scheme, only iec61860 is supported, not %s" % uri_ref.scheme)
 				continue
 
 			#check if connection is active, or reconnect
@@ -457,12 +507,12 @@ class iec61850client():
 							self.readvaluecallback(key, model[uri_ref.path[1:]])
 
 					else:
-						logger.error("ERROR: model not updated for %s with error: %i" % (key, err))
+						logger.error("model not updated for %s with error: %i" % (key, err))
 						if err == 3: #we lost the connection
 							iec61850.IedConnection_destroy(con)
 							self.connections[tupl]['con'] = None
 			else:
-				logger.error("ERROR: model not updated for %s with error: %i" % (key, err))
+				logger.error("model not updated for %s with error: %i" % (key, err))
 
 
 	# retrieve datamodel from server
@@ -482,7 +532,7 @@ class iec61850client():
 			tupl =  hostname + ":" + str(port)
 			return self.connections[tupl]['model']
 		else:
-			logger.error("ERROR: no connection to IED: %s:%s" % (hostname, port) )
+			logger.error("no connection to IED: %s:%s" % (hostname, port) )
 			return {}
 	
 

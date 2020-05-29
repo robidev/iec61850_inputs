@@ -14,7 +14,7 @@ $(document).ready(function() {
       svg_load(mmi); 
     },false);
   }
-  else {//race condition, where svg is allready loaded
+  else {//race condition, where svg is allready loaded from cache
     svg_load(mmi);
   }
   
@@ -71,12 +71,12 @@ $(document).ready(function() {
   socket.on('log_event', function (data) {
     //event gets called from server when new log events are generated, and add them to the log tab
     //if clear is set, all log data is cleared before adding the new data
-    if($("#" + data['host'] + "_tab").length == 0) {
+    if($("#" + $.escapeSelector(data['host']) + "_tab").length == 0) {
       //addNode(data['host'], '1');
       addNewStaticTab(data['host']);
     }
 
-    var ahref = $("#" + data['host'] + "_tab")[0];
+    var ahref = $("#" + $.escapeSelector(data['host']) + "_tab")[0];
     var key = $(ahref).attr('href');
     if(data['clear'] == '1') {
       $(key)[0].innerHTML = "<pre>" + data['data'] + "</pre>";  
@@ -99,7 +99,7 @@ $(document).ready(function() {
       ahref = $('#hostlogtab.tabs')[0].children[integer].children[0];
     }
     else if(data['host_name']){
-      ahref = $("#" + data['host_name'] + "_tab")[0];
+      ahref = $("#" + $.escapeSelector(data['host_name']) + "_tab")[0];
     }
     selectTabByHref(tab, ahref);
   });
@@ -130,7 +130,7 @@ function get_page_data() {
 function addNewStaticTab(host)
 {
   var ret = 0;
-  if($("#" + host + "_tab").length > 0) {
+  if($("#" + $.escapeSelector(host) + "_tab").length > 0) {
     console.log("tab exists");
     return 1;//tab exists
   }
@@ -149,7 +149,7 @@ function addNewStaticTab(host)
     ahref.id = host + "_tab";
 
     //add additional callback
-    $("#" + host + "_tab").bind('click',{ ahref: ahref, tab: ahref.id, host: host}, myTabClick );	
+    $("#" + $.escapeSelector(host) + "_tab").bind('click',{ ahref: ahref, tab: ahref.id, host: host}, myTabClick );	
   }
   catch (err) {
     console.log(err);
@@ -193,13 +193,34 @@ function svg_load(mmi){
   //register for all values in loaded svg
   $("g",svgRoot).find("*").each(function(idx, el){
     //console.log("id:" + el.id );
-    if(el.id.startsWith("iec61850://") == true){
-      var cl = el.classList.toString();
-      socket.emit('register_datapoint', {id : el.id, class : cl});
+    var cl = el.classList.toString();
+    //elements that can be interacted with by the IEC61850 client
+    if(el.id.startsWith("iec61850://") == true){    
       svgElementData[el.id] = {};
       if(cl == "XCBR"){
+        socket.emit('register_datapoint', {id : el.id, class : cl});
+        el.onclick = writePositionCSWI;
+      }
+      if(cl == "XSWI"){
+        socket.emit('register_datapoint', {id : el.id, class : cl});
+        el.onclick = writePositionCSWI;//register, to pass to CSWI element
+      }
+      if(cl == "CSWI"){
+        //dont register datapoint
         el.onclick = writePosition;
         svgElementData[el.id]['position'] = false;
+      }
+      if(cl == "MEAS"){
+        socket.emit('register_datapoint', {id : el.id, class : cl});
+      }
+    }
+    //elements that can be modified by the simulation
+    if(el.id.startsWith("simulation://") == true){
+      if(cl == "LINE"){
+        el.onclick = simulationPoint;
+      }
+      if(cl == "IFL"){
+        el.onclick = writeValue;
       }
       if(cl == "LOAD"){
         el.onclick = writeValue;
@@ -209,9 +230,16 @@ function svg_load(mmi){
   socket.emit('register_datapoint_finished', '');
   // connect functions for reading/writing values and generating faults, that can socket.emit
 }
+
 function writeValue(event){
   alert('write a value');
-  socket.emit('write_value', { id : this.id, value : '10' });
+  //generate write interface
+  //socket.emit('write_value', { id : this.id, value : '10' });
+}
+
+function simulationPoint(event){
+  //generate call to create fault at this line
+  console.log(this.id);
 }
 
 function writePosition(event){
@@ -223,6 +251,12 @@ function writePosition(event){
       socket.emit('write_position', { id : this.id, value : true });
     }
   } 
+}
+
+function writePositionCSWI(event){
+  console.log(event);
+  //find CSWI sibling that goes with this element
+  //call writePosition with that element
 }
 
 function draw() {
