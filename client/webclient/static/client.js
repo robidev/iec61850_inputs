@@ -43,26 +43,44 @@ $(document).ready(function() {
     var type = data['data']['type'];
 
     if(svgRoot != null){//if the svg is loaded
-      //var aa = $("#svg_147",svgRoot);
-      //aa[0].textContent = "hoi";
-      if(type == 'integer'){
-        $("#" + $.escapeSelector(element),svgRoot)[0].textContent = value;
-      }
-      if(type == 'boolean'){
-        var el = $("#" + $.escapeSelector(element),svgRoot)[0];
-        if(value=='True'){
-          if(svgElementData[el.id]['position'] != true) {
-            $("#open",el)[0].beginElement();
-            svgElementData[el.id]['position'] = true;
+      //check for each occurence of id, there can be multiple instances of the same id, with different classes
+      $("#" + $.escapeSelector(element),svgRoot).each(function(idx, el){
+        var cl = el.classList.toString();
+
+        if( cl == "MEAS"){
+          el.textContent = value;
+        }
+        if(cl == "XCBR" || cl == "XSWI"){
+          if(type == 'boolean'){
+            if(value=='True'){
+              if(svgElementData[el.id]['position'] != true) {
+                $("#open",el)[0].beginElement();
+                svgElementData[el.id]['position'] = true;
+              }
+            }
+            else{
+              if(svgElementData[el.id]['position'] != false){
+                $("#close",el)[0].beginElement();
+                svgElementData[el.id]['position'] = false;
+              }
+            }
+          }
+          if(type == 'bit-string'){
+            if(value=='1'){
+              if(svgElementData[el.id]['position'] != true) {
+                $("#open",el)[0].beginElement();
+                svgElementData[el.id]['position'] = true;
+              }
+            }
+            else{
+              if(svgElementData[el.id]['position'] != false){
+                $("#close",el)[0].beginElement();
+                svgElementData[el.id]['position'] = false;
+              }
+            }
           }
         }
-        else{
-          if(svgElementData[el.id]['position'] != false){
-            $("#close",el)[0].beginElement();
-            svgElementData[el.id]['position'] = false;
-          }
-        }
-      }
+      })
     }
   });
 
@@ -255,8 +273,20 @@ function writePosition(event){
 
 function writePositionCSWI(event){
   console.log(event);
-  //find CSWI sibling that goes with this element
-  //call writePosition with that element
+  var ref = this.id;
+  //lazy, TODO properly search for CSWI siblings
+  ref = ref.replace("XCBR1","CSWI1");
+  ref = ref.replace("XSWI2","CSWI2");
+  ref = ref.replace(".stVal",".ctlVal");
+
+  if(ref in svgElementData && 'position' in svgElementData[ref]){
+    if(svgElementData[ref]['position'] == true){
+      socket.emit('write_position', { id : ref, value : false });
+    }
+    else{
+      socket.emit('write_position', { id : ref, value : true });
+    }
+  } 
 }
 
 function draw() {

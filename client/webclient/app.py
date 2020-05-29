@@ -81,12 +81,14 @@ def set_focus(data):
   else:
     socketio.emit('info_event', "" )
   emit('select_tab_event', {'host_name': focus})
+  
 
 @socketio.on('connect', namespace='')
 def test_connect():
   global thread
   if thread is None:
     thread = socketio.start_background_task(target=worker)
+
 
 @socketio.on('register_datapoint_finished', namespace='')
 def register_datapoint_finished(data):
@@ -173,14 +175,14 @@ def worker():
 # callback from libiec61850client
 # called by client.poll
 def readvaluecallback(key,data):
-  logger.debug("cb: %s - %s" % (key,data))
+  logger.debug("callback: %s - %s" % (key,data))
   socketio.emit("svg_value_update_event",{ 'element' : key, 'data' : data })
 
 
 if __name__ == '__main__':
   logger = logging.getLogger('webserver')
   logging.basicConfig(format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
-    level=logging.INFO)
+    level=logging.DEBUG)
 	# note the `logger` from above is now properly configured
   logger.debug("started")
   client = libiec61850client.iec61850client(readvaluecallback, logger)
