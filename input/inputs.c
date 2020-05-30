@@ -450,7 +450,8 @@ void UpdateAttributeValueEx(IedServer self, InputValue* inputValue, MmsValue* va
   InputValueHandleExtensionCallbacks(inputValue);
 }
 
-
+//retrieve the inputValue_list associated with a DA. An inputvalue_list is a linked list of elements that use the DA as input
+//during an update of the DA, all DA related inputvalues in the list will receive a callback
 InputValue* _findAttributeValueEx(DataAttribute* dataAttribute, LinkedList inputvalues)
 {
   while(inputvalues != NULL)//for each LN with an inputs/extref defined;
@@ -469,7 +470,7 @@ InputValue* _findAttributeValueEx(DataAttribute* dataAttribute, LinkedList input
 }
 
 //call AttributeValueHandleExtensionCallback
-//slow, as it will iterate trough the whole list
+//slow, as it will iterate trough the whole list, instead this call can be done once during initialisation
 void AttributeValueHandleExtensionCallbacks(DataAttribute* dataAttribute, LinkedList inputvalues)
 {
   InputValue* inputValue = _findAttributeValueEx(dataAttribute, inputvalues);

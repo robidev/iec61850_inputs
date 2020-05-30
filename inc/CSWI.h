@@ -9,7 +9,7 @@
 extern "C" {
 #endif
 
-void CSWI_init(Input* input);
+void CSWI_init(IedServer server, LogicalNode* ln, Input* input, LinkedList allInputValues);
 
 #ifdef __cplusplus
 }

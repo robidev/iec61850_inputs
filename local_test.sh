@@ -10,7 +10,7 @@
 
 ./server_example_inputs lo 9102 cfg/IED3_SMV.cfg cfg/IED3_SMV.ext L 65002 &
 
-
+sleep 1
 read -n 1 -s -r -p "Press any key to stop"
 
 [[ -z "$(jobs -p)" ]] || kill $(jobs -p)

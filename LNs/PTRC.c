@@ -42,26 +42,29 @@ void PTRC_init(IedServer server, LogicalNode* ln, Input* input, LinkedList allIn
 {
   PTRC* inst = (PTRC *) malloc(sizeof(PTRC));//create new instance with MALLOC
   inst->server = server;
-  inst->Tr_general = (DataAttribute*) ModelNode_getChild((ModelNode*) ln, "Tr.general");//the node to operate on
+  inst->Tr_general = (DataAttribute*) ModelNode_getChild((ModelNode*) ln, "Tr.general");//the node to operate on, to which the XCBR is subscribed
   inst->Tr_general_callback = _findAttributeValueEx(inst->Tr_general, allInputValues);
  
-  //find extref for the last SMV, using the intaddr
+  //find extref for the input signals for this LN
   if(input != NULL)
   {
     InputEntry* extRef = input->extRefs;
 
     while(extRef != NULL)
     {
+      //subscribed to Op signal of Protection; Time Over Current
       if(strcmp(extRef->intAddr,"PTOC_Op") == 0)
       {
-        extRef->callBack = (callBackFunction) PTRC_input_callback;
+        extRef->callBack = (callBackFunction) PTRC_input_callback;//callback to trigger when PTOC.Op is set
         extRef->callBackParam = inst;
       }
+      //subscribed to Op signal of recloser
       if(strcmp(extRef->intAddr,"RREC_Op") == 0)
       {
-        extRef->callBack = (callBackFunction) PTRC_input_callback;
+        extRef->callBack = (callBackFunction) PTRC_input_callback;//callback to trigger when RREC.Op is set
         extRef->callBackParam = inst;
       }
+      //subscribed to stVal of XCBR to check its position
       if(strcmp(extRef->intAddr,"xcbr_stval") == 0)
       {
         extRef->callBack = (callBackFunction) PTRC_xcbr_callback;

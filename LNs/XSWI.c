@@ -81,6 +81,12 @@ void *XSWI_init(IedServer server, LogicalNode* ln, Input* input)
       extref = extref->sibling;
     }
   }
+  else
+  {
+    printf("ERROR: no input element defined")
+    return 0;
+  }
+  
   //start simulation threat
   Thread thread = Thread_create((ThreadExecutionFunction)XSWI_simulate_switch, input, true);
   Thread_start(thread);

@@ -27,7 +27,7 @@ void TCTR_updateValue(int sd, char * buffer, void* param)
 
   //printf("TCTR buf= %s, val=%i\n",buffer, i);
   IedServer_updateInt32AttributeValue(inst->server,inst->da,i);
-  InputValueHandleExtensionCallbacks(inst->da_callback); //update the associated callbacks with this Data Element
+  InputValueHandleExtensionCallbacks(inst->da_callback); //update the associated callbacks with this Data Element (e.g. MMXU)
 
   if( send(sd, "OK\n", 3, 0) != 3 ) { 
 		perror("send"); 

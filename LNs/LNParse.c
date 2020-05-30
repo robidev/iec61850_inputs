@@ -57,18 +57,18 @@ void attachLogicalNodes(IedServer server, IedModel_extensions* model, LinkedList
     {
       PTOC_init(server, lnClass->parent, input, allInputValues);
     }
+    else if(strcmp(lnClass->lnClass,"MMXU") == 0)
+    {
+      MMXU_init(server, lnClass->parent, input, allInputValues);
+    }
+    else if(strcmp(lnClass->lnClass,"CSWI") == 0)
+    {
+      CSWI_init(server, lnClass->parent, input, allInputValues);
+    }
     //stubs
     else if(strcmp(lnClass->lnClass,"RADR") == 0)
     {
       RADR_init(input);
-    }
-    else if(strcmp(lnClass->lnClass,"MMXU") == 0)
-    {
-      MMXU_init(input);
-    }
-    else if(strcmp(lnClass->lnClass,"CSWI") == 0)
-    {
-      CSWI_init(input);
     }
     else if(strcmp(lnClass->lnClass,"CILO") == 0)
     {
@@ -76,7 +76,7 @@ void attachLogicalNodes(IedServer server, IedModel_extensions* model, LinkedList
     }
     else
     {
-      printf("ERROR: Class not supported\n");
+      printf("ERROR: Class %s not supported\n", lnClass->lnClass);
     }
     lnClass = lnClass->sibling;
   }

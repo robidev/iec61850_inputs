@@ -134,8 +134,6 @@ schema/SCL.xsd" xmlns:ext="http://www.private.org">
     </SubNetwork>
   </Communication>
 
-
-
   <IED name="IED1_XCBR">
     <Services>
       <DynAssociation />
@@ -167,6 +165,26 @@ schema/SCL.xsd" xmlns:ext="http://www.private.org">
           <LN lnClass="XCBR" lnType="XCBR1" inst="1" prefix="">
             <Inputs>
               <ExtRef intAddr="Tr" desc="Trip" iedName="IED2_PTOC" ldInst="GenericIO" lnClass="PTRC" lnInst="1" doName="Tr" daName="general" serviceType="GOOSE" srcLDInst="GenericIO" srcLNClass="LLN0" srcCBName="GoCB" />
+            </Inputs>
+          </LN>
+          <LN lnClass="CSWI" lnType="CSWIa" inst="1" prefix="">
+            <Inputs>
+              <ExtRef intAddr="xcbr_stval" desc="xcbr_status" iedName="IED1_XCBR" ldInst="GenericIO" lnClass="XCBR" lnInst="1" doName="Pos" daName="stVal" serviceType="Poll" />
+            </Inputs>
+          </LN>
+          <LN lnClass="XSWI" lnType="XSWI1" inst="2" prefix="">
+            <DOI name="SwTyp">
+              <DAI name="stVal">
+                <Val>Disconnector</Val>
+              </DAI>
+            </DOI>
+            <Inputs>
+              <ExtRef intAddr="Tr" desc="Operate" iedName="IED1_XCBR" ldInst="GenericIO" lnClass="CSWI" lnInst="2" doName="Pos" daName="opOk" serviceType="Poll" />
+            </Inputs>
+          </LN>
+          <LN lnClass="CSWI" lnType="CSWIa" inst="2" prefix="">
+            <Inputs>
+              <ExtRef intAddr="xcbr_stval" desc="xcbr_status" iedName="IED1_XCBR" ldInst="GenericIO" lnClass="XSWI" lnInst="2" doName="Pos" daName="stVal" serviceType="Poll" />
             </Inputs>
           </LN>
         </LDevice>
@@ -203,6 +221,17 @@ schema/SCL.xsd" xmlns:ext="http://www.private.org">
           </LN0>
           <LN lnClass="LPHD" lnType="LPHD1" inst="1" prefix="" />
           <LN lnClass="PTOC" lnType="PTOC1" inst="1" prefix="" >
+            <DOI name="TmACrv">
+              <DAI name="setCharact">
+                <Val>ANSI Definite Time (Default)</Val>
+              </DAI>
+              <DAI name="setParA">
+                <Val>1</Val>
+              </DAI>
+              <DAI name="setParB">
+                <Val>2</Val>
+              </DAI>
+            </DOI>
             <Inputs>
               <ExtRef intAddr="Amp1" desc="sample_a1" iedName="IED3_SMV" ldInst="MUnn" lnClass="TCTR" lnInst="1" doName="Amp" serviceType="SMV" srcLDInst="MUnn" srcLNClass="LLN0" srcCBName="MSVCB01" />
               <ExtRef intAddr="Amp2" desc="sample_a2" iedName="IED3_SMV" ldInst="MUnn" lnClass="TCTR" lnInst="2" doName="Amp" serviceType="SMV" srcLDInst="MUnn" srcLNClass="LLN0" srcCBName="MSVCB01" />
@@ -289,6 +318,8 @@ schema/SCL.xsd" xmlns:ext="http://www.private.org">
 					<LN lnType="9-2LETVTR" lnClass="TVTR" inst="3" />
 					<LN lnType="9-2LETVTR" lnClass="TVTR" inst="4" />
 
+          <LN lnType="MMXUa" lnClass="MMXU" inst="1" />
+
 				</LDevice>
 			</Server>
 		</AccessPoint>
@@ -335,6 +366,7 @@ schema/SCL.xsd" xmlns:ext="http://www.private.org">
       <DO name="NamPlt" type="LPL_2_NamPlt" />
       <DO name="Str" type="ACD" />
       <DO name="Op" type="ACT" />
+      <DO name="TmACrv" type="CURVE" />
     </LNodeType>
 
     <LNodeType id="XCBR1" lnClass="XCBR" desc="Circuit breaker">
@@ -348,6 +380,40 @@ schema/SCL.xsd" xmlns:ext="http://www.private.org">
       <DO name="BlkOpn" type="SPC_1_SPCSO1" />
       <DO name="BlkCls" type="SPC_1_SPCSO1" />
     </LNodeType>
+
+    <LNodeType id="XSWI1" lnClass="XSWI" desc="Switch">
+      <DO name="Mod" type="INC_2_Mod" />
+      <DO name="Beh" type="INS_1_Beh" />
+      <DO name="Health" type="INS_1_Beh" />
+      <DO name="NamPlt" type="LPL_2_NamPlt" />
+      <DO name="Loc" type="SPC_1_SPCSO1" />
+      <DO name="OpCnt" type="INS_1_Beh" />
+      <DO name="SwTyp" type="ENS" />
+      <DO name="Pos" type="DPC" />
+      <DO name="BlkOpn" type="SPC_1_SPCSO1" />
+      <DO name="BlkCls" type="SPC_1_SPCSO1" />
+    </LNodeType>
+
+    <LNodeType id="CSWIa" lnClass="CSWI" desc="Controlable switch">
+			<DO name="Mod" type="INC_2_Mod"/>
+			<DO name="Beh" type="INS_1_Beh"/>
+			<DO name="Health" type="INS_1_Beh"/>
+			<DO name="NamPlt" type="LPL_2_NamPlt"/>
+			<DO name="Pos" type="DPC_CO"/>
+		</LNodeType>
+
+		<LNodeType id="MMXUa" lnClass="MMXU">
+			<DO name="Mod" type="INC_2_Mod"/>
+			<DO name="Beh" type="INS_1_Beh"/>
+			<DO name="Health" type="INS_1_Beh"/>
+			<DO name="NamPlt" type="LPL_2_NamPlt"/>
+			<DO name="AvAPhs" type="myMV"/>
+			<DO name="AvPhVPhs" type="myMV"/>
+      <DO name="MaxAPhs" type="myMV"/>
+			<DO name="MaxPhVPhs" type="myMV"/>
+      <DO name="MinAPhs" type="myMV"/>
+			<DO name="MinPhVPhs" type="myMV"/>
+		</LNodeType>
 
     <LNodeType id="GGIO1" lnClass="GGIO">
       <DO name="Mod" type="INC_2_Mod" />
@@ -368,10 +434,41 @@ schema/SCL.xsd" xmlns:ext="http://www.private.org">
       <DO name="Ind4" type="SPS_1_Proxy" />
     </LNodeType>
 
+  <DOType id="CURVE" cdc="CURVE">
+    <DA name="setCharact" fc="SP" dchg="true" bType="Enum" type="setCharact_1"/>
+    <DA name="setParA" fc="SP" dchg="true" bType="FLOAT32"/>
+    <DA name="setParB" fc="SP" dchg="true" bType="FLOAT32"/>
+    <DA name="setParC" fc="SP" dchg="true" bType="FLOAT32"/>
+    <DA name="setParD" fc="SP" dchg="true" bType="FLOAT32"/>
+    <DA name="setParE" fc="SP" dchg="true" bType="FLOAT32"/>
+    <DA name="setParF" fc="SP" dchg="true" bType="FLOAT32"/>
+  </DOType>
+
+  <DOType id="myMV" cdc="MV">
+    <DA name="mag" fc="MX" dchg="true" bType="Struct" type="AnalogueValue_1"/>
+    <DA name="q" fc="MX" qchg="true" bType="Quality"/>
+    <DA name="t" fc="MX" bType="Timestamp"/>
+    <DA name="sVC" fc="CF" dchg="true" bType="Struct" type="ScaledValueConfig"/>
+  </DOType>
   <DOType cdc="DPC" id="DPC" desc="Controllable double point CDC.">
     <DA name="stVal" bType="Dbpos" fc="ST" dchg="true" desc="intermediate-state | off | on | bad-state" />
     <DA name="q" bType="Quality" fc="ST" qchg="true" desc="Quality of the data value: 'stVal'." />
     <DA name="t" bType="Timestamp" fc="ST" desc="Timestamp of the last change in one of the attributes representing the data value ('stVal') or the data quality ('q'), i.e., those which have 'dchg' or 'qchg'." />
+  </DOType>
+  <DOType cdc="ENS" id="ENS" desc="Enumerated status">
+    <DA name="stVal" bType="Enum" type="SwTyp_Enum" fc="ST" dchg="true" desc="" />
+    <DA name="q" bType="Quality" fc="ST" qchg="true" desc="Quality of the data value: 'stVal'." />
+    <DA name="t" bType="Timestamp" fc="ST" desc="Timestamp of the last change in one of the attributes representing the data value ('stVal') or the data quality ('q'), i.e., those which have 'dchg' or 'qchg'." />
+  </DOType>
+  <DOType cdc="DPC" id="DPC_CO" desc="Controllable double point CDC.">
+    <DA name="stVal" bType="Dbpos" fc="ST" dchg="true" desc="intermediate-state | off | on | bad-state" />
+    <DA name="q" bType="Quality" fc="ST" qchg="true" desc="Quality of the data value: 'stVal'." />
+    <DA name="t" bType="Timestamp" fc="ST" desc="Timestamp of the last change in one of the attributes representing the data value ('stVal') or the data quality ('q'), i.e., those which have 'dchg' or 'qchg'." />
+    <DA name="opOk" bType="BOOLEAN" fc="OR" dchg="true" />
+    <DA name="ctlModel" fc="CF" bType="Enum" type="CtlModels"/>
+    <DA name="Oper" fc="CO" bType="Struct" type="DPCOperate_1"/>
+    <DA name="SBOw" fc="CO" bType="Struct" type="DPCOperate_1"/>
+    <DA name="Cancel" fc="CO" bType="Struct" type="myCancel"/>
   </DOType>
   <DOType id="ACD" cdc="ACD">
     <DA name="general" fc="ST" dchg="true" bType="BOOLEAN" />
@@ -472,6 +569,10 @@ schema/SCL.xsd" xmlns:ext="http://www.private.org">
       <DA name="t" bType="Timestamp" fc="ST" />
     </DOType>
 
+		<DAType id="ScaledValueConfig">
+			<BDA name="scaleFactor" bType="FLOAT32"/>
+			<BDA name="offset" bType="FLOAT32"/>
+		</DAType>
 	<DAType id="9-2LEAV">
 		<BDA name="i" bType="INT32" />
 	</DAType>
@@ -507,6 +608,21 @@ schema/SCL.xsd" xmlns:ext="http://www.private.org">
       <BDA name="Test" bType="BOOLEAN" />
       <BDA name="Check" bType="Check" />
     </DAType>
+    <DAType id="DPCOperate_1">
+      <BDA name="ctlVal" bType="BOOLEAN" />
+      <BDA name="origin" type="Originator_1" bType="Struct" />
+      <BDA name="ctlNum" bType="INT8U" />
+      <BDA name="T" bType="Timestamp" />
+      <BDA name="Test" bType="BOOLEAN" />
+      <BDA name="Check" bType="Check" />
+    </DAType>
+    <DAType id="myCancel">
+			<BDA name="ctlVal" bType="BOOLEAN"/>
+			<BDA name="origin" bType="Struct" type="Originator_1"/>
+			<BDA name="ctlNum" bType="INT8U"/>
+			<BDA name="T" bType="Timestamp"/>
+			<BDA name="Test" bType="BOOLEAN"/>
+		</DAType>
     <EnumType id="CtlModels">
       <EnumVal ord="0">status-only</EnumVal>
       <EnumVal ord="1">direct-with-normal-security</EnumVal>
@@ -530,6 +646,33 @@ schema/SCL.xsd" xmlns:ext="http://www.private.org">
       <EnumVal ord="1">forward</EnumVal>
       <EnumVal ord="2">backward</EnumVal>
       <EnumVal ord="3">both</EnumVal>
+    </EnumType>
+    <EnumType id="setCharact_1">
+      <EnumVal ord="0">unknown</EnumVal>
+      <EnumVal ord="1">ANSI Extremely Inverse</EnumVal>
+      <EnumVal ord="2">ANSI Very Inverse</EnumVal>
+      <EnumVal ord="3">ANSI Normal Inverse</EnumVal>
+      <EnumVal ord="4">ANSI Moderately Inverse</EnumVal>
+      <EnumVal ord="5">ANSI Definite Time (Default)</EnumVal>
+      <EnumVal ord="6">Long-Time Extremely Inverse</EnumVal>
+      <EnumVal ord="7">Long-Time Very Inverse</EnumVal>
+      <EnumVal ord="8">Long-Time Inverse</EnumVal>
+      <EnumVal ord="9">IEC Normal Inverse</EnumVal>
+      <EnumVal ord="10">IEC Very Inverse</EnumVal>
+      <EnumVal ord="11">IEC Inverse</EnumVal>
+      <EnumVal ord="12">IEC Extremely Inverse</EnumVal>
+      <EnumVal ord="13">IEC Short-Time Inverse</EnumVal>
+      <EnumVal ord="14">IEC Long-Time Inverse</EnumVal>
+      <EnumVal ord="15">IEC Definite Time</EnumVal>
+      <EnumVal ord="16">reserved</EnumVal>
+      <EnumVal ord="17">Definable curve 1 based on formula [x=f(y,A,B,C,D, E, F)]</EnumVal>
+    </EnumType>
+    <EnumType id="SwTyp_Enum">
+      <EnumVal ord="0">unknown</EnumVal>
+      <EnumVal ord="1">Load break switch</EnumVal>
+      <EnumVal ord="2">Disconnector</EnumVal>
+      <EnumVal ord="3">Earthing switch</EnumVal>
+      <EnumVal ord="4">High speed earthing switch</EnumVal>
     </EnumType>
   </DataTypeTemplates>
 </SCL>

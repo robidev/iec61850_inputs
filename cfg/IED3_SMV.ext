@@ -30,6 +30,9 @@ CL(TVTR);
 LN(TVTR4){
 CL(TVTR);
 }
+LN(MMXU1){
+CL(MMXU);
+}
 }
 SD(IED1_XCBRGenericIO/XCBR1.Pos.stVal Events 4096 010ccd040001 IED1_XCBRGenericIO/LLN0$GO$gcbEvents events);
 SD(IED2_PTOCGenericIO/GGIO1.SPCSO1.stVal Events 4098 010ccd010002 IED2_PTOCGenericIO/LLN0$GO$gcbEvents events);
