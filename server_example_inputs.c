@@ -366,7 +366,7 @@ int main(int argc, char** argv) {
 	}
 	
 	//call initializers for sampled value control blocks and start publishing
-	attachSMV(iedServer, iedModel_local, ethernetIfcID);
+	attachSMV(iedServer, iedModel_local, ethernetIfcID, allInputValues);
 
 	//call all initializers for logical nodes in the model
 	attachLogicalNodes(iedServer, iedExtendedModel_local, allInputValues);

@@ -18,6 +18,10 @@ typedef struct sSMVP {
 
     void * simulationHandler;
     LinkedList dataSetValues;
+
+    IedServer server;
+    LinkedList  da_el;
+    LinkedList  da_el_callback;
 } SMVP;
 
 void SMV_Thread(SMVP* inst);
@@ -31,11 +35,12 @@ void sVCBEventHandler (SVControlBlock* svcb, int event, void* parameter)
         inst->svcbEnabled = 0;
 }
 
-void* SMVP_init(SVPublisher SMVPublisher, SVControlBlock* svcb, IedServer server)
+void* SMVP_init(SVPublisher SMVPublisher, SVControlBlock* svcb, IedServer server, LinkedList allInputValues)
 {
     SMVP* inst = (SMVP *) malloc(sizeof(SMVP));
     inst->running = false;
 
+    inst->server = server;
     inst->svPublisher = SMVPublisher;
 
     if (inst->svPublisher == NULL) {
@@ -77,7 +82,8 @@ void* SMVP_init(SVPublisher SMVPublisher, SVControlBlock* svcb, IedServer server
 
     inst->dataSetValues = NULL;
     
-    if(IEC61850_server_simulation_type() == SIMULATION_TYPE_REMOTE)
+    //retrieve dataset for this svcb, and use it to store simulated values
+    //if(IEC61850_server_simulation_type() == SIMULATION_TYPE_REMOTE)
     {
         //get domain
         char objectReference[130];
@@ -91,11 +97,20 @@ void* SMVP_init(SVPublisher SMVPublisher, SVControlBlock* svcb, IedServer server
 
         /* prepare data set values */
         inst->dataSetValues = LinkedList_create();
+        inst->da_el = LinkedList_create();//NEW
+        inst->da_el_callback = LinkedList_create();//NEW
+
         IedModel* model = IedServer_getDataModel(server);
         DataSet* dataSet = IedModel_lookupDataSet(model, dataSetReference);
         DataSetEntry* dataSetEntry = dataSet->fcdas;
         while (dataSetEntry != NULL) {
             LinkedList_add(inst->dataSetValues, dataSetEntry->value);
+
+            //NEW
+            DataAttribute* da =  IedModel_lookupDataAttributeByMmsValue(model, MmsValue_getElement( MmsValue_getElement(dataSetEntry->value,0), 0) );
+            LinkedList_add(inst->da_el, da );
+            LinkedList_add(inst->da_el_callback, _findAttributeValueEx(da, allInputValues));
+
             dataSetEntry = dataSetEntry->sibling;
         }
     }
@@ -114,21 +129,14 @@ void SMVP_destroy(SMVP* inst)
 void SMV_Thread(SMVP* inst)
 {
     inst->running = true;
-    int voltageA;
-    int voltageB;
-    int voltageC;
-    int voltageN;
-    int currentA;
-    int currentB;
-    int currentC;
-    int currentN;
+    int measurements[8];
 
     if(IEC61850_server_simulation_type() == SIMULATION_TYPE_LOCAL)
     {
         Quality q = QUALITY_VALIDITY_GOOD;
 
         int vol = (int) (6350.f * sqrt(2));
-        int amp = 0;
+        int amp = 10;
         float phaseAngle = 0.f;
 
         int sampleCount = 0;
@@ -143,35 +151,54 @@ void SMV_Thread(SMVP* inst)
             double angleB = (2 * M_PI / 80) * samplePoint - ( 2 * M_PI / 3);
             double angleC = (2 * M_PI / 80) * samplePoint - ( 4 * M_PI / 3);
 
-            voltageA = (vol * sin(angleA)) * 100;
-            voltageB = (vol * sin(angleB)) * 100;
-            voltageC = (vol * sin(angleC)) * 100;
-            voltageN = voltageA + voltageB + voltageC;
+            measurements[0] = (amp * sin(angleA - phaseAngle)) * 1000;
+            measurements[1] = (amp * sin(angleB - phaseAngle)) * 1000;
+            measurements[2] = (amp * sin(angleC - phaseAngle)) * 1000;
+            measurements[3] = measurements[0] + measurements[1] + measurements[2];
 
-            currentA = (amp * sin(angleA - phaseAngle)) * 1000;
-            currentB = (amp * sin(angleB - phaseAngle)) * 1000;
-            currentC = (amp * sin(angleC - phaseAngle)) * 1000;
-            currentN = currentA + currentB + currentC;
+            measurements[4] = (vol * sin(angleA)) * 100;
+            measurements[5] = (vol * sin(angleB)) * 100;
+            measurements[6] = (vol * sin(angleC)) * 100;
+            measurements[7] = measurements[4] + measurements[5] + measurements[6];
 
+            //retrieve data from dataset, and update values
+            /*LinkedList ds = inst->dataSetValues;
+            int ds_index = 0;
+            while((ds != NULL)//for each LN with an inputs/extref defined;
+            {
+                if((ds->data != NULL)
+                {
+                    MmsValue* datasetValue = ds->data;
+                    MmsValue_setInt32( MmsValue_getElement( MmsValue_getElement(datasetValue,0), 0) , measurements[ds_index]);
+                    ds_index += 1;
+                }
+                ds = LinkedList_getNext(ds);
+            }*/
+
+            LinkedList da_el = inst->da_el;
+            LinkedList da_el_callback = inst->da_el_callback;
+            int ds_index = 0;
+            while(da_el != NULL)//for each LN with an inputs/extref defined;
+            {
+                if(da_el->data != NULL)
+                {
+                    IedServer_updateInt32AttributeValue(inst->server,da_el->data,measurements[ds_index]);
+                    InputValueHandleExtensionCallbacks(da_el_callback->data); //update the associated input-extref items for this Data Element
+                    ds_index += 1;
+                }
+                da_el = LinkedList_getNext(da_el);
+                da_el_callback = LinkedList_getNext(da_el_callback);
+            }
+            
+            
             if (inst->svcbEnabled) {
-                
-                SVPublisher_ASDU_setINT32(inst->asdu, 0, currentA);
-                SVPublisher_ASDU_setQuality(inst->asdu, 4, q);
-                SVPublisher_ASDU_setINT32(inst->asdu, 8, currentB);
-                SVPublisher_ASDU_setQuality(inst->asdu, 12, q);
-                SVPublisher_ASDU_setINT32(inst->asdu, 16, currentC);
-                SVPublisher_ASDU_setQuality(inst->asdu, 20, q);
-                SVPublisher_ASDU_setINT32(inst->asdu, 24, currentN);
-                SVPublisher_ASDU_setQuality(inst->asdu, 28, q);
-
-                SVPublisher_ASDU_setINT32(inst->asdu, 32, voltageA);
-                SVPublisher_ASDU_setQuality(inst->asdu, 36, q);
-                SVPublisher_ASDU_setINT32(inst->asdu, 40, voltageB);
-                SVPublisher_ASDU_setQuality(inst->asdu, 44, q);
-                SVPublisher_ASDU_setINT32(inst->asdu, 48, voltageC);
-                SVPublisher_ASDU_setQuality(inst->asdu, 52, q);
-                SVPublisher_ASDU_setINT32(inst->asdu, 56, voltageN);
-                SVPublisher_ASDU_setQuality(inst->asdu, 60, q);
+                //update all ASDU values
+                int asdu_index = 0;
+                while(asdu_index < (ds_index*8)){
+                    SVPublisher_ASDU_setINT32(inst->asdu, asdu_index, measurements[asdu_index / 8]);
+                    SVPublisher_ASDU_setQuality(inst->asdu, asdu_index + 4, q);
+                    asdu_index += 8;
+                }
 
                 SVPublisher_ASDU_setRefrTm(inst->asdu, Hal_getTimeInMs());
 
@@ -208,6 +235,7 @@ void SMV_Thread(SMVP* inst)
             int samplePoint = sampleCount % 80;
             if (inst->svcbEnabled) {
                 
+                //retrieve data from dataset
                 LinkedList ds = inst->dataSetValues;
                 int index = 0;
                 while(ds != NULL)//for each LN with an inputs/extref defined;
@@ -215,9 +243,9 @@ void SMV_Thread(SMVP* inst)
                     if(ds->data != NULL)
                     {
                         MmsValue* datasetValue = ds->data;
-                        char buf[255];
-                        MmsValue_printToBuffer(datasetValue,buf,255);
-                        printf("data: %s\n",buf);
+                        //char buf[255];
+                        //MmsValue_printToBuffer(datasetValue,buf,255);
+                        //printf("data: %s\n",buf);
 
                         SVPublisher_ASDU_setINT32(inst->asdu, index, MmsValue_toInt32( MmsValue_getElement( MmsValue_getElement(datasetValue,0), 0) ) );
                         SVPublisher_ASDU_setQuality(inst->asdu, index + 4, MmsValue_toUint32( MmsValue_getElement(datasetValue,1) ));

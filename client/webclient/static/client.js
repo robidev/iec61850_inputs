@@ -47,8 +47,10 @@ $(document).ready(function() {
       $("#" + $.escapeSelector(element),svgRoot).each(function(idx, el){
         var cl = el.classList.toString();
 
+
         if( cl == "MEAS"){
-          el.textContent = value;
+          var desc = el.innerHTML;
+          el.textContent = desc.replace("{value}",value);
         }
         if(cl == "XCBR" || cl == "XSWI"){
           if(type == 'boolean'){
@@ -277,7 +279,7 @@ function writePositionCSWI(event){
   //lazy, TODO properly search for CSWI siblings
   ref = ref.replace("XCBR1","CSWI1");
   ref = ref.replace("XSWI2","CSWI2");
-  ref = ref.replace(".stVal",".ctlVal");
+  ref = ref.replace(".stVal",".Oper.ctlVal");
 
   if(ref in svgElementData && 'position' in svgElementData[ref]){
     if(svgElementData[ref]['position'] == true){

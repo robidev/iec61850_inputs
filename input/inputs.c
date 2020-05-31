@@ -470,6 +470,7 @@ InputValue* _findAttributeValueEx(DataAttribute* dataAttribute, LinkedList input
 }
 
 //call AttributeValueHandleExtensionCallback
+//this call will trigger an update of all input elements that refer to this DA.
 //slow, as it will iterate trough the whole list, instead this call can be done once during initialisation
 void AttributeValueHandleExtensionCallbacks(DataAttribute* dataAttribute, LinkedList inputvalues)
 {

@@ -99,7 +99,7 @@ def register_datapoint_finished(data):
     tupl = key.split(':')
     hostname = tupl[0]
 
-    emit('log_event', {'host':hostname,'data':'[+] adding IED info','clear':1})
+    emit('log_event', {'host':key,'data':'[+] adding IED info','clear':1})
 
     port = None
     if len(tupl) > 1 and tupl[1] != "":
@@ -107,7 +107,7 @@ def register_datapoint_finished(data):
     model = client.getDatamodel(hostname=hostname, port=port)
 
     loaded_json = {}
-    loaded_json['host'] = hostname
+    loaded_json['host'] = key
     loaded_json['data'] = model
     process_info_event(loaded_json)
 
@@ -182,7 +182,7 @@ def readvaluecallback(key,data):
 if __name__ == '__main__':
   logger = logging.getLogger('webserver')
   logging.basicConfig(format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
-    level=logging.DEBUG)
+    level=logging.INFO)
 	# note the `logger` from above is now properly configured
   logger.debug("started")
   client = libiec61850client.iec61850client(readvaluecallback, logger)

@@ -28,7 +28,8 @@
 			"streambuf": "c",
 			"functional": "c",
 			"iec61850_model.h": "c",
-			"unordered_map": "c"
+			"unordered_map": "c",
+			"cmath": "c"
 		}
 	}
 }

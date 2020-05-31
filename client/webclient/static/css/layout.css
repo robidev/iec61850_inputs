@@ -65,7 +65,7 @@ body {
   width: auto;
 
   display: grid;
-  grid-template-columns: auto 300px; /* 100px auto 200px*/
+  grid-template-columns: 500px auto; /* 100px auto 200px*/
   grid-template-rows: auto 250px;
   height: 100vh;
 }

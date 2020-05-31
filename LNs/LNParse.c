@@ -83,14 +83,14 @@ void attachLogicalNodes(IedServer server, IedModel_extensions* model, LinkedList
   
 }
 
-void attachSMV(IedServer server, IedModel* model, char* ethernetIfcID)
+void attachSMV(IedServer server, IedModel* model, char* ethernetIfcID, LinkedList allInputValues) //allInputValues is needed for callbacks when a local value is updated
 {
   SVControlBlock* svCBs = model->svCBs;
   while(svCBs != NULL)
   {
     	//smv publisher
 	  SVPublisher SMVPublisher = SVPublisher_create((CommParameters *)svCBs->dstAddress, ethernetIfcID);
-    SMVP_init(SMVPublisher, svCBs, server);
+    SMVP_init(SMVPublisher, svCBs, server, allInputValues);
 
     svCBs = svCBs->sibling;
   }

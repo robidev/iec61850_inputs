@@ -91,14 +91,16 @@ void PTOC_callback_SMV(InputEntry* extRef)
   
   while(extRef != NULL )
   {
-    if(strcmp(extRef->intAddr,"xcbr_stval") != 0 && extRef->value != NULL)
-    {
+    if(strcmp(extRef->intAddr,"xcbr_stval") != 0 && extRef->value != NULL)//perform for all items except xcbr_stval (meaning: all SMV)
+    { //TODO: make this more specific
+
       MmsValue * stVal = MmsValue_getElement(extRef->value,0);
       uint8_t tempBuf[20];
       Conversions_msTimeToGeneralizedTime2(MmsValue_getUtcTimeInMs(MmsValue_getElement(extRef->value,2)), tempBuf);
       //printf("val :%lld, q: %08X, time: %s\n", (long long) MmsValue_toInt64(stVal), MmsValue_toUint32(MmsValue_getElement(extRef->value,1)), tempBuf);
 
       //check if value is outside allowed band
+      //TODO: get values from settings
       if(MmsValue_toInt64(stVal) > 800000){
         printf("PTOC: treshold reached\n");
         MmsValue* tripValue = MmsValue_newBoolean(true);

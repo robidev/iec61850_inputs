@@ -10,7 +10,7 @@ extern "C" {
 
 void attachLogicalNodes(IedServer server, IedModel_extensions* model, LinkedList allInputValues);
 
-void attachSMV(IedServer server, IedModel* model, char* ethernetIfcID);
+void attachSMV(IedServer server, IedModel* model, char* ethernetIfcID, LinkedList allInputValues);
 
 LogicalNodeClass* getLNClass(IedModel* model, IedModel_extensions* model_ex, const char * objectReference);
 

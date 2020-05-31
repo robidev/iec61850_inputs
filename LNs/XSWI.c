@@ -83,7 +83,7 @@ void *XSWI_init(IedServer server, LogicalNode* ln, Input* input)
   }
   else
   {
-    printf("ERROR: no input element defined")
+    printf("ERROR: no input element defined");
     return 0;
   }
   
