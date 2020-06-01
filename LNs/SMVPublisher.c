@@ -135,8 +135,8 @@ void SMV_Thread(SMVP* inst)
     {
         Quality q = QUALITY_VALIDITY_GOOD;
 
-        int vol = (int) (6350.f * sqrt(2));
-        int amp = 10;
+        int vol = (int) (6350.f * sqrt(2));//RMS to peak
+        int amp = (int) (10.f * sqrt(2));//RMS to peak
         float phaseAngle = 0.f;
 
         int sampleCount = 0;

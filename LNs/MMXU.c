@@ -22,7 +22,7 @@ typedef struct sMMXU
 void MMXU_callback(InputEntry* extRef)
 {
   MMXU* inst = extRef->callBackParam;
-  extRef = inst->input->extRefs;//start from the first extref, and check all values
+  extRef = inst->input->extRefs;//start from the first extref, and check all values, we assume there are 8!
   int i = 0;
   while(extRef != NULL )
   {
@@ -32,25 +32,24 @@ void MMXU_callback(InputEntry* extRef)
       {
         inst->RMS[i] = 0;//start over
       }
-      //MmsValue * stVal = MmsValue_getElement(extRef->value,0);
-
-      //check if value is outside allowed band
+      //calculate RMS value TODO: check correct amount of elements instead of assuming 8, and offload this into a separate thread
+      //currently, it is called each time a sampled-value is updated which might become slow
       float ff = (float)MmsValue_toInt32(extRef->value);
       inst->RMS[i] += (ff * ff);
 
-      if( (inst->RMS_samplecount % 80) == 79)
+      if( (inst->RMS_samplecount % 80) == 79)//we calculate the average after 80 samples
       {
         inst->RMS[i] /= 80;
         inst->RMS[i] = sqrt(inst->RMS[i]);
 
         if(i==3){
           float a = (inst->RMS[0] + inst->RMS[1] + inst->RMS[2]) / 3;
-          IedServer_updateFloatAttributeValue(inst->server,inst->da_A,a);
+          IedServer_updateFloatAttributeValue(inst->server,inst->da_A, a/1000 );
           InputValueHandleExtensionCallbacks(inst->da_A_callback); //update the associated callbacks with this Data Element 
         }
         if(i==7){
           float v = (inst->RMS[4] + inst->RMS[5] + inst->RMS[6]) / 3;
-          IedServer_updateFloatAttributeValue(inst->server,inst->da_V,v);
+          IedServer_updateFloatAttributeValue(inst->server,inst->da_V, v/100 );
           InputValueHandleExtensionCallbacks(inst->da_V_callback); //update the associated callbacks with this Data Element 
         }
         
@@ -89,9 +88,5 @@ void *MMXU_init(IedServer server, LogicalNode* ln, Input* input, LinkedList allI
     }
   }
 
-  //Amp1
-  //Vol1
-  //register callback for input
-  //inst->call_simulation = TCTR_updateValue;
   return inst;
 }

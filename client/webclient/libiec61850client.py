@@ -301,6 +301,10 @@ class iec61850client():
 		if port == "" or port == None:
 			port = 102
 
+		if host == None:
+			logger.error("missing hostname")
+			return -1
+
 		tupl = host + ":" + str(port)
 		if tupl in self.connections and self.connections[tupl]["con"] != None:
 			if not self.connections[tupl]["model"]:
@@ -349,11 +353,15 @@ class iec61850client():
 		if port == "" or port == None:
 			port = 102
 
-		tupl = uri_ref.hostname + ":" + str(port)
-
 		if uri_ref.scheme != "iec61850":
 			logger.error("incorrect scheme, only iec61860 is supported, not %s" % uri_ref.scheme)
 			return -1
+
+		if uri_ref.hostname == None:
+			logger.error("missing hostname: %s" % ref)
+			return -1
+
+		tupl = uri_ref.hostname + ":" + str(port)
 
 		#check if connection is active, or reconnect
 		err = self.getIED(uri_ref.hostname, port)
@@ -397,11 +405,16 @@ class iec61850client():
 		if port == "" or port == None:
 			port = 102
 
-		tupl = uri_ref.hostname + ":" + str(port)
-
 		if uri_ref.scheme != "iec61850":
 			logger.error("incorrect scheme, only iec61860 is supported, not %s" % uri_ref.scheme)
 			return {}, -1
+
+		if uri_ref.hostname == None:
+			logger.error("missing hostname: %s" % ref)
+			return {}, -1
+
+		tupl = uri_ref.hostname + ":" + str(port)
+
 
 		#check if connection is active, or reconnect
 		err = self.getIED(uri_ref.hostname, port)
@@ -425,7 +438,7 @@ class iec61850client():
 					if self.readvaluecallback != None:
 						self.readvaluecallback(ref, model[uri_ref.path[1:]])
 
-					return model[uri_ref.path[1:]], 0
+					return model[uri_ref.path[1:]], 0 #TODO: also return children, if its a struct
 				else:
 					logger.error("could not read '%s' with error: %i" % (ref, error))
 					if error == 3: #we lost the connection
@@ -455,11 +468,16 @@ class iec61850client():
 		if port == "" or port == None:
 			port = 102
 
-		tupl = uri_ref.hostname + ":" + str(port)
 
 		if uri_ref.scheme != "iec61850":
 			logger.error("incorrect scheme, only iec61860 is supported, not %s" % uri_ref.scheme)
 			return -1
+
+		if uri_ref.hostname == None:
+			logger.error("missing hostname: %s" % ref)
+			return -1
+
+		tupl = uri_ref.hostname + ":" + str(port)
 
 		#check if connection is active, or reconnect
 		err = self.getIED(uri_ref.hostname, port)
@@ -486,11 +504,16 @@ class iec61850client():
 			if port == "" or port == None:
 				port = 102
 
-			tupl = uri_ref.hostname + ":" + str(port)
 
 			if uri_ref.scheme != "iec61850":
 				logger.error("incorrect scheme, only iec61860 is supported, not %s" % uri_ref.scheme)
 				continue
+
+			if uri_ref.hostname == None:
+				logger.error("missing hostname: %s" % key)
+				continue
+
+			tupl = uri_ref.hostname + ":" + str(port)
 
 			#check if connection is active, or reconnect
 			err = self.getIED(uri_ref.hostname, port)

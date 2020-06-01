@@ -69,6 +69,14 @@ def write_position(data):
   logger.debug("write position:" + str(data['id'])  )
   client.registerWriteValue(str(data['id']),data['value'])
 
+#synchronous call
+@socketio.on('read_value', namespace='')
+def read_value(data):
+  logger.debug("read value:" + str(data['id'])  )
+  return client.ReadValue(data['id'])
+
+
+
   
 @socketio.on('set_focus', namespace='')
 def set_focus(data):
@@ -118,7 +126,7 @@ def process_info_event(loaded_json): #add info to the ied datamodel tab
   global focus
   global hosts_info
   ihost = loaded_json['host']
-  idata = printItems(loaded_json['data'])
+  idata = printItems(loaded_json)
   # store data
   if not ihost in hosts_info:
     hosts_info[ihost] = {}
@@ -130,14 +138,16 @@ def process_info_event(loaded_json): #add info to the ied datamodel tab
     socketio.emit('info_event', idata)
 
 
-def printItems(dictObj):
-  el = '<table style="width:100%; border: 1px solid white; border-collapse: collapse;"><tr>'
+def printItems(dictObjs):
+  dictObj = dictObjs['data']
+  el = '<table id="CurrentIEDModel" style="width:100%; border: 1px solid white; border-collapse: collapse;"><tr>'
   el += '<th>Reference</th><th>Value</th></tr>\n'
   for k in dictObj:
+    id = "iec61850://" + dictObjs['host'] + "/" + k
     if dictObj[k]['FC'] == '**':
-      el += ('<tr><td style="border: 1px solid white; border-collapse: collapse;">['+ dictObj[k]['FC'] + '] ' + k + '</td><td style="border: 1px solid white; border-collapse: collapse;"> </td></tr>')
+      el += ('<tr id="'+id+'"><td style="border: 1px solid white; border-collapse: collapse;">['+ dictObj[k]['FC'] + '] ' + k + '</td><td style="border: 1px solid white; border-collapse: collapse;"> </td></tr>')
     else:
-      el += ('<tr><td style="border: 1px solid white; border-collapse: collapse;">['+ dictObj[k]['FC'] + '] ' + k + '</td><td style="border: 1px solid white; border-collapse: collapse;">'+ dictObj[k]['value']+ '</td></tr>')
+      el += ('<tr id="'+id+'"><td style="border: 1px solid white; border-collapse: collapse;">['+ dictObj[k]['FC'] + '] ' + k + '</td><td style="border: 1px solid white; border-collapse: collapse;">'+ dictObj[k]['value']+ '</td></tr>')
   el += ('</table>\n')
   return el
 

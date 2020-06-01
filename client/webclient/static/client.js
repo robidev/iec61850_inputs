@@ -33,6 +33,7 @@ $(document).ready(function() {
     //event gets called from server when info data is updated, so update the info tab
     //write data
     $('#datamodel')[0].innerHTML = data;
+    $("#CurrentIEDModel tr").click(writeValueModel);//regiser click event for dialog
   });
 
   //add info to the ied/datamodel tab
@@ -123,7 +124,6 @@ $(document).ready(function() {
     }
     selectTabByHref(tab, ahref);
   });
-
 
   socket.on('page_reload', function (data) {
     location.reload();
@@ -255,6 +255,32 @@ function writeValue(event){
   alert('write a value');
   //generate write interface
   //socket.emit('write_value', { id : this.id, value : '10' });
+}
+
+function writeValueModel(event){
+  var refid = this.id;//get the id of the first column
+  var ref = $(this).children("td").html();
+  var type = ref.substring(1, 3);
+
+  if(type == "**"){
+    alert("cannot write a structure");
+    return;
+  }
+  //read element
+  socket.emit("read_value", {id : refid }, function(data, err){
+    if(err != 0){
+      alert("could not read element:"+refid+" error:"+err);
+      return;
+    }
+   //based on element type, create dialog (type: int, float, text, enum, bool, bitstring)
+  //if ref endswith .Oper/.SBO/.SBOw,.Cancel, provide dialog based on ctlmodel (drop-down for forcing a different model?)   
+    new top.PopLayer({ 
+      "title": "Write Value", 
+      "content": ref + " : " + JSON.stringify(data)
+    });
+  });
+
+
 }
 
 function simulationPoint(event){
