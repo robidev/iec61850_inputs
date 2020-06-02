@@ -211,11 +211,23 @@ div.tabcontents {
   height: 500px;
 }
 
-.control {
+.controlInput {
   background-color: #000;
   border: none;
   outline: none;
-  cursor: pointer;
+  padding: 7px 8px;
+  transition: 0.3s;
+  color: #FFFFFF;
+  margin-bottom: 10px;
+  font-size: 12px;
+  font-weight: normal;
+  width: 100%;
+}
+
+.controlBtn {
+  background-color:  rgba(255, 0, 255, 0.192);
+  border: none;
+  outline: none;
   padding: 7px 8px;
   transition: 0.3s;
   color: #FFFFFF;
@@ -225,11 +237,11 @@ div.tabcontents {
   font-weight: bold;
 }
 
-.control:hover {
+.controlBtn:hover {
   background-color: rgba(255, 0, 255, 0.692);
 }
 
-.control:active {
+.controlBtn:active {
   transition: 0s;
   background-color: #F1F;
 }

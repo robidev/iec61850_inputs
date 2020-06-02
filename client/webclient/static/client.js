@@ -273,10 +273,24 @@ function writeValueModel(event){
       return;
     }
    //based on element type, create dialog (type: int, float, text, enum, bool, bitstring)
-  //if ref endswith .Oper/.SBO/.SBOw,.Cancel, provide dialog based on ctlmodel (drop-down for forcing a different model?)   
-    new top.PopLayer({ 
+  //if ref endswith .Oper/.SBO/.SBOw,.Cancel, provide dialog based on ctlmodel (drop-down for forcing a different model?)
+  content = '<form>';   
+  content += '<div style="" ><b>Element: </b></div><br><div class="controlInput"><i>' + ref + '</i></div><br>'; //+ " : " + JSON.stringify(data);
+  content += '<div style=""><label for="inp"><b>Value: ( type : '+ data['type'] +')</b></label></div><br>';
+  content += '<input  class="controlInput" id="inp" type="text" value="'+data['value']+'"/><br>';
+  content += '<br><button class="controlBtn" type="submit">Write</button><br>';
+  content += '</form>';
+  //$("#includedContent").load("b.html");
+    var dialog = new top.PopLayer({ 
       "title": "Write Value", 
-      "content": ref + " : " + JSON.stringify(data)
+      "content": content
+    });
+    dialog.myPop[0].addEventListener('submit', (event) => {
+      event.preventDefault();
+      // check input values
+      // submit write request
+      // show result
+      dialog.destroy();
     });
   });
 
