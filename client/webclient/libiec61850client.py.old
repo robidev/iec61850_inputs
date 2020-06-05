@@ -3,8 +3,9 @@
 import os,sys
 import ctypes
 import time
-import lib61850
+import iec61850
 import logging
+import pprint
 
 from urllib.parse import urlparse
 
@@ -24,69 +25,78 @@ class iec61850client():
 
 	@staticmethod
 	def printValue(value):
-		_type = lib61850.MmsValue_getTypeString(value)
-		_type = str(_type)
-		if _type == "boolean":
-			return ("%r" % lib61850.MmsValue_getBoolean(value)), _type
-		if _type == "array":
-			return ("arr"), _type
-		if _type ==  "bcd":
-			return ("bcd"), _type
-		if _type ==  "binary-time":
-			return ("%i" % lib61850.MmsValue_getBinaryTimeAsUtcMs(value)), _type
-		if _type == "bit-string":
-			return ("%i" % lib61850.MmsValue_getBitStringAsInteger(value)), _type
-		if _type == "access-error":
-			return ("ACCESS ERROR"), _type
-		if _type == "float":
-			return ("%f" % lib61850.MmsValue_toFloat(value)), _type
-		if _type == "generalized-time":
-			return ("%u" % lib61850.MmsValue_toUnixTimestamp(value)), _type
-		if _type == "integer":
-			return ("%i" % lib61850.MmsValue_toInt64(value)), _type
-		if _type == "oid":
-			return ("OID ERROR"), _type
-		if _type == "mms-string":
-			return ("%s" % lib61850.MmsValue_toString(value).decode("utf-8")), _type
-		if _type == "structure":
-			return ("STRUCTURE"), _type
-		if _type == "octet-string":
-			len = lib61850.MmsValue_getOctetStringSize(value)
-			buf = lib61850.MmsValue_getOctetStringBuffer(value)
+		type = iec61850.MmsValue_getTypeString(value)
+		if type == "boolean":
+			return ("%r" % iec61850.MmsValue_getBoolean(value)), type
+		if type == "array":
+			return ("arr"), type
+		if type ==  "bcd":
+			return ("bcd"), type
+		if type ==  "binary-time":
+			return ("%i" % iec61850.MmsValue_getBinaryTimeAsUtcMs(value)), type
+		if type == "bit-string":
+			sz = iec61850.MmsValue_getBitStringSize(value)
+			val = iec61850.MmsValue_getBitStringAsInteger(value)
+			bs = ""
+			for _ in range(sz):
+				if val & (1>>sz) != 0:
+					bs += "1"
+				else:
+					bs += "0"
+			return ("[%s]" % bs), type
+		if type == "access-error":
+			return ("ACCESS ERROR"), type
+		if type == "float":
+			return ("%f" % iec61850.MmsValue_toFloat(value)), type
+		if type == "generalized-time":
+			return ("%u" % iec61850.MmsValue_toUnixTimestamp(value)), type
+		if type == "integer":
+			return ("%i" % iec61850.MmsValue_toInt64(value)), type
+		if type == "oid":
+			return ("OID ERROR"), type
+		if type == "mms-string":
+			return ("%s" % iec61850.MmsValue_toString(value)), type
+		if type == "structure":
+			return ("STRUCTURE"), type
+		if type == "octet-string":
+			len = iec61850.MmsValue_getOctetStringSize(value)
+			buf = iec61850.MmsValue_getOctetStringBuffer(value)
 			#magic cast to convert a swig pointer into a ctypes pointer, the int(buf) works, but why?
-			buff = ctypes.cast(buf, ctypes.POINTER(ctypes.c_char))
+			buff = ctypes.cast(int(buf), ctypes.POINTER(ctypes.c_char))
 			#allocate a buffer for the result
 			res = bytearray(len)
 			#create a pointer to the result buffer
 			rptr = (ctypes.c_char * len).from_buffer(res)
 			#copy the memory from the swig buffer to the result buffer
 			ctypes.memmove(rptr, buff, len)
-			return ("%s" % ''.join(format(x, '02x') for x in res)), _type
-		if _type == "unsigned":
-			return ("%u" % lib61850.MmsValue_toUint32(value)), _type
-		if _type == "utc-time":
-			return ("%u" % lib61850.MmsValue_getUtcTimeInMs(value)), _type
-		if _type == "visible-string":
-			return ("%s" % lib61850.MmsValue_toString(value).decode("utf-8")), _type
-		if _type == "unknown(error)":
-			return ("UNKNOWN ERROR"), _type
-		return ("CANNOT FIND TYPE"), _type
+			return ("%s" % ''.join(format(x, '02x') for x in res)), type
+		if type == "unsigned":
+			return ("%u" % iec61850.MmsValue_toUint32(value)), type
+		if type == "utc-time":
+			return ("%u" % iec61850.MmsValue_getUtcTimeInMs(value)), type
+		if type == "visible-string":
+			return ("%s" % iec61850.MmsValue_toString(value)), type
+		if type == "unknown(error)":
+			return ("UNKNOWN ERROR"), type
+		return ("CANNOT FIND TYPE"), type
 
 
 	@staticmethod
 	def printDataDirectory(con, doRef):
 		model = {}
-		error = lib61850.IedClientError()
-		dataAttributes = lib61850.IedConnection_getDataDirectoryFC(con, ctypes.byref(error), doRef)
 
-		if error.value != 0:
-			logger.error("could not get logical device list, error:%i" % error.value)
+		ret = iec61850.IedConnection_getDataDirectoryFC(con, doRef)
+		if isinstance(ret, int):#ret becomes int if connection is lost
+			return model
+		[dataAttributes, error] = ret
+		if error != 0:
+			logger.error("could not get logical device list, error:%i" % error)
 
-		if dataAttributes:
-			dataAttribute = lib61850.LinkedList_getNext(dataAttributes)
+		if dataAttributes != None:
+			dataAttribute = iec61850.LinkedList_getNext(dataAttributes)
 
-			while dataAttribute:
-				daName = ctypes.cast(lib61850.LinkedList_getData(dataAttribute),ctypes.c_char_p).value.decode("utf-8")
+			while dataAttribute != None:
+				daName = iec61850.toCharP(dataAttribute.data)
 				daRef = doRef+"."+daName[:-4]
 				fcName = daName[-3:-1]
 
@@ -102,34 +112,36 @@ class iec61850client():
 					
 				else:
 					#read DA
-					fc = lib61850.FunctionalConstraint_fromString(fcName) 
-					value = lib61850.IedConnection_readObject(con, ctypes.byref(error), daRef, fc)
-
-					if error.value == 0:
+					fc = iec61850.FunctionalConstraint_fromString(fcName) 
+					ret = iec61850.IedConnection_readObject(con, daRef, fc)
+					if isinstance(ret, int):#ret becomes int if connection is lost
+						return model
+					[value, error] = ret
+					if error == 0:
 						model[daRef]['value'], model[daRef]['type'] = iec61850client.printValue(value)
-						lib61850.MmsValue_delete(value)
+						iec61850.MmsValue_delete(value)
 
-				dataAttribute = lib61850.LinkedList_getNext(dataAttribute)
+				dataAttribute = iec61850.LinkedList_getNext(dataAttribute)
 
-			lib61850.LinkedList_destroy(dataAttributes)
+			iec61850.LinkedList_destroy(dataAttributes)
 		return model
 
-
 	@staticmethod
-	def d_printDataDirectory(con, doRef):
+	def tprintDataDirectory(con, doRef):
 		tmodel = {}
 
-		error = lib61850.IedClientError()
-		dataAttributes = lib61850.IedConnection_getDataDirectoryFC(con, ctypes.byref(error), doRef)
+		ret = iec61850.IedConnection_getDataDirectoryFC(con, doRef)
+		if isinstance(ret, int):#ret becomes int if connection is lost
+			return tmodel
+		[dataAttributes, error] = ret
+		if error != 0:
+			logger.error("could not get logical device list, error:%i" % error)
 
-		if error.value != 0:
-			logger.error("could not get logical device list, error:%i" % error.value)
+		if dataAttributes != None:
+			dataAttribute = iec61850.LinkedList_getNext(dataAttributes)
 
-		if dataAttributes:
-			dataAttribute = lib61850.LinkedList_getNext(dataAttributes)
-
-			while dataAttribute:
-				daName = ctypes.cast(lib61850.LinkedList_getData(dataAttribute),ctypes.c_char_p).value.decode("utf-8")
+			while dataAttribute != None:
+				daName = iec61850.toCharP(dataAttribute.data)
 				daRef = doRef+"."+daName[:-4]
 				fcName = daName[-3:-1]
 
@@ -143,47 +155,54 @@ class iec61850client():
 					tmodel[daName[:-4]]['FC'] = fcName
 					tmodel[daName[:-4]]['value'] = "UNKNOWN"
 					#read DA
-					fc = lib61850.FunctionalConstraint_fromString(fcName) 
-					value = lib61850.IedConnection_readObject(con, ctypes.byref(error), daRef, fc)
+					fc = iec61850.FunctionalConstraint_fromString(fcName) 
+					ret = iec61850.IedConnection_readObject(con, daRef, fc)
+					if isinstance(ret, int):#ret becomes int if connection is lost
+						return tmodel
+					[value, error] = ret
+					if error == 0:
+						tmodel[daName[:-4]]['value'], tmodel[daName[:-4]]['type'] = iec61850client.printValue(value)
+						iec61850.MmsValue_delete(value)
 
-					if error.value == 0:
-						tmodel[daRef]['value'], tmodel[daRef]['type'] = iec61850client.printValue(value)
-						lib61850.MmsValue_delete(value)
+				dataAttribute = iec61850.LinkedList_getNext(dataAttribute)
 
-				dataAttribute = lib61850.LinkedList_getNext(dataAttribute)
-
-			lib61850.LinkedList_destroy(dataAttributes)
+			iec61850.LinkedList_destroy(dataAttributes)
 		return tmodel
 
 
 	@staticmethod
 	def discovery(con):
 		model = {}
-		error = lib61850.IedClientError()
-		deviceList = lib61850.IedConnection_getLogicalDeviceList(con, ctypes.byref(error))
 
-		if error.value != 0:
+		ret = iec61850.IedConnection_getLogicalDeviceList(con)
+		if isinstance(ret, int):#ret becomes int if connection is lost
+			return model
+		[deviceList, error] = ret
+
+		if error != 0:
 			logger.error("could not get logical device list, error:%i" % error)
 
-		if deviceList:
-			device = lib61850.LinkedList_getNext(deviceList)
+		if deviceList != None:
+			device = iec61850.LinkedList_getNext(deviceList)
 			while device:
-				LD_name=ctypes.cast(lib61850.LinkedList_getData(device),ctypes.c_char_p).value.decode("utf-8")
+				LD_name=iec61850.toCharP(device.data)
 				#logger.error("LD: %s" % LD_name)
 				model[LD_name] = {}
 				model[LD_name]['reftype'] = "LD"
 				model[LD_name]['type'] = "structure"
 				model[LD_name]['FC'] = "**"
 				model[LD_name]['value'] = "{}"
-				
-				logicalNodes = lib61850.IedConnection_getLogicalDeviceDirectory(con, ctypes.byref(error), LD_name)
-				if error.value != 0:#ret becomes int if connection is lost
-					lib61850.LinkedList_destroy(deviceList)
-					return model
 
-				logicalNode = lib61850.LinkedList_getNext(logicalNodes)
+				ret = iec61850.IedConnection_getLogicalDeviceDirectory(con, LD_name)
+				if isinstance(ret, int):#ret becomes int if connection is lost
+					iec61850.LinkedList_destroy(deviceList)
+					return model
+					
+				[logicalNodes, error] = ret
+
+				logicalNode = iec61850.LinkedList_getNext(logicalNodes)
 				while logicalNode:
-					LN_name=ctypes.cast(lib61850.LinkedList_getData(logicalNode),ctypes.c_char_p).value.decode("utf-8")
+					LN_name=iec61850.toCharP(logicalNode.data)
 					#logger.error(" LN: %s" % LN_name)
 					model[LD_name+"/"+LN_name] = {}
 					model[LD_name+"/"+LN_name]['reftype'] = "LN"
@@ -191,16 +210,17 @@ class iec61850client():
 					model[LD_name+"/"+LN_name]['FC'] = "**"
 					model[LD_name+"/"+LN_name]['value'] = "{}"
 
-					#[LNobjects, error] = lib61850.IedConnection_getLogicalNodeVariables(con, LD_name+"/"+LN_name)
-					LNobjects = lib61850.IedConnection_getLogicalNodeDirectory(con, ctypes.byref(error), LD_name+"/"+LN_name,lib61850.ACSI_CLASS_DATA_OBJECT)
-					if error.value != 0:#ret becomes int if connection is lost
-						lib61850.LinkedList_destroy(logicalNodes)
-						lib61850.LinkedList_destroy(deviceList)
+					#[LNobjects, error] = iec61850.IedConnection_getLogicalNodeVariables(con, LD_name+"/"+LN_name)
+					ret = iec61850.IedConnection_getLogicalNodeDirectory(con, LD_name+"/"+LN_name,iec61850.ACSI_CLASS_DATA_OBJECT)
+					if isinstance(ret, int):#ret becomes int if connection is lost
+						iec61850.LinkedList_destroy(logicalNodes)
+						iec61850.LinkedList_destroy(deviceList)
 						return model
+					[LNobjects, error] = ret
 
-					LNobject = lib61850.LinkedList_getNext(LNobjects)
+					LNobject = iec61850.LinkedList_getNext(LNobjects)
 					while LNobject:
-						Do = ctypes.cast(lib61850.LinkedList_getData(LNobject),ctypes.c_char_p).value.decode("utf-8")
+						Do = iec61850.toCharP(LNobject.data)
 						#logger.error("  DO: %s" % Do)
 						model[LD_name+"/"+LN_name+"."+Do] = {}
 						model[LD_name+"/"+LN_name+"."+Do]['reftype'] = "DO"
@@ -209,23 +229,24 @@ class iec61850client():
 						model[LD_name+"/"+LN_name+"."+Do]['value'] = "{}"
 
 						doRef = LD_name+"/"+LN_name+"."+Do
-						
+
 						submodel = iec61850client.printDataDirectory(con, doRef)
 						model.update(submodel)
 
-						LNobject = lib61850.LinkedList_getNext(LNobject)
-					lib61850.LinkedList_destroy(LNobjects)
+						LNobject = iec61850.LinkedList_getNext(LNobject)
+					iec61850.LinkedList_destroy(LNobjects)
 
-					LNdss = lib61850.IedConnection_getLogicalNodeDirectory(con, ctypes.byref(error), LD_name+"/"+LN_name, lib61850.ACSI_CLASS_DATA_SET)
-					if error.value != 0:#ret becomes int if connection is lost
-						lib61850.LinkedList_destroy(logicalNodes)
-						lib61850.LinkedList_destroy(deviceList)
+					ret = iec61850.IedConnection_getLogicalNodeDirectory(con, LD_name+"/"+LN_name, iec61850.ACSI_CLASS_DATA_SET)
+					if isinstance(ret, int):#ret becomes int if connection is lost
+						iec61850.LinkedList_destroy(logicalNodes)
+						iec61850.LinkedList_destroy(deviceList)
 						return model
+					[LNdss, error] = ret
 
-					LNds = lib61850.LinkedList_getNext(LNdss)
+					LNds = iec61850.LinkedList_getNext(LNdss)
 					while LNds:
-
-						DSname = ctypes.cast(lib61850.LinkedList_getData(LNds),ctypes.c_char_p).value.decode("utf-8")
+						isDel = None
+						DSname = iec61850.toCharP(LNds.data)
 						model[LD_name+"/"+LN_name+"$"+DSname] = {}
 						model[LD_name+"/"+LN_name+"$"+DSname]['reftype'] = "DS"
 						model[LD_name+"/"+LN_name+"$"+DSname]['type'] = "structure"
@@ -233,25 +254,23 @@ class iec61850client():
 						model[LD_name+"/"+LN_name+"$"+DSname]['value'] = "{}"
 
 						#cannot pass the right type to isDeletable(last arg).. keeps complaining about 'bool *', and isDel = ctypes.pointer(ctypes.c_bool(False)) does not work
-						isDel = ctypes.c_bool(False)
-						dataSetMembers = lib61850.IedConnection_getDataSetDirectory(con, ctypes.byref(error), LD_name+"/"+LN_name+"."+DSname, ctypes.byref(isDel))  
-						if error.value != 0:#ret becomes int if connection is lost
-							lib61850.LinkedList_destroy(LNdss)
-							lib61850.LinkedList_destroy(logicalNodes)
-							lib61850.LinkedList_destroy(deviceList)
+						ret = iec61850.IedConnection_getDataSetDirectory(con, LD_name+"/"+LN_name+"."+DSname, isDel )  
+						if isinstance(ret, int):#ret becomes int if connection is lost
+							iec61850.LinkedList_destroy(LNdss)
+							iec61850.LinkedList_destroy(logicalNodes)
+							iec61850.LinkedList_destroy(deviceList)
 							return model
-	
+						[dataSetMembers, error] = ret
 						#all DS are assumed not deletable 
-						if isDel == True:
-							logger.error("  DS: %s, is Deletable" % DSname)
-						else:
-							logger.error("  DS: %s, is not Deletable" % DSname)
-
-						dataSetMemberRef = lib61850.LinkedList_getNext(dataSetMembers)
+						#if isDel == None:
+						#	logger.error("  DS: %s, not Deletable" % DSname)
+						#else:
+						#	logger.error("  DS: %s, is Deletable" % DSname)
+						dataSetMemberRef = iec61850.LinkedList_getNext(dataSetMembers)
 
 						i = 0
 						while dataSetMemberRef:
-							dsRef = ctypes.cast(lib61850.LinkedList_getData(dataSetMemberRef),ctypes.c_char_p).value.decode("utf-8")
+							dsRef = iec61850.toCharP(dataSetMemberRef.data)
 							DX = dsRef[:-4]
 							FC = dsRef[-3:-1]
 							#logger.error("      %s" % DX)
@@ -260,112 +279,117 @@ class iec61850client():
 							model[LD_name+"/"+LN_name+"$"+DSname+"^"+DX]['FC'] = FC
 							model[LD_name+"/"+LN_name+"$"+DSname+"^"+DX]['type'] = "reference"
 							model[LD_name+"/"+LN_name+"$"+DSname+"^"+DX]['value'] = str(i)
-							dataSetMemberRef = lib61850.LinkedList_getNext(dataSetMemberRef)
+							dataSetMemberRef = iec61850.LinkedList_getNext(dataSetMemberRef)
 							i += 1
-						lib61850.LinkedList_destroy(dataSetMembers)
-						LNds = lib61850.LinkedList_getNext(LNds)
+						iec61850.LinkedList_destroy(dataSetMembers)
+						LNds = iec61850.LinkedList_getNext(LNds)
 
-					lib61850.LinkedList_destroy(LNdss)
-					logicalNode = lib61850.LinkedList_getNext(logicalNode)
+					iec61850.LinkedList_destroy(LNdss)
+					logicalNode = iec61850.LinkedList_getNext(logicalNode)
 
-				lib61850.LinkedList_destroy(logicalNodes)
-				device = lib61850.LinkedList_getNext(device)
+				iec61850.LinkedList_destroy(logicalNodes)
+				device = iec61850.LinkedList_getNext(device)
 
-			lib61850.LinkedList_destroy(deviceList)
+			iec61850.LinkedList_destroy(deviceList)
 		return model
 
 
 	@staticmethod
-	def d_discovery(con):
+	def tdiscovery(con):
 		tmodel = {}
 
-		error = lib61850.IedClientError()
-		deviceList = lib61850.IedConnection_getLogicalDeviceList(con, ctypes.byref(error))
+		ret = iec61850.IedConnection_getLogicalDeviceList(con)
+		if isinstance(ret, int):#ret becomes int if connection is lost
+			return model
+		[deviceList, error] = ret
 
-		if error.value != 0:
+		if error != 0:
 			logger.error("could not get logical device list, error:%i" % error)
 
-		if deviceList:
-			device = lib61850.LinkedList_getNext(deviceList)
+		if deviceList != None:
+			device = iec61850.LinkedList_getNext(deviceList)
 			while device:
-				LD_name=ctypes.cast(lib61850.LinkedList_getData(device),ctypes.c_char_p).value.decode("utf-8")
+				LD_name=iec61850.toCharP(device.data)
 				tmodel[LD_name] = {}
 
-				logicalNodes = lib61850.IedConnection_getLogicalDeviceDirectory(con, ctypes.byref(error), LD_name)
-				if error.value != 0:#ret becomes int if connection is lost
-					lib61850.LinkedList_destroy(deviceList)
+				ret = iec61850.IedConnection_getLogicalDeviceDirectory(con, LD_name)
+				if isinstance(ret, int):#ret becomes int if connection is lost
+					iec61850.LinkedList_destroy(deviceList)
 					return model
 					
-				logicalNode = lib61850.LinkedList_getNext(logicalNodes)
+				[logicalNodes, error] = ret
+
+				logicalNode = iec61850.LinkedList_getNext(logicalNodes)
 				while logicalNode:
-					LN_name=ctypes.cast(lib61850.LinkedList_getData(logicalNode),ctypes.c_char_p).value.decode("utf-8")
+					LN_name=iec61850.toCharP(logicalNode.data)
 					tmodel[LD_name][LN_name] = {}
 
 					#[LNobjects, error] = iec61850.IedConnection_getLogicalNodeVariables(con, LD_name+"/"+LN_name)
-					LNobjects = lib61850.IedConnection_getLogicalNodeDirectory(con, ctypes.byref(error), LD_name+"/"+LN_name,lib61850.ACSI_CLASS_DATA_OBJECT)
-					if error.value != 0:#ret becomes int if connection is lost
-						lib61850.LinkedList_destroy(logicalNodes)
-						lib61850.LinkedList_destroy(deviceList)
+					ret = iec61850.IedConnection_getLogicalNodeDirectory(con, LD_name+"/"+LN_name,iec61850.ACSI_CLASS_DATA_OBJECT)
+					if isinstance(ret, int):#ret becomes int if connection is lost
+						iec61850.LinkedList_destroy(logicalNodes)
+						iec61850.LinkedList_destroy(deviceList)
 						return model
+					[LNobjects, error] = ret
 
-					LNobject = lib61850.LinkedList_getNext(LNobjects)
+					LNobject = iec61850.LinkedList_getNext(LNobjects)
 					while LNobject:
-						Do = ctypes.cast(lib61850.LinkedList_getData(LNobject),ctypes.c_char_p).value.decode("utf-8")
+						Do = iec61850.toCharP(LNobject.data)
 						tmodel[LD_name][LN_name][Do] = {}
 
 						doRef = LD_name+"/"+LN_name+"."+Do
 
-						tmodel[LD_name][LN_name][Do] = iec61850client.d_printDataDirectory(con, doRef)
+						tmodel[LD_name][LN_name][Do] = iec61850client.tprintDataDirectory(con, doRef)
 
-						LNobject = lib61850.LinkedList_getNext(LNobject)
-					lib61850.LinkedList_destroy(LNobjects)
+						LNobject = iec61850.LinkedList_getNext(LNobject)
+					iec61850.LinkedList_destroy(LNobjects)
 
-					LNdss = lib61850.IedConnection_getLogicalNodeDirectory(con, ctypes.byref(error), LD_name+"/"+LN_name, lib61850.ACSI_CLASS_DATA_SET)
-					if error.value != 0:#ret becomes int if connection is lost
-						lib61850.LinkedList_destroy(logicalNodes)
-						lib61850.LinkedList_destroy(deviceList)
-						return tmodel
+					ret = iec61850.IedConnection_getLogicalNodeDirectory(con, LD_name+"/"+LN_name, iec61850.ACSI_CLASS_DATA_SET)
+					if isinstance(ret, int):#ret becomes int if connection is lost
+						iec61850.LinkedList_destroy(logicalNodes)
+						iec61850.LinkedList_destroy(deviceList)
+						return model
+					[LNdss, error] = ret
 
-					LNds = lib61850.LinkedList_getNext(LNdss)
+					LNds = iec61850.LinkedList_getNext(LNdss)
 					while LNds:
-
-						DSname = ctypes.cast(lib61850.LinkedList_getData(LNds),ctypes.c_char_p).value.decode("utf-8")
+						isDel = None
+						DSname = iec61850.toCharP(LNds.data)
 						tmodel[LD_name][LN_name][DSname] = {}
 
 						#cannot pass the right type to isDeletable(last arg).. keeps complaining about 'bool *', and isDel = ctypes.pointer(ctypes.c_bool(False)) does not work
-						isDel = ctypes.c_bool(False)
-						dataSetMembers = lib61850.IedConnection_getDataSetDirectory(con, ctypes.byref(error), LD_name+"/"+LN_name+"."+DSname, ctypes.byref(isDel))  
-						if error.value != 0:#ret becomes int if connection is lost
-							lib61850.LinkedList_destroy(LNdss)
-							lib61850.LinkedList_destroy(logicalNodes)
-							lib61850.LinkedList_destroy(deviceList)
-							return tmodel
-
+						ret = iec61850.IedConnection_getDataSetDirectory(con, LD_name+"/"+LN_name+"."+DSname, isDel )  
+						if isinstance(ret, int):#ret becomes int if connection is lost
+							iec61850.LinkedList_destroy(LNdss)
+							iec61850.LinkedList_destroy(logicalNodes)
+							iec61850.LinkedList_destroy(deviceList)
+							return model
+						[dataSetMembers, error] = ret
 						#all DS are assumed not deletable 
-						if isDel == True:
-							logger.error("  DS: %s, not Deletable" % DSname)
-						else:
-							logger.error("  DS: %s, is Deletable" % DSname)
-						dataSetMemberRef = lib61850.LinkedList_getNext(dataSetMembers)
+						#if isDel == None:
+						#	logger.error("  DS: %s, not Deletable" % DSname)
+						#else:
+						#	logger.error("  DS: %s, is Deletable" % DSname)
+						dataSetMemberRef = iec61850.LinkedList_getNext(dataSetMembers)
 
 						i = 0
 						while dataSetMemberRef:
-							dsRef = ctypes.cast(lib61850.LinkedList_getData(dataSetMemberRef),ctypes.c_char_p).value.decode("utf-8")
+							dsRef = iec61850.toCharP(dataSetMemberRef.data)
 							DX = dsRef[:-4]
 							FC = dsRef[-3:-1]
 							tmodel[LD_name][LN_name][DSname][str(i)] = DX
-							dataSetMemberRef = lib61850.LinkedList_getNext(dataSetMemberRef)
+							dataSetMemberRef = iec61850.LinkedList_getNext(dataSetMemberRef)
 							i += 1
-						lib61850.LinkedList_destroy(dataSetMembers)
-						LNds = lib61850.LinkedList_getNext(LNds)
+						iec61850.LinkedList_destroy(dataSetMembers)
+						LNds = iec61850.LinkedList_getNext(LNds)
 
-					lib61850.LinkedList_destroy(LNdss)
-					logicalNode = lib61850.LinkedList_getNext(logicalNode)
+					iec61850.LinkedList_destroy(LNdss)
+					logicalNode = iec61850.LinkedList_getNext(logicalNode)
 
-				lib61850.LinkedList_destroy(logicalNodes)
-				device = lib61850.LinkedList_getNext(device)
+				iec61850.LinkedList_destroy(logicalNodes)
+				device = iec61850.LinkedList_getNext(device)
 
-			lib61850.LinkedList_destroy(deviceList)
+			iec61850.LinkedList_destroy(deviceList)
 		return tmodel
 
 
@@ -373,35 +397,35 @@ class iec61850client():
 	def getMMsValue(type, value, size=8):
 		#allocate mmsvalue based on type
 		if type == "visible-string":
-			return lib61850.MmsValue_newVisibleString(str(value))
+			return iec61850.MmsValue_newVisibleString(str(value))
 		if type == "boolean":
 			if value == "True":
-				return lib61850.MmsValue_newBoolean(True)
+				return iec61850.MmsValue_newBoolean(True)
 			else:
-				return lib61850.MmsValue_newBoolean(False)
+				return iec61850.MmsValue_newBoolean(False)
 		if type == "integer":
-			return lib61850.MmsValue_newInteger(int(value))
+			return iec61850.MmsValue_newInteger(int(value))
 		#untested
 		if type == "unsigned":
-			return lib61850.MmsValue_newUnsignedFromUint32(int(value))
+			return iec61850.MmsValue_newUnsignedFromUint32(int(value))
 		if type == "mms-string":
-			return lib61850.MmsValue_newMmsString(str(value))
+			return iec61850.MmsValue_newMmsString(str(value))
 		if type == "float":
-			return lib61850.MmsValue_newFloat(float(value))
+			return iec61850.MmsValue_newFloat(float(value))
 		if type ==  "binary-time":
-			return lib61850.MmsValue_newBinaryTime(int(value))
+			return iec61850.MmsValue_newBinaryTime(int(value))
 		if type == "bit-string":
-			bs = lib61850.MmsValue_newBitString(size)
-			return lib61850.MmsValue_setBitStringFromInteger(bs,int(value))
+			bs = iec61850.MmsValue_newBitString(size)
+			return iec61850.MmsValue_setBitStringFromInteger(bs,int(value))
 		if type == "generalized-time":
-			return lib61850.MmsValue_newUtcTimeByMsTime(int(value))
+			return iec61850.MmsValue_newUtcTimeByMsTime(int(value))
 		if type == "utc-time":
-			return lib61850.MmsValue_newUtcTimeByMsTime(int(value))
+			return iec61850.MmsValue_newUtcTimeByMsTime(int(value))
 		if type == "octet-string":
 			sl = len(value)
 			sptr = (ctypes.c_char * sl).from_buffer(value)
 
-			buf = lib61850.MmsValue_newOctetString(sl,127)
+			buf = iec61850.MmsValue_newOctetString(sl,127)
 			buff = ctypes.cast(int(buf), ctypes.POINTER(ctypes.c_char))
 
 			ctypes.memmove(buff, sptr, sl)
@@ -423,47 +447,45 @@ class iec61850client():
 		return None
 
 
-
 	@staticmethod
 	def writeValue(con, model, ref, value):
-		
-		fc = lib61850.FunctionalConstraint_fromString(model[ref]['FC']) 
+		fc = iec61850.FunctionalConstraint_fromString(model[ref]['FC']) 
 		mmsvalue = iec61850client.getMMsValue(model[ref]['type'],value)
 		if not mmsvalue:
 			return model,-1
 
-		error = lib61850.IedClientError()
-		lib61850.IedConnection_writeObject(con, ctypes.byref(error), ref, fc, mmsvalue)
-		lib61850.MmsValue_delete(mmsvalue)
-		if error.value == 0:
-			RetValue = lib61850.IedConnection_readObject(con, ctypes.byref(error), ref, fc)
-			if error.value != 0:#ret becomes int if connection is lost
-				return model, error.value
-			else:
+		error = iec61850.IedConnection_writeObject(con, ref, fc, mmsvalue)
+		iec61850.MmsValue_delete(mmsvalue)
+		if error == 0:
+			ret = iec61850.IedConnection_readObject(con, ref, fc)
+			if isinstance(ret, int):#ret becomes int if connection is lost
+				return model, ret
+			[RetValue, error] = ret
+			if error == 0:
 				model[ref]['value'], model[ref]['type'] = iec61850client.printValue(RetValue)
-				lib61850.MmsValue_delete(RetValue)
-		return model, error.value
+				iec61850.MmsValue_delete(RetValue)
+		return model, error
 	
 
 	@staticmethod
 	def updateValueInModel(con, model, ref):
-		err = -1
 		if model[ref]['reftype'] != 'DA': 
+			error = -1
 			submodel = iec61850client.printDataDirectory(con,ref)
 			if submodel:
 				model.update(submodel)
-				err = 0
+				error = 0
 		else:
-			fc = lib61850.FunctionalConstraint_fromString(model[ref]['FC']) 
-			error = lib61850.IedClientError()
-			RetValue = lib61850.IedConnection_readObject(con,ctypes.byref(error), ref, fc)
-			err = error.value
-			if err != 0:#ret becomes int if connection is lost
-				return model, err
-			else:
+			fc = iec61850.FunctionalConstraint_fromString(model[ref]['FC']) 
+			ret = iec61850.IedConnection_readObject(con, ref, fc)
+			if isinstance(ret, int):#ret becomes int if connection is lost
+				return model, ret
+
+			[RetValue, error] = ret
+			if error == 0:
 				model[ref]['value'], model[ref]['type'] = iec61850client.printValue(RetValue)
-				lib61850.MmsValue_delete(RetValue)
-		return model, err
+				iec61850.MmsValue_delete(RetValue)
+		return model, error
 
 
 	# retrieve an active connection to IED, and up to date datamodel, stored in 'connections'
@@ -486,7 +508,7 @@ class iec61850client():
 					return 0
 				else:
 					#we could not perform a discovery, so remove connection
-					lib61850.IedConnection_destroy(con)
+					iec61850.IedConnection_destroy(con)
 					self.connections[tupl]["con"] = None
 					return -1
 			else:
@@ -498,10 +520,9 @@ class iec61850client():
 			self.connections[tupl]["con"] = None
 			self.connections[tupl]["model"] = {}
 
-		con = lib61850.IedConnection_create()
-		error = lib61850.IedClientError()
-		lib61850.IedConnection_connect(con,ctypes.byref(error), host, port)
-		if error.value == lib61850.IED_ERROR_OK:
+		con = iec61850.IedConnection_create()
+		error = iec61850.IedConnection_connect(con, host, port)
+		if (error == iec61850.IED_ERROR_OK):
 			# store the active connection
 			self.connections[tupl]["con"] = con
 			# read the model
@@ -513,7 +534,7 @@ class iec61850client():
 			else:
 				return -1
 		else:
-			lib61850.IedConnection_destroy(con)
+			iec61850.IedConnection_destroy(con)
 			return -1
 
 
@@ -560,7 +581,7 @@ class iec61850client():
 				else:
 					logger.error("could not write '%s' to %s with error: %i" % (model[uri_ref.path[1:]], ref, error))
 					if error == 3: #we lost the connection
-						lib61850.IedConnection_destroy(con)
+						iec61850.IedConnection_destroy(con)
 						self.connections[tupl]['con'] = None
 					return error
 			else:
@@ -614,7 +635,7 @@ class iec61850client():
 				else:
 					logger.error("could not read '%s' with error: %i" % (ref, error))
 					if error == 3: #we lost the connection
-						lib61850.IedConnection_destroy(con)
+						iec61850.IedConnection_destroy(con)
 						self.connections[tupl]['con'] = None
 			else:
 				logger.error("could not find %s in model" % uri_ref.path[1:])
@@ -627,7 +648,6 @@ class iec61850client():
 	# register value for reading
 	def registerReadValue(self,ref):
 		# check if present in dataset/report, and subscribe is impossible for now due to lacking reportcallback implementation in SWIG
-		
 		# i.e. there is no valid way to pass a function-pointer for the callback in IedConnection_installReportHandler
 		# so periodic poll
 
@@ -705,7 +725,7 @@ class iec61850client():
 					else:
 						logger.error("model not updated for %s with error: %i" % (key, err))
 						if err == 3: #we lost the connection
-							lib61850.IedConnection_destroy(con)
+							iec61850.IedConnection_destroy(con)
 							self.connections[tupl]['con'] = None
 			else:
 				logger.error("model not updated for %s with error: %i" % (key, err))
@@ -735,8 +755,6 @@ class iec61850client():
 	def getRegisteredIEDs(self):
 		return self.connections
 
-def cb(a,b):
-	print("cb called!")
 
 if __name__=="__main__":
 	logging.basicConfig(format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
@@ -751,71 +769,34 @@ if __name__=="__main__":
 	if len(sys.argv)>2:
 		port = sys.argv[2]
 
-
-	error = lib61850.IedClientError()
-	con = lib61850.IedConnection_create()
-	lib61850.IedConnection_connect(con,ctypes.byref(error), hostname, tcpPort)
-	if (error.value == lib61850.IED_ERROR_OK):
-
-		model = iec61850client.discovery(con)
-		
+	con = iec61850.IedConnection_create()
+	error = iec61850.IedConnection_connect(con, hostname, tcpPort)
+	if (error == iec61850.IED_ERROR_OK):
+		model = iec61850client.tdiscovery(con)
 		for key in model:
-			logger.info("[" + model[key]['FC'] + "] " + model[key]['type'] + "\t" + key + "\t" + model[key]['value'])
-
-		
+			for key2 in model[key]:
+				for key3 in model[key][key2]:
+					for key4 in model[key][key2][key3]:
+						logger.info(key + "/" + key2 + "." + key3 + "." + key4 + ":\t" + str(model[key][key2][key3][key4]))
+		iec61850.IedConnection_close(con)
+		exit()
 		#for key in model:
 		#	logger.error("[" + model[key]['FC'] + "] " + model[key]['type'] + "\t" + key + "\t" + model[key]['value'])
-		#        /* Read RCB values */
-		
-		rcb = lib61850.IedConnection_getRCBValues(con,ctypes.byref(error), "simpleIOGenericIO/LLN0.RP.EventsRCB01", None)
-
-		if error.value != lib61850.IED_ERROR_OK:
-			print("getRCBValues service error!")
-			exit()
-
-		#/* prepare the parameters of the RCP */
-		lib61850.ClientReportControlBlock_setResv(rcb, True)
-		lib61850.ClientReportControlBlock_setTrgOps(rcb, lib61850.TRG_OPT_DATA_CHANGED | lib61850.TRG_OPT_QUALITY_CHANGED | lib61850.TRG_OPT_GI)
-		lib61850.ClientReportControlBlock_setDataSetReference(rcb, "simpleIOGenericIO/LLN0$Events")
-		lib61850.ClientReportControlBlock_setRptEna(rcb, True)
-		lib61850.ClientReportControlBlock_setGI(rcb, True)
-		rptid = lib61850.ClientReportControlBlock_getRptId(rcb)
-
-		cbRef = lib61850.ReportCallbackFunction(cb)
-		lib61850.IedConnection_installReportHandler(con,"simpleIOGenericIO/LLN0.RP.EventsRCB",rptid,cbRef,None)
-		print("cb installed")
-		lib61850.IedConnection_setRCBValues(con,ctypes.byref(error), rcb, lib61850.RCB_ELEMENT_RESV | lib61850.RCB_ELEMENT_DATSET | lib61850.RCB_ELEMENT_TRG_OPS | lib61850.RCB_ELEMENT_RPT_ENA | lib61850.RCB_ELEMENT_GI, True)
-		print("setRCB called")
-		if error.value != lib61850.IED_ERROR_OK:
-			print("setRCBValues service error!")
-
-		time.sleep(1)
-
-		#/* Trigger GI Report */
-		lib61850.ClientReportControlBlock_setGI(rcb, True)
-		lib61850.IedConnection_setRCBValues(con,ctypes.byref(error), rcb, lib61850.RCB_ELEMENT_GI, True)
-		print("gi send, waiting 5 sec.")
-		if error.value != lib61850.IED_ERROR_OK:
-			print("Error triggering a GI report (code: %i)"% err)
-		
-		time.sleep(5)
-
-		lib61850.IedConnection_close(con)
 	else:
 		logger.error("Failed to connect to %s:%i\n"%(hostname, tcpPort))
-	lib61850.IedConnection_destroy(con)
+	iec61850.IedConnection_destroy(con)
 
 	cl = iec61850client()
 
-	err = cl.registerReadValue("iec61850://127.0.0.1:102/simpleIOGenericIO/GGIO1.AnIn1.mag.f")
-	err = cl.registerReadValue("iec61850://127.0.0.1:102/simpleIOGenericIO/GGIO1.AnIn2.mag.f")
-	err = cl.registerReadValue("iec61850://127.0.0.1:102/simpleIOGenericIO/GGIO1.AnIn3.mag.f")
-	err = cl.registerReadValue("iec61850://127.0.0.1:102/simpleIOGenericIO/GGIO1.AnIn4.mag.f")
+	err = cl.registerReadValue("iec61850://127.0.0.1:102/TEMPLATEMUnn/TVTR1.Vol.instMag.i")
+	err = cl.registerReadValue("iec61850://127.0.0.1:102/TEMPLATEMUnn/TVTR2.Vol.instMag.i")
+	err = cl.registerReadValue("iec61850://127.0.0.1:102/TEMPLATEMUnn/TVTR3.Vol.instMag.i")
+	err = cl.registerReadValue("iec61850://127.0.0.1:102/TEMPLATEMUnn/TVTR4.Vol.instMag.i")
 
-	err = cl.registerWriteValue("iec61850://127.0.0.1/simpleIOGenericIO/GGIO1.SPCSO4.Oper.ctlVal",True)
+	err = cl.registerWriteValue("iec61850://127.0.0.1/TEMPLATEMUnn/LLN0.MSVCB01.SvEna",True)
 	#while True:
 	cl.poll()
-	cl.registerWriteValue("iec61850://127.0.0.1:102/simpleIOGenericIO/GGIO1.SPCSO4.Oper.ctlVal",False)
+	cl.registerWriteValue("iec61850://127.0.0.1:102/TEMPLATEMUnn/LLN0.MSVCB01.SvEna",False)
 	time.sleep(0.719)
 	cl.poll()
-	cl.registerWriteValue("iec61850://127.0.0.1:102/simpleIOGenericIO/GGIO1.SPCSO4.Oper.ctlVal",True)
+	cl.registerWriteValue("iec61850://127.0.0.1:102/TEMPLATEMUnn/LLN0.MSVCB01.SvEna",True)

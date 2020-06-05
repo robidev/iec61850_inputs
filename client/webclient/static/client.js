@@ -268,33 +268,40 @@ function writeValueModel(event){
   }
   //read element
   socket.emit("read_value", {id : refid }, function(data, err){
+    //read return
     if(err != 0){
       alert("could not read element:"+refid+" error:"+err);
       return;
     }
-   //based on element type, create dialog (type: int, float, text, enum, bool, bitstring)
-  //if ref endswith .Oper/.SBO/.SBOw,.Cancel, provide dialog based on ctlmodel (drop-down for forcing a different model?)
-  content = '<form>';   
-  content += '<div style="" ><b>Element: </b></div><br><div class="controlInput"><i>' + ref + '</i></div><br>'; //+ " : " + JSON.stringify(data);
-  content += '<div style=""><label for="inp"><b>Value: ( type : '+ data['type'] +')</b></label></div><br>';
-  content += '<input  class="controlInput" id="inp" type="text" value="'+data['value']+'"/><br>';
-  content += '<br><button class="controlBtn" type="submit">Write</button><br>';
-  content += '</form>';
-  //$("#includedContent").load("b.html");
+    //based on element type, create dialog (type: int, float, text, enum, bool, bitstring)
+    //if ref endswith .Oper/.SBO/.SBOw,.Cancel, provide dialog based on ctlmodel (drop-down for forcing a different model?)
+    content = '<form>';   
+    content += '<div style="" ><b>Element: </b></div><br><div class="controlInput"><i>' + ref + '</i></div><br>'; //+ " : " + JSON.stringify(data);
+    content += '<div style=""><label for="inp"><b>Value: ( type : '+ data['type'] +')</b></label></div><br>';
+    content += '<input  class="controlInput" id="inp" type="text" value="'+data['value']+'"/><br>';
+    content += '<br><button class="controlBtn" type="submit">Write</button><br>';
+    content += '</form>';
+    //$("#includedContent").load("b.html");
     var dialog = new top.PopLayer({ 
       "title": "Write Value", 
       "content": content
     });
+
     dialog.myPop[0].addEventListener('submit', (event) => {
       event.preventDefault();
       // check input values
+      var val = event.target['inp'];
       // submit write request
-      // show result
-      dialog.destroy();
+      socket.emit('write_value', { id : refid, value : val.value }, function(err){
+        if(err==0){
+          dialog.destroy();
+        }else{
+          // show error
+          alert("could not write value with error code:"+err);
+        }
+      });
     });
   });
-
-
 }
 
 function simulationPoint(event){

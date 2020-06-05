@@ -62,12 +62,12 @@ def register_datapoint(data):
 def write_value(data):
   global client
   logger.debug("write value:" + str(data['value']) + ", element:" + str(data['id']) )
-  client.registerWriteValue(str(data['id']),str(data['value']))
+  return client.registerWriteValue(str(data['id']),str(data['value']))
 
 @socketio.on('write_position', namespace='')
 def write_position(data):
   logger.debug("write position:" + str(data['id'])  )
-  client.registerWriteValue(str(data['id']),data['value'])
+  return client.registerWriteValue(str(data['id']),data['value'])
 
 #synchronous call
 @socketio.on('read_value', namespace='')
