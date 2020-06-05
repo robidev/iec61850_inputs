@@ -5,6 +5,7 @@ import ctypes
 import time
 import iec61850
 import logging
+import pprint
 
 from urllib.parse import urlparse
 
@@ -116,6 +117,49 @@ class iec61850client():
 
 			iec61850.LinkedList_destroy(dataAttributes)
 		return model
+
+	@staticmethod
+	def tprintDataDirectory(con, doRef):
+		tmodel = {}
+
+		ret = iec61850.IedConnection_getDataDirectoryFC(con, doRef)
+		if isinstance(ret, int):#ret becomes int if connection is lost
+			return tmodel
+		[dataAttributes, error] = ret
+		if error != 0:
+			logger.error("could not get logical device list, error:%i" % error)
+
+		if dataAttributes != None:
+			dataAttribute = iec61850.LinkedList_getNext(dataAttributes)
+
+			while dataAttribute != None:
+				daName = iec61850.toCharP(dataAttribute.data)
+				daRef = doRef+"."+daName[:-4]
+				fcName = daName[-3:-1]
+
+				submodel = iec61850client.tprintDataDirectory(con,daRef)
+				if submodel:
+					tmodel[daName[:-4]] = submodel
+					
+				else:
+					tmodel[daName[:-4]] = {}
+					tmodel[daName[:-4]]['reftype'] = "DA"
+					tmodel[daName[:-4]]['FC'] = fcName
+					tmodel[daName[:-4]]['value'] = "UNKNOWN"
+					#read DA
+					fc = iec61850.FunctionalConstraint_fromString(fcName) 
+					ret = iec61850.IedConnection_readObject(con, daRef, fc)
+					if isinstance(ret, int):#ret becomes int if connection is lost
+						return tmodel
+					[value, error] = ret
+					if error == 0:
+						tmodel[daName[:-4]]['value'], tmodel[daName[:-4]]['type'] = iec61850client.printValue(value)
+						iec61850.MmsValue_delete(value)
+
+				dataAttribute = iec61850.LinkedList_getNext(dataAttribute)
+
+			iec61850.LinkedList_destroy(dataAttributes)
+		return tmodel
 
 
 	@staticmethod
@@ -240,6 +284,105 @@ class iec61850client():
 
 			iec61850.LinkedList_destroy(deviceList)
 		return model
+
+
+	@staticmethod
+	def tdiscovery(con):
+		tmodel = {}
+
+		ret = iec61850.IedConnection_getLogicalDeviceList(con)
+		if isinstance(ret, int):#ret becomes int if connection is lost
+			return model
+		[deviceList, error] = ret
+
+		if error != 0:
+			logger.error("could not get logical device list, error:%i" % error)
+
+		if deviceList != None:
+			device = iec61850.LinkedList_getNext(deviceList)
+			while device:
+				LD_name=iec61850.toCharP(device.data)
+				tmodel[LD_name] = {}
+
+				ret = iec61850.IedConnection_getLogicalDeviceDirectory(con, LD_name)
+				if isinstance(ret, int):#ret becomes int if connection is lost
+					iec61850.LinkedList_destroy(deviceList)
+					return model
+					
+				[logicalNodes, error] = ret
+
+				logicalNode = iec61850.LinkedList_getNext(logicalNodes)
+				while logicalNode:
+					LN_name=iec61850.toCharP(logicalNode.data)
+					tmodel[LD_name][LN_name] = {}
+
+					#[LNobjects, error] = iec61850.IedConnection_getLogicalNodeVariables(con, LD_name+"/"+LN_name)
+					ret = iec61850.IedConnection_getLogicalNodeDirectory(con, LD_name+"/"+LN_name,iec61850.ACSI_CLASS_DATA_OBJECT)
+					if isinstance(ret, int):#ret becomes int if connection is lost
+						iec61850.LinkedList_destroy(logicalNodes)
+						iec61850.LinkedList_destroy(deviceList)
+						return model
+					[LNobjects, error] = ret
+
+					LNobject = iec61850.LinkedList_getNext(LNobjects)
+					while LNobject:
+						Do = iec61850.toCharP(LNobject.data)
+						tmodel[LD_name][LN_name][Do] = {}
+
+						doRef = LD_name+"/"+LN_name+"."+Do
+
+						tmodel[LD_name][LN_name][Do] = iec61850client.tprintDataDirectory(con, doRef)
+
+						LNobject = iec61850.LinkedList_getNext(LNobject)
+					iec61850.LinkedList_destroy(LNobjects)
+
+					ret = iec61850.IedConnection_getLogicalNodeDirectory(con, LD_name+"/"+LN_name, iec61850.ACSI_CLASS_DATA_SET)
+					if isinstance(ret, int):#ret becomes int if connection is lost
+						iec61850.LinkedList_destroy(logicalNodes)
+						iec61850.LinkedList_destroy(deviceList)
+						return model
+					[LNdss, error] = ret
+
+					LNds = iec61850.LinkedList_getNext(LNdss)
+					while LNds:
+						isDel = None
+						DSname = iec61850.toCharP(LNds.data)
+						tmodel[LD_name][LN_name][DSname] = {}
+
+						#cannot pass the right type to isDeletable(last arg).. keeps complaining about 'bool *', and isDel = ctypes.pointer(ctypes.c_bool(False)) does not work
+						ret = iec61850.IedConnection_getDataSetDirectory(con, LD_name+"/"+LN_name+"."+DSname, isDel )  
+						if isinstance(ret, int):#ret becomes int if connection is lost
+							iec61850.LinkedList_destroy(LNdss)
+							iec61850.LinkedList_destroy(logicalNodes)
+							iec61850.LinkedList_destroy(deviceList)
+							return model
+						[dataSetMembers, error] = ret
+						#all DS are assumed not deletable 
+						#if isDel == None:
+						#	logger.error("  DS: %s, not Deletable" % DSname)
+						#else:
+						#	logger.error("  DS: %s, is Deletable" % DSname)
+						dataSetMemberRef = iec61850.LinkedList_getNext(dataSetMembers)
+
+						i = 0
+						while dataSetMemberRef:
+							dsRef = iec61850.toCharP(dataSetMemberRef.data)
+							DX = dsRef[:-4]
+							FC = dsRef[-3:-1]
+							tmodel[LD_name][LN_name][DSname][str(i)] = DX
+							dataSetMemberRef = iec61850.LinkedList_getNext(dataSetMemberRef)
+							i += 1
+						iec61850.LinkedList_destroy(dataSetMembers)
+						LNds = iec61850.LinkedList_getNext(LNds)
+
+					iec61850.LinkedList_destroy(LNdss)
+					logicalNode = iec61850.LinkedList_getNext(logicalNode)
+
+				iec61850.LinkedList_destroy(logicalNodes)
+				device = iec61850.LinkedList_getNext(device)
+
+			iec61850.LinkedList_destroy(deviceList)
+		return tmodel
 
 
 	@staticmethod
@@ -579,10 +722,14 @@ if __name__=="__main__":
 	con = iec61850.IedConnection_create()
 	error = iec61850.IedConnection_connect(con, hostname, tcpPort)
 	if (error == iec61850.IED_ERROR_OK):
-		model = iec61850client.discovery(con)
+		model = iec61850client.tdiscovery(con)
 		for key in model:
-			logger.info("[" + model[key]['FC'] + "] " + model[key]['type'] + "\t" + key + "\t" + model[key]['value'])
+			for key2 in model[key]:
+				for key3 in model[key][key2]:
+					for key4 in model[key][key2][key3]:
+						logger.info(key + "/" + key2 + "." + key3 + "." + key4 + ":\t" + str(model[key][key2][key3][key4]))
 		iec61850.IedConnection_close(con)
+		exit()
 		#for key in model:
 		#	logger.error("[" + model[key]['FC'] + "] " + model[key]['type'] + "\t" + key + "\t" + model[key]['value'])
 	else:
