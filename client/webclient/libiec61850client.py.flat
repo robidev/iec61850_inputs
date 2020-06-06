@@ -75,6 +75,48 @@ class iec61850client():
 
 	@staticmethod
 	def printDataDirectory(con, doRef):
+		model = {}
+		error = lib61850.IedClientError()
+		dataAttributes = lib61850.IedConnection_getDataDirectoryFC(con, ctypes.byref(error), doRef)
+
+		if error.value != 0:
+			logger.error("could not get logical device list, error:%i" % error.value)
+
+		if dataAttributes:
+			dataAttribute = lib61850.LinkedList_getNext(dataAttributes)
+
+			while dataAttribute:
+				daName = ctypes.cast(lib61850.LinkedList_getData(dataAttribute),ctypes.c_char_p).value.decode("utf-8")
+				daRef = doRef+"."+daName[:-4]
+				fcName = daName[-3:-1]
+
+				model[daRef] = {}
+				model[daRef]['reftype'] = "DA"
+				model[daRef]['FC'] = fcName
+
+				submodel = iec61850client.printDataDirectory(con,daRef)
+				if submodel:
+					model[daRef]['type'] = "structure"
+					model[daRef]['value'] = "{}"
+					model.update(submodel)
+					
+				else:
+					#read DA
+					fc = lib61850.FunctionalConstraint_fromString(fcName) 
+					value = lib61850.IedConnection_readObject(con, ctypes.byref(error), daRef, fc)
+
+					if error.value == 0:
+						model[daRef]['value'], model[daRef]['type'] = iec61850client.printValue(value)
+						lib61850.MmsValue_delete(value)
+
+				dataAttribute = lib61850.LinkedList_getNext(dataAttribute)
+
+			lib61850.LinkedList_destroy(dataAttributes)
+		return model
+
+
+	@staticmethod
+	def d_printDataDirectory(con, doRef):
 		tmodel = {}
 		if doRef.find("/") == -1:
 			logger.error("invalid datadirecory")
@@ -94,7 +136,7 @@ class iec61850client():
 				daRef = doRef+"."+daName[:-4]
 				fcName = daName[-3:-1]
 
-				submodel = iec61850client.printDataDirectory(con,daRef)
+				submodel = iec61850client.d_printDataDirectory(con,daRef)
 				if submodel:
 					tmodel[daName[:-4]] = submodel
 					
@@ -119,6 +161,125 @@ class iec61850client():
 
 	@staticmethod
 	def discovery(con):
+		model = {}
+		error = lib61850.IedClientError()
+		deviceList = lib61850.IedConnection_getLogicalDeviceList(con, ctypes.byref(error))
+
+		if error.value != 0:
+			logger.error("could not get logical device list, error:%i" % error)
+
+		if deviceList:
+			device = lib61850.LinkedList_getNext(deviceList)
+			while device:
+				LD_name=ctypes.cast(lib61850.LinkedList_getData(device),ctypes.c_char_p).value.decode("utf-8")
+				#logger.error("LD: %s" % LD_name)
+				model[LD_name] = {}
+				model[LD_name]['reftype'] = "LD"
+				model[LD_name]['type'] = "structure"
+				model[LD_name]['FC'] = "**"
+				model[LD_name]['value'] = "{}"
+				
+				logicalNodes = lib61850.IedConnection_getLogicalDeviceDirectory(con, ctypes.byref(error), LD_name)
+				if error.value != 0:#ret becomes int if connection is lost
+					lib61850.LinkedList_destroy(deviceList)
+					return model
+
+				logicalNode = lib61850.LinkedList_getNext(logicalNodes)
+				while logicalNode:
+					LN_name=ctypes.cast(lib61850.LinkedList_getData(logicalNode),ctypes.c_char_p).value.decode("utf-8")
+					#logger.error(" LN: %s" % LN_name)
+					model[LD_name+"/"+LN_name] = {}
+					model[LD_name+"/"+LN_name]['reftype'] = "LN"
+					model[LD_name+"/"+LN_name]['type'] = "structure"
+					model[LD_name+"/"+LN_name]['FC'] = "**"
+					model[LD_name+"/"+LN_name]['value'] = "{}"
+
+					#[LNobjects, error] = lib61850.IedConnection_getLogicalNodeVariables(con, LD_name+"/"+LN_name)
+					LNobjects = lib61850.IedConnection_getLogicalNodeDirectory(con, ctypes.byref(error), LD_name+"/"+LN_name,lib61850.ACSI_CLASS_DATA_OBJECT)
+					if error.value != 0:#ret becomes int if connection is lost
+						lib61850.LinkedList_destroy(logicalNodes)
+						lib61850.LinkedList_destroy(deviceList)
+						return model
+
+					LNobject = lib61850.LinkedList_getNext(LNobjects)
+					while LNobject:
+						Do = ctypes.cast(lib61850.LinkedList_getData(LNobject),ctypes.c_char_p).value.decode("utf-8")
+						#logger.error("  DO: %s" % Do)
+						model[LD_name+"/"+LN_name+"."+Do] = {}
+						model[LD_name+"/"+LN_name+"."+Do]['reftype'] = "DO"
+						model[LD_name+"/"+LN_name+"."+Do]['type'] = "structure"
+						model[LD_name+"/"+LN_name+"."+Do]['FC'] = "**"
+						model[LD_name+"/"+LN_name+"."+Do]['value'] = "{}"
+
+						doRef = LD_name+"/"+LN_name+"."+Do
+						
+						submodel = iec61850client.printDataDirectory(con, doRef)
+						model.update(submodel)
+
+						LNobject = lib61850.LinkedList_getNext(LNobject)
+					lib61850.LinkedList_destroy(LNobjects)
+
+					LNdss = lib61850.IedConnection_getLogicalNodeDirectory(con, ctypes.byref(error), LD_name+"/"+LN_name, lib61850.ACSI_CLASS_DATA_SET)
+					if error.value != 0:#ret becomes int if connection is lost
+						lib61850.LinkedList_destroy(logicalNodes)
+						lib61850.LinkedList_destroy(deviceList)
+						return model
+
+					LNds = lib61850.LinkedList_getNext(LNdss)
+					while LNds:
+
+						DSname = ctypes.cast(lib61850.LinkedList_getData(LNds),ctypes.c_char_p).value.decode("utf-8")
+						model[LD_name+"/"+LN_name+"$"+DSname] = {}
+						model[LD_name+"/"+LN_name+"$"+DSname]['reftype'] = "DS"
+						model[LD_name+"/"+LN_name+"$"+DSname]['type'] = "structure"
+						model[LD_name+"/"+LN_name+"$"+DSname]['FC'] = "**"
+						model[LD_name+"/"+LN_name+"$"+DSname]['value'] = "{}"
+
+						#cannot pass the right type to isDeletable(last arg).. keeps complaining about 'bool *', and isDel = ctypes.pointer(ctypes.c_bool(False)) does not work
+						isDel = ctypes.c_bool(False)
+						dataSetMembers = lib61850.IedConnection_getDataSetDirectory(con, ctypes.byref(error), LD_name+"/"+LN_name+"."+DSname, ctypes.byref(isDel))  
+						if error.value != 0:#ret becomes int if connection is lost
+							lib61850.LinkedList_destroy(LNdss)
+							lib61850.LinkedList_destroy(logicalNodes)
+							lib61850.LinkedList_destroy(deviceList)
+							return model
+	
+						#all DS are assumed not deletable 
+						if isDel == True:
+							logger.error("  DS: %s, is Deletable" % DSname)
+						else:
+							logger.error("  DS: %s, is not Deletable" % DSname)
+
+						dataSetMemberRef = lib61850.LinkedList_getNext(dataSetMembers)
+
+						i = 0
+						while dataSetMemberRef:
+							dsRef = ctypes.cast(lib61850.LinkedList_getData(dataSetMemberRef),ctypes.c_char_p).value.decode("utf-8")
+							DX = dsRef[:-4]
+							FC = dsRef[-3:-1]
+							#logger.error("      %s" % DX)
+							model[LD_name+"/"+LN_name+"$"+DSname+"^"+DX] = {}
+							model[LD_name+"/"+LN_name+"$"+DSname+"^"+DX]['reftype'] = "DX"
+							model[LD_name+"/"+LN_name+"$"+DSname+"^"+DX]['FC'] = FC
+							model[LD_name+"/"+LN_name+"$"+DSname+"^"+DX]['type'] = "reference"
+							model[LD_name+"/"+LN_name+"$"+DSname+"^"+DX]['value'] = str(i)
+							dataSetMemberRef = lib61850.LinkedList_getNext(dataSetMemberRef)
+							i += 1
+						lib61850.LinkedList_destroy(dataSetMembers)
+						LNds = lib61850.LinkedList_getNext(LNds)
+
+					lib61850.LinkedList_destroy(LNdss)
+					logicalNode = lib61850.LinkedList_getNext(logicalNode)
+
+				lib61850.LinkedList_destroy(logicalNodes)
+				device = lib61850.LinkedList_getNext(device)
+
+			lib61850.LinkedList_destroy(deviceList)
+		return model
+
+
+	@staticmethod
+	def d_discovery(con):
 		tmodel = {}
 
 		error = lib61850.IedClientError()
@@ -157,7 +318,7 @@ class iec61850client():
 
 						doRef = LD_name+"/"+LN_name+"."+Do
 
-						tmodel[LD_name][LN_name][Do] = iec61850client.printDataDirectory(con, doRef)
+						tmodel[LD_name][LN_name][Do] = iec61850client.d_printDataDirectory(con, doRef)
 
 						LNobject = lib61850.LinkedList_getNext(LNobject)
 					lib61850.LinkedList_destroy(LNobjects)
@@ -271,6 +432,26 @@ class iec61850client():
 
 	@staticmethod
 	def writeValue(con, model, ref, value):
+		fc = lib61850.FunctionalConstraint_fromString(model[ref]['FC']) 
+		mmsvalue = iec61850client.getMMsValue(model[ref]['type'],value)
+		if not mmsvalue:
+			return model,-1
+
+		error = lib61850.IedClientError()
+		lib61850.IedConnection_writeObject(con, ctypes.byref(error), ref, fc, mmsvalue)
+		lib61850.MmsValue_delete(mmsvalue)
+		if error.value == 0:
+			RetValue = lib61850.IedConnection_readObject(con, ctypes.byref(error), ref, fc)
+			if error.value != 0:#ret becomes int if connection is lost
+				return model, error.value
+			else:
+				model[ref]['value'], model[ref]['type'] = iec61850client.printValue(RetValue)
+				lib61850.MmsValue_delete(RetValue)
+		return model, error.value
+
+
+	@staticmethod
+	def d_writeValue(con, model, ref, value):
 		submodel, path = iec61850client.parseRef(model,ref)
 
 		if not submodel:
@@ -289,17 +470,37 @@ class iec61850client():
 		lib61850.IedConnection_writeObject(con, ctypes.byref(error), ref, fc, mmsvalue)
 		lib61850.MmsValue_delete(mmsvalue)
 		if error.value == 0:
-			model, err = iec61850client.updateValueInModel(con, model, ref)
+			model, err = iec61850client.d_updateValueInModel(con, model, ref)
 			return model, err
 		return model, error.value
-
+	
 
 	@staticmethod
 	def updateValueInModel(con, model, ref):
 		err = -1
+		if model[ref]['reftype'] != 'DA': 
+			submodel = iec61850client.printDataDirectory(con,ref)
+			if submodel:
+				model.update(submodel)
+				err = 0
+		else:
+			fc = lib61850.FunctionalConstraint_fromString(model[ref]['FC']) 
+			error = lib61850.IedClientError()
+			RetValue = lib61850.IedConnection_readObject(con,ctypes.byref(error), ref, fc)
+			err = error.value
+			if err != 0:#ret becomes int if connection is lost
+				return model, err
+			else:
+				model[ref]['value'], model[ref]['type'] = iec61850client.printValue(RetValue)
+				lib61850.MmsValue_delete(RetValue)
+		return model, err
+
+
+	@staticmethod
+	def d_updateValueInModel(con, model, ref):
+		err = -1
 		val, path = iec61850client.parseRef(model,ref)
 
-		# recursive subfunction
 		def update_recurse(con, submodel, path):
 			err = -1
 			if len(path) < 1:
@@ -321,7 +522,7 @@ class iec61850client():
 						err = -1
 
 				else:
-					submodel[ path[0] ] = iec61850client.printDataDirectory(con, ref)
+					submodel[ path[0] ] = iec61850client.d_printDataDirectory(con, ref)
 					if submodel[ path[0] ]:# check if value or empty returned
 						err = 0
 					else:
@@ -420,12 +621,14 @@ class iec61850client():
 
 		tupl = host + ":" + str(port)
 		if tupl in self.connections and self.connections[tupl]["con"] != None:
-			if not self.connections[tupl]["model"]:
+			if not self.connections[tupl]["model"] or not self.connections[tupl]["d_model"]:
 				con = self.connections[tupl]["con"]
 				model = iec61850client.discovery(con)
-				if model: #if model is not empty
+				d_model = iec61850client.d_discovery(con)
+				if model and d_model: #if model is not empty
 					# store the model
 					self.connections[tupl]["model"] = model
+					self.connections[tupl]["d_model"] = d_model
 					return 0
 				else:
 					#we could not perform a discovery, so remove connection
@@ -440,6 +643,7 @@ class iec61850client():
 			self.connections[tupl] = {}
 			self.connections[tupl]["con"] = None
 			self.connections[tupl]["model"] = {}
+			self.connections[tupl]["d_model"] = {}
 
 		con = lib61850.IedConnection_create()
 		error = lib61850.IedClientError()
@@ -449,9 +653,11 @@ class iec61850client():
 			self.connections[tupl]["con"] = con
 			# read the model
 			model = iec61850client.discovery(con)
-			if model: #if model is not empty
+			d_model = iec61850client.d_discovery(con)
+			if model and d_model: #if model is not empty
 				# store the model
 				self.connections[tupl]["model"] = model
+				self.connections[tupl]["d_model"] = d_model
 				return 0
 			else:
 				return -1
@@ -490,9 +696,62 @@ class iec61850client():
 				logger.error("no valid model")
 				return -1
 
-			model, error = iec61850client.writeValue(con, model, uri_ref.path[1:], value)
+			if uri_ref.path[1:] in model:
+				model, error = iec61850client.writeValue(con, model, uri_ref.path[1:], value)
+				if error == 0:
+					self.connections[tupl]['model'] = model
+					logger.debug("Value '%s' written to %s" % (model[uri_ref.path[1:]]['value'], ref) )
+
+					if self.readvaluecallback != None:
+						self.readvaluecallback(ref, model[uri_ref.path[1:]])
+
+					return 0
+				else:
+					logger.error("could not write '%s' to %s with error: %i" % (model[uri_ref.path[1:]], ref, error))
+					if error == 3: #we lost the connection
+						lib61850.IedConnection_destroy(con)
+						self.connections[tupl]['con'] = None
+					return error
+			else:
+				logger.error("could not find %s in model" % uri_ref.path[1:])
+		else:
+			logger.error("no connection to IED: %s:%s" % (uri_ref.hostname, port) )
+		return -1
+
+
+	# write a value to an active connection
+	def d_registerWriteValue(self, ref, value):
+		uri_ref = urlparse(ref)
+		port = uri_ref.port
+		if port == "" or port == None:
+			port = 102
+
+		if uri_ref.scheme != "iec61850":
+			logger.error("incorrect scheme, only iec61860 is supported, not %s" % uri_ref.scheme)
+			return -1
+
+		if uri_ref.hostname == None:
+			logger.error("missing hostname: %s" % ref)
+			return -1
+
+		tupl = uri_ref.hostname + ":" + str(port)
+
+		#check if connection is active, or reconnect
+		err = self.getIED(uri_ref.hostname, port)
+		if err == 0:
+			con = self.connections[tupl]['con']
+			if not con:
+				logger.error("no valid connection")
+				return -1			
+
+			model = self.connections[tupl]['d_model']
+			if not model:
+				logger.error("no valid model")
+				return -1
+
+			model, error = iec61850client.d_writeValue(con, model, uri_ref.path[1:], value)
 			if error == 0:
-				self.connections[tupl]['model'] = model
+				self.connections[tupl]['d_model'] = model
 				submodel, path = iec61850client.parseRef(model,uri_ref.path[1:]) #get value from model via ref
 				logger.debug("Value '%s' written to %s" % (str(submodel), ref) )
 
@@ -542,11 +801,64 @@ class iec61850client():
 				logger.error("no valid model")
 				return {}, -1
 
-			submodel, path = iec61850client.parseRef(model, uri_ref.path[1:])
-			if submodel: #ref exists in model
+			if uri_ref.path[1:] in model:
 				model, error = iec61850client.updateValueInModel(con, model, uri_ref.path[1:])
 				if error == 0:
 					self.connections[tupl]['model'] = model
+					logger.debug("Value '%s' read from %s" % (str(model[uri_ref.path[1:]]), ref) )
+
+					if self.readvaluecallback != None:
+						self.readvaluecallback(ref, model[uri_ref.path[1:]])
+
+					return model[uri_ref.path[1:]], 0 #TODO: also return children, if its a struct
+				else:
+					logger.error("could not read '%s' with error: %i" % (ref, error))
+					if error == 3: #we lost the connection
+						lib61850.IedConnection_destroy(con)
+						self.connections[tupl]['con'] = None
+			else:
+				logger.error("could not find %s in model" % uri_ref.path[1:])
+		else:
+			logger.error("no connection to IED: %s:%s" % (uri_ref.hostname, port) )
+		return {}, -1
+
+
+	# read a value from an active connection
+	def d_ReadValue(self, ref):
+		uri_ref = urlparse(ref)
+		port = uri_ref.port
+		if port == "" or port == None:
+			port = 102
+
+		if uri_ref.scheme != "iec61850":
+			logger.error("incorrect scheme, only iec61860 is supported, not %s" % uri_ref.scheme)
+			return {}, -1
+
+		if uri_ref.hostname == None:
+			logger.error("missing hostname: %s" % ref)
+			return {}, -1
+
+		tupl = uri_ref.hostname + ":" + str(port)
+
+
+		#check if connection is active, or reconnect
+		err = self.getIED(uri_ref.hostname, port)
+		if err == 0:
+			con = self.connections[tupl]['con']
+			if not con:
+				logger.error("no valid connection")
+				return {}, -1			
+
+			model = self.connections[tupl]['d_model']
+			if not model:
+				logger.error("no valid model")
+				return {}, -1
+
+			submodel, path = iec61850client.parseRef(model, uri_ref.path[1:])
+			if submodel: #ref exists in model
+				model, error = iec61850client.d_updateValueInModel(con, model, uri_ref.path[1:])
+				if error == 0:
+					self.connections[tupl]['d_model'] = model
 					submodel, path = iec61850client.parseRef(model, uri_ref.path[1:])
 					logger.debug("Value '%s' read from %s" % (str(submodel), ref) )
 
@@ -564,6 +876,7 @@ class iec61850client():
 		else:
 			logger.error("no connection to IED: %s:%s" % (uri_ref.hostname, port) )
 		return {}, -1
+
 
 
 	# register value for reading
@@ -599,6 +912,50 @@ class iec61850client():
 		if err == 0:
 			#only add an IED if it could be connected to
 			model = self.connections[tupl]['model']
+			#check if the ref exists in the model
+			if uri_ref.path[1:] in model:
+				self.polling[ref] = 1
+				return 0
+			else:
+				logger.error("could not find %s in model" % uri_ref.path[1:])
+		else:
+			logger.error("no connection to IED: %s:%s, ref:%s not registered" % (uri_ref.hostname, port, ref) )
+		return -1
+
+
+	# register value for reading
+	def d_registerReadValue(self,ref):
+		# check if present in dataset/report, and subscribe is impossible for now due to lacking reportcallback implementation in SWIG
+		
+		# i.e. there is no valid way to pass a function-pointer for the callback in IedConnection_installReportHandler
+		# so periodic poll
+
+		#if we allready have it in the list
+		if ref in self.polling:
+			logger.debug("reference: %s allready registered" % ref)
+			return 0
+
+		uri_ref = urlparse(ref)
+		port = uri_ref.port
+		if port == "" or port == None:
+			port = 102
+
+
+		if uri_ref.scheme != "iec61850":
+			logger.error("incorrect scheme, only iec61860 is supported, not %s" % uri_ref.scheme)
+			return -1
+
+		if uri_ref.hostname == None:
+			logger.error("missing hostname: %s" % ref)
+			return -1
+
+		tupl = uri_ref.hostname + ":" + str(port)
+
+		#check if connection is active, or reconnect
+		err = self.getIED(uri_ref.hostname, port)
+		if err == 0:
+			#only add an IED if it could be connected to
+			model = self.connections[tupl]['d_model']
 			#check if the ref exists in the model
 			submodel, path = iec61850client.parseRef(model, uri_ref.path[1:])
 			if submodel:
@@ -640,6 +997,49 @@ class iec61850client():
 					model, err = iec61850client.updateValueInModel(con, model, uri_ref.path[1:])
 					if err == 0:
 						self.connections[tupl]['model'] = model
+						logger.debug("value:%s read from key: %s" % (model[uri_ref.path[1:]]['value'], key))
+						#call function with ref+value
+						if self.readvaluecallback != None:
+							self.readvaluecallback(key, model[uri_ref.path[1:]])
+
+					else:
+						logger.error("model not updated for %s with error: %i" % (key, err))
+						if err == 3: #we lost the connection
+							lib61850.IedConnection_destroy(con)
+							self.connections[tupl]['con'] = None
+			else:
+				logger.error("model not updated for %s with error: %i" % (key, err))
+
+
+	# retrieve all registered values by polling
+	def d_poll(self):
+		for key in self.polling:
+			uri_ref = urlparse(key)
+
+			port = uri_ref.port
+			if port == "" or port == None:
+				port = 102
+
+
+			if uri_ref.scheme != "iec61850":
+				logger.error("incorrect scheme, only iec61860 is supported, not %s" % uri_ref.scheme)
+				continue
+
+			if uri_ref.hostname == None:
+				logger.error("missing hostname: %s" % key)
+				continue
+
+			tupl = uri_ref.hostname + ":" + str(port)
+
+			#check if connection is active, or reconnect
+			err = self.getIED(uri_ref.hostname, port)
+			if err == 0:
+				con = self.connections[tupl]['con']
+				model = self.connections[tupl]['d_model']
+				if con and model:
+					model, err = iec61850client.d_updateValueInModel(con, model, uri_ref.path[1:])
+					if err == 0:
+						self.connections[tupl]['d_model'] = model
 						submodel, path = iec61850client.parseRef(model, uri_ref.path[1:])
 						logger.debug("value:%s read from key: %s" % (str(submodel), key))
 						#call function with ref+value
@@ -674,6 +1074,27 @@ class iec61850client():
 		else:
 			logger.error("no connection to IED: %s:%s" % (hostname, port) )
 			return {}
+
+
+	# retrieve datamodel from server
+	def d_getDatamodel(self, ref=None, hostname="localhost", port=102):
+		# if uri provided, it will have presedence over hostname and port
+		if ref != None:
+			uri_ref = urlparse(ref)
+			hostname = uri_ref.hostname
+			port = uri_ref.port
+
+		# if port is explicitly defined as "" or None, assume 102
+		if port == "" or port == None:
+			port = 102
+
+		err = self.getIED(hostname, port)
+		if err == 0:
+			tupl =  hostname + ":" + str(port)
+			return self.connections[tupl]['d_model']
+		else:
+			logger.error("no connection to IED: %s:%s" % (hostname, port) )
+			return {}
 	
 
 	def getRegisteredIEDs(self):
@@ -702,9 +1123,9 @@ if __name__=="__main__":
 	lib61850.IedConnection_connect(con,ctypes.byref(error), hostname, tcpPort)
 	if (error.value == lib61850.IED_ERROR_OK):
 
-		model = iec61850client.discovery(con)
+		model = iec61850client.d_discovery(con)
 		
-		model, err = iec61850client.updateValueInModel(con, model, "IED3_SMVMUnn")
+		model, err = iec61850client.d_updateValueInModel(con, model, "IED3_SMVMUnn")
 		print(err)
 		#iec61850client.printrefs(val,"",len(path))
 
@@ -755,18 +1176,18 @@ if __name__=="__main__":
 	lib61850.IedConnection_destroy(con)
 
 	cl = iec61850client()
-	model = cl.getDatamodel(None,'localhost',9102)
+	model = cl.d_getDatamodel(None,'localhost',9102)
 	cl.printrefs(model)
 
-	err = cl.registerReadValue("iec61850://127.0.0.1:9102/IED3_SMVMUnn/MMXU2.AvAPhs")
-	err = cl.registerReadValue("iec61850://127.0.0.1:9102/IED3_SMVMUnn/MMXU2.AvPhVPhs.mag.f")
-	err = cl.registerReadValue("iec61850://127.0.0.1:9102/IED3_SMVMUnn/TCTR1.Amp")
-	err = cl.registerReadValue("iec61850://127.0.0.1:9102/IED3_SMVMUnn/TCTR2.Amp.instMag.i")
+	err = cl.d_registerReadValue("iec61850://127.0.0.1:9102/IED3_SMVMUnn/MMXU2.AvAPhs")
+	err = cl.d_registerReadValue("iec61850://127.0.0.1:9102/IED3_SMVMUnn/MMXU2.AvPhVPhs.mag.f")
+	err = cl.d_registerReadValue("iec61850://127.0.0.1:9102/IED3_SMVMUnn/TCTR1.Amp")
+	err = cl.d_registerReadValue("iec61850://127.0.0.1:9102/IED3_SMVMUnn/TCTR2.Amp.instMag.i")
 
-	err = cl.registerWriteValue("iec61850://127.0.0.1:9102/IED3_SMVMUnn/LLN0.MSVCB01.SvEna",True)
+	err = cl.d_registerWriteValue("iec61850://127.0.0.1:9102/IED3_SMVMUnn/LLN0.MSVCB01.SvEna",True)
 	#while True:
-	cl.poll()
-	cl.registerWriteValue("iec61850://127.0.0.1:9102/IED3_SMVMUnn/LLN0.MSVCB01.SvEna",False)
+	cl.d_poll()
+	cl.d_registerWriteValue("iec61850://127.0.0.1:9102/IED3_SMVMUnn/LLN0.MSVCB01.SvEna",False)
 	time.sleep(0.719)
-	cl.poll()
-	cl.registerWriteValue("iec61850://127.0.0.1:9102/IED3_SMVMUnn/LLN0.MSVCB01.SvEna",True)
+	cl.d_poll()
+	cl.d_registerWriteValue("iec61850://127.0.0.1:9102/IED3_SMVMUnn/LLN0.MSVCB01.SvEna",True)

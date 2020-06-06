@@ -84,7 +84,7 @@ def set_focus(data):
   global hosts_info
   focus = data
   #print("focus:" + str(focus))
-  if focus in hosts_info:
+  if focus in hosts_info and 'data' in hosts_info[focus]:
     socketio.emit('info_event', hosts_info[focus]['data'] )
   else:
     socketio.emit('info_event', "" )
@@ -126,12 +126,16 @@ def process_info_event(loaded_json): #add info to the ied datamodel tab
   global focus
   global hosts_info
   ihost = loaded_json['host']
-  idata = printItems(loaded_json)
+  
   # store data
   if not ihost in hosts_info:
     hosts_info[ihost] = {}
 
-  hosts_info[ihost]['last'] = time.time()
+  lastupdate =  time.time()
+  loaded_json['last'] = lastupdate
+  idata = printItems(loaded_json)
+
+  hosts_info[ihost]['last'] = lastupdate
   hosts_info[ihost]['data'] = idata
   # send data also to webclient
   if ihost==focus:
@@ -140,14 +144,29 @@ def process_info_event(loaded_json): #add info to the ied datamodel tab
 
 def printItems(dictObjs):
   dictObj = dictObjs['data']
-  el = '<table id="CurrentIEDModel" style="width:100%; border: 1px solid white; border-collapse: collapse;"><tr>'
+  el = 'Last update: '+str(time.strftime("%a, %d %b %Y %H:%M:%S",time.localtime(dictObjs['last'])))+'<br><br>'
+  el += '<table id="CurrentIEDModel" style="width:100%; border: 1px solid white; border-collapse: collapse;"><tr>'
   el += '<th>Reference</th><th>Value</th></tr>\n'
-  for k in dictObj:
-    id = "iec61850://" + dictObjs['host'] + "/" + k
-    if dictObj[k]['FC'] == '**':
-      el += ('<tr id="'+id+'"><td style="border: 1px solid white; border-collapse: collapse;">['+ dictObj[k]['FC'] + '] ' + k + '</td><td style="border: 1px solid white; border-collapse: collapse;"> </td></tr>')
-    else:
-      el += ('<tr id="'+id+'"><td style="border: 1px solid white; border-collapse: collapse;">['+ dictObj[k]['FC'] + '] ' + k + '</td><td style="border: 1px solid white; border-collapse: collapse;">'+ dictObj[k]['value']+ '</td></tr>')
+
+  def printrefs(model, ref="", depth=0):
+    _ref = ""
+    row = ""
+    for element in model:
+      if depth == 0:
+        _ref = element
+      elif depth == 1:
+        _ref = ref + "/" + element
+      elif depth > 1:
+        _ref = ref + "." + element
+        
+      if 'value' in model[element] and 'FC' in model[element]:
+        id = "iec61850://" + dictObjs['host'] + "/" + _ref
+        row += ('<tr id="'+id+'"><td style="border: 1px solid white; border-collapse: collapse;">['+ model[element]['FC'] + '] ' + _ref + '</td><td style="border: 1px solid white; border-collapse: collapse;">'+ model[element]['value']+ '</td></tr>')
+      else:
+        row += printrefs(model[element],_ref, depth + 1)
+    return row
+
+  el += printrefs(dictObj)
   el += ('</table>\n')
   return el
 
@@ -180,6 +199,24 @@ def worker():
     socketio.sleep(1)
     client.poll()
     logger.info("values polled")
+
+    # updating datamodel values
+    ieds = client.getRegisteredIEDs()
+    for key in ieds:
+      tupl = key.split(':')
+      hostname = tupl[0]
+
+      #socketio.emit('log_event', {'host':key,'data':'[+] updating IED info','clear':0})
+
+      port = None
+      if len(tupl) > 1 and tupl[1] != "":
+        port = int(tupl[1])
+      model = client.getDatamodel(hostname=hostname, port=port)
+
+      loaded_json = {}
+      loaded_json['host'] = key
+      loaded_json['data'] = model
+      process_info_event(loaded_json)
 
 
 # callback from libiec61850client
