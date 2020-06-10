@@ -42,3 +42,7 @@ Generate the compose file;
   
 Run the Docker compose file;  
 `# sudo docker-compose -f substation.yml up`  
+
+# Under development
+
+iec61850 python based client. This is a client that is configured using an SVG file for the mimics and data-references.

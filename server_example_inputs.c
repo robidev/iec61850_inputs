@@ -374,11 +374,15 @@ int main(int argc, char** argv) {
 	/* Start GOOSE publishing */
 	IedServer_enableGoosePublishing(iedServer);
 
+	if(global_simulation_type == SIMULATION_TYPE_REMOTE) {
+		simulation_thread(iedModel_local, iedExtendedModel_local, sim_port);
+	}
+	else {
+		while (running) {
+			Thread_sleep(1000);
+		}
+	}
 
-	simulation_thread(iedModel_local, iedExtendedModel_local, sim_port);
-	//while (running) {
-	//	Thread_sleep(1000);
-	//}
 
 	/* stop MMS server - close TCP server socket and all client sockets */
 	IedServer_stop(iedServer);

@@ -160,7 +160,7 @@ void XCBR_simulate_switch(Input* input)
       }
       else
       {
-        Thread_sleep(1);
+        Thread_sleep(10);
       }
       
     }    

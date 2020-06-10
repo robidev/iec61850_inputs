@@ -216,34 +216,34 @@ class iec61850client():
 
 
 	@staticmethod
-	def getMMsValue(type, value, size=8):
+	def getMMsValue(type, value, size=8, typeval = -1):
 		#allocate mmsvalue based on type
-		if type == "visible-string":
+		if type == "visible-string" or typeval == lib61850.MMS_VISIBLE_STRING:
 			return lib61850.MmsValue_newVisibleString(str(value))
-		if type == "boolean":
+		if type == "boolean" or typeval == lib61850.MMS_BOOLEAN:
 			if value == "True":
 				return lib61850.MmsValue_newBoolean(True)
 			else:
 				return lib61850.MmsValue_newBoolean(False)
-		if type == "integer":
+		if type == "integer" or typeval == lib61850.MMS_INTEGER:
 			return lib61850.MmsValue_newInteger(int(value))
 		#untested
-		if type == "unsigned":
+		if type == "unsigned" or typeval == lib61850.MMS_UNSIGNED:
 			return lib61850.MmsValue_newUnsignedFromUint32(int(value))
-		if type == "mms-string":
+		if type == "mms-string" or typeval == lib61850.MMS_STRING:
 			return lib61850.MmsValue_newMmsString(str(value))
-		if type == "float":
+		if type == "float" or typeval == lib61850.MMS_FLOAT:
 			return lib61850.MmsValue_newFloat(float(value))
-		if type ==  "binary-time":
+		if type ==  "binary-time" or typeval == lib61850.MMS_BINARY_TIME:
 			return lib61850.MmsValue_newBinaryTime(int(value))
-		if type == "bit-string":
+		if type == "bit-string" or typeval == lib61850.MMS_BIT_STRING:
 			bs = lib61850.MmsValue_newBitString(size)
 			return lib61850.MmsValue_setBitStringFromInteger(bs,int(value))
-		if type == "generalized-time":
+		if type == "generalized-time" or typeval == lib61850.MMS_GENERALIZED_TIME:
 			return lib61850.MmsValue_newUtcTimeByMsTime(int(value))
-		if type == "utc-time":
+		if type == "utc-time" or typeval == lib61850.MMS_UTC_TIME:
 			return lib61850.MmsValue_newUtcTimeByMsTime(int(value))
-		if type == "octet-string":
+		if type == "octet-string" or typeval == lib61850.MMS_OCTET_STRING:
 			sl = len(value)
 			sptr = (ctypes.c_char * sl).from_buffer(value)
 
@@ -253,19 +253,19 @@ class iec61850client():
 			ctypes.memmove(buff, sptr, sl)
 			return buf
 		#unsupported types
-		if type == "array":
+		if type == "array" or typeval == lib61850.MMS_ARRAY:
 			return None
-		if type ==  "bcd":
+		if type ==  "bcd" or typeval == lib61850.MMS_BCD:
 			return None
-		if type == "access-error":
+		if type == "access-error" or typeval == lib61850.MMS_DATA_ACCESS_ERROR:
 			return None
-		if type == "oid":
+		if type == "oid" or typeval == lib61850.MMS_OBJ_ID:
 			return None
-		if type == "structure":
+		if type == "structure" or typeval == lib61850.MMS_STRUCTURE:
 			return  None
 		if type == "unknown(error)":
 			return None
-		logger.error("Mms value type not supported")
+		logger.error("Mms value type %s not supported" % type)
 		return None
 
 
@@ -568,11 +568,9 @@ class iec61850client():
 
 	# register value for reading
 	def registerReadValue(self,ref):
-		# check if present in dataset/report, and subscribe is impossible for now due to lacking reportcallback implementation in SWIG
+		# check if present in dataset/report, and subscribe TODO
 		
-		# i.e. there is no valid way to pass a function-pointer for the callback in IedConnection_installReportHandler
-		# so periodic poll
-
+		# fallback to periodic poll when no report+dataset configured
 		#if we allready have it in the list
 		if ref in self.polling:
 			logger.debug("reference: %s allready registered" % ref)
@@ -679,6 +677,131 @@ class iec61850client():
 	def getRegisteredIEDs(self):
 		return self.connections
 
+
+	def commandTerminationHandler_cb(self, param, con):
+		#buff = ctypes.cast(param, ctypes.POINTER(ctypes.c_char))
+		buff = ctypes.cast(param,ctypes.c_char_p).value.decode("utf-8")
+		logger.debug("commandTerminationHandler_cb called: %s", buff)
+		lastApplError = lib61850.ControlObjectClient_getLastApplError(con)
+
+		#/* if lastApplError.error != 0 this indicates a CommandTermination- */
+		if lastApplError.error != 0:
+			print("Received CommandTermination-")
+			print(" LastApplError: %i"% lastApplError.error)
+			print("      addCause: %i"% lastApplError.addCause)
+		else:
+			print("Received CommandTermination+")
+		return
+
+
+	def operate(self, ref, value, control = None):
+		error = -1
+
+		if ref != None:
+			uri_ref = urlparse(ref)
+			hostname = uri_ref.hostname
+			port = uri_ref.port
+
+		# if port is explicitly defined as "" or None, assume 102
+		if port == "" or port == None:
+			port = 102
+
+		err = self.getIED(hostname, port)
+		if err == 0:
+			tupl =  hostname + ":" + str(port)
+			con = self.connections[tupl]['con']
+
+			if control == None:
+				control = lib61850.ControlObjectClient_create(uri_ref.path[1:], con)
+				ctlModel = lib61850.ControlObjectClient_getControlModel(control)
+				if ctlModel == lib61850.CONTROL_MODEL_DIRECT_ENHANCED or ctlModel == lib61850.CONTROL_MODEL_SBO_ENHANCED:
+					logger.debug("enhanced security")
+					cb = lib61850.CommandTerminationHandler(self.commandTerminationHandler_cb)
+					lib61850.ControlObjectClient_setCommandTerminationHandler(control, cb, "Operate")
+				else:
+					logger.debug("normal security")
+				lib61850.ControlObjectClient_setOrigin(control, "mmi", 3)
+
+			mmsType = lib61850.ControlObjectClient_getCtlValType(control)
+			ctlVal = iec61850client.getMMsValue("",value,0,mmsType)
+			
+			error = lib61850.ControlObjectClient_operate(control, ctlVal, 0)
+
+			time.sleep(2)
+			lib61850.MmsValue_delete(ctlVal)
+			lib61850.ControlObjectClient_destroy(control)
+		
+		return error
+
+	def select(self, ref, value):
+		error = -1
+		control = None
+
+		if ref != None:
+			uri_ref = urlparse(ref)
+			hostname = uri_ref.hostname
+			port = uri_ref.port
+
+		# if port is explicitly defined as "" or None, assume 102
+		if port == "" or port == None:
+			port = 102
+
+		err = self.getIED(hostname, port)
+		if err == 0:
+			tupl =  hostname + ":" + str(port)
+			con = self.connections[tupl]['con']
+			control = lib61850.ControlObjectClient_create(uri_ref.path[1:], con)
+
+			ctlModel = lib61850.ControlObjectClient_getControlModel(control)
+			if ctlModel == lib61850.CONTROL_MODEL_SBO_NORMAL:
+				logger.debug("SBO ctlmodel")
+				error = lib61850.ControlObjectClient_select(control)
+
+			elif ctlModel == lib61850.CONTROL_MODEL_SBO_ENHANCED:
+				logger.debug("SBOw ctlmodel")
+				cb = lib61850.CommandTerminationHandler(self.commandTerminationHandler_cb)
+				lib61850.ControlObjectClient_setCommandTerminationHandler(control, cb, "Select")
+
+				mmsType = lib61850.ControlObjectClient_getCtlValType(control)
+				ctlVal = iec61850client.getMMsValue("",value,0,mmsType)
+				lib61850.ControlObjectClient_setOrigin(control, "mmi", 3)
+				error = lib61850.ControlObjectClient_selectWithValue(control, ctlVal)
+
+				time.sleep(2)
+				lib61850.MmsValue_delete(ctlVal)
+				#lib61850.ControlObjectClient_destroy(control)
+			else:
+				logger.error("cannot select object with ctlmodel: %i" % ctlModel)
+				error = -1
+				lib61850.ControlObjectClient_destroy(control)
+				control = None
+
+		return error, control
+
+	def cancel(self, ref, control = None):
+		error = -1
+		control = None
+
+		if ref != None:
+			uri_ref = urlparse(ref)
+			hostname = uri_ref.hostname
+			port = uri_ref.port
+
+		# if port is explicitly defined as "" or None, assume 102
+		if port == "" or port == None:
+			port = 102
+
+		err = self.getIED(hostname, port)
+		if err == 0:
+			tupl =  hostname + ":" + str(port)
+			con = self.connections[tupl]['con']
+			if control == None:
+				control = lib61850.ControlObjectClient_create(uri_ref.path[1:], con)
+			error = lib61850.ControlObjectClient_cancel(control)
+			lib61850.ControlObjectClient_destroy(control)
+
+		return error, control
+
 def cb(a,b):
 	print("cb called!")
 
@@ -697,15 +820,15 @@ if __name__=="__main__":
 		port = sys.argv[2]
 
 
-	error = lib61850.IedClientError()
-	con = lib61850.IedConnection_create()
-	lib61850.IedConnection_connect(con,ctypes.byref(error), hostname, tcpPort)
-	if (error.value == lib61850.IED_ERROR_OK):
+	#error = lib61850.IedClientError()
+	#con = lib61850.IedConnection_create()
+	#lib61850.IedConnection_connect(con,ctypes.byref(error), hostname, tcpPort)
+	#if (error.value == lib61850.IED_ERROR_OK):
 
-		model = iec61850client.discovery(con)
+	#	model = iec61850client.discovery(con)
 		
-		model, err = iec61850client.updateValueInModel(con, model, "IED3_SMVMUnn")
-		print(err)
+	#	model, err = iec61850client.updateValueInModel(con, model, "IED3_SMVMUnn")
+	#	print(err)
 		#iec61850client.printrefs(val,"",len(path))
 
 
@@ -749,24 +872,35 @@ if __name__=="__main__":
 		
 		# time.sleep(5)
 
-		lib61850.IedConnection_close(con)
-	else:
-		logger.error("Failed to connect to %s:%i\n"%(hostname, tcpPort))
-	lib61850.IedConnection_destroy(con)
+	#	lib61850.IedConnection_close(con)
+	#else:
+	#	logger.error("Failed to connect to %s:%i\n"%(hostname, tcpPort))
+	#lib61850.IedConnection_destroy(con)
 
 	cl = iec61850client()
-	model = cl.getDatamodel(None,'localhost',9102)
+	model = cl.getDatamodel(None,'localhost',102)
 	cl.printrefs(model)
 
-	err = cl.registerReadValue("iec61850://127.0.0.1:9102/IED3_SMVMUnn/MMXU2.AvAPhs")
-	err = cl.registerReadValue("iec61850://127.0.0.1:9102/IED3_SMVMUnn/MMXU2.AvPhVPhs.mag.f")
-	err = cl.registerReadValue("iec61850://127.0.0.1:9102/IED3_SMVMUnn/TCTR1.Amp")
-	err = cl.registerReadValue("iec61850://127.0.0.1:9102/IED3_SMVMUnn/TCTR2.Amp.instMag.i")
+	#err = cl.registerReadValue("iec61850://127.0.0.1:9102/IED3_SMVMUnn/MMXU2.AvAPhs")
+	#err = cl.registerReadValue("iec61850://127.0.0.1:9102/IED3_SMVMUnn/MMXU2.AvPhVPhs.mag.f")
+	#err = cl.registerReadValue("iec61850://127.0.0.1:9102/IED3_SMVMUnn/TCTR1.Amp")
+	#err = cl.registerReadValue("iec61850://127.0.0.1:9102/IED3_SMVMUnn/TCTR2.Amp.instMag.i")
 
-	err = cl.registerWriteValue("iec61850://127.0.0.1:9102/IED3_SMVMUnn/LLN0.MSVCB01.SvEna",True)
+	#err = cl.registerWriteValue("iec61850://127.0.0.1:9102/IED3_SMVMUnn/LLN0.MSVCB01.SvEna",True)
 	#while True:
-	cl.poll()
-	cl.registerWriteValue("iec61850://127.0.0.1:9102/IED3_SMVMUnn/LLN0.MSVCB01.SvEna",False)
-	time.sleep(0.719)
-	cl.poll()
-	cl.registerWriteValue("iec61850://127.0.0.1:9102/IED3_SMVMUnn/LLN0.MSVCB01.SvEna",True)
+	#cl.poll()
+	#cl.registerWriteValue("iec61850://127.0.0.1:9102/IED3_SMVMUnn/LLN0.MSVCB01.SvEna",False)
+	#time.sleep(0.719)
+	#cl.poll()
+	#cl.registerWriteValue("iec61850://127.0.0.1:9102/IED3_SMVMUnn/LLN0.MSVCB01.SvEna",True)
+	error, control = cl.select("iec61850://127.0.0.1:102/IED1_XCBRGenericIO/CSWI1.Pos", True)
+	if error == 1:
+		print("selected successfully")
+	else:
+		print("failed to select")	
+	#control = None
+	if cl.operate("iec61850://127.0.0.1:102/IED1_XCBRGenericIO/CSWI1.Pos", True, control) == 1:
+		print("operated successfully")
+	else:
+		print("failed to operate")
+
