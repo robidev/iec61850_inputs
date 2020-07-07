@@ -1,3 +1,10 @@
+# Warning: archived repository
+
+This repository has been archived for reference. The new, and maintained repo is here:  
+
+https://github.com/robidev/iec61850_open_server.git
+
+
 # iec61850_inputs
 An implementation of an IED using the libiec61850 library.
 
